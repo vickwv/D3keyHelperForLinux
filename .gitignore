@@ -1,0 +1,7 @@
+__pycache__/
+tests/__pycache__/
+build/
+dist/
+*.AppImage
+*.spec
+*.ini

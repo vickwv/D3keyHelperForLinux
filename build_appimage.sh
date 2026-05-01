@@ -2,7 +2,6 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${ROOT_DIR}/.." && pwd)"
 BUILD_DIR="${ROOT_DIR}/build/appimage"
 DIST_DIR="${ROOT_DIR}/dist"
 APP_NAME="D3keyHelper-Linux"
@@ -25,7 +24,7 @@ rm -rf "${APPDIR}" "${DIST_DIR}/${APP_NAME}" "${ROOT_DIR}/build/${APP_NAME}.spec
   --name "${APP_NAME}" \
   --hidden-import PySide6.QtDBus \
   --collect-submodules PySide6 \
-  --add-data "${REPO_ROOT}/mainwindow.png:." \
+  --add-data "${ROOT_DIR}/mainwindow.png:." \
   "${ROOT_DIR}/d3keyhelper_linux_gui.py"
 
 mkdir -p "${APPDIR}/usr/lib/d3keyhelper-linux"
@@ -36,7 +35,7 @@ cp "${ROOT_DIR}/packaging/AppRun" "${APPDIR}/AppRun"
 cp "${ROOT_DIR}/packaging/D3keyHelper.desktop" "${APPDIR}/io.github.WeijieH.D3keyHelper.desktop"
 cp "${ROOT_DIR}/packaging/D3keyHelper.desktop" "${APPDIR}/usr/share/applications/io.github.WeijieH.D3keyHelper.desktop"
 cp "${ROOT_DIR}/packaging/D3keyHelper.appdata.xml" "${APPDIR}/usr/share/metainfo/io.github.WeijieH.D3keyHelper.appdata.xml"
-cp "${REPO_ROOT}/mainwindow.png" "${APPDIR}/d3keyhelper-linux.png"
+cp "${ROOT_DIR}/mainwindow.png" "${APPDIR}/d3keyhelper-linux.png"
 chmod +x "${APPDIR}/AppRun"
 
 APPIMAGETOOL="${BUILD_DIR}/appimagetool-x86_64.AppImage"
