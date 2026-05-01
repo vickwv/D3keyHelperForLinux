@@ -964,6 +964,9 @@ class MacroApp:
         self._helper_break = False
         self._helper_thread: Optional[threading.Thread] = None
         self._quick_pause_last_pressed_at: dict[str, float] = {}
+        self._watched_press_bases: set[str] = set()
+        self._watched_release_bases: set[str] = set()
+        self._refresh_input_watch()
 
     def start(self) -> None:
         if self.general.d3only and self.matcher is None:
@@ -985,7 +988,50 @@ class MacroApp:
         if self._focus_thread and self._focus_thread.is_alive():
             self._focus_thread.join(timeout=1.0)
 
+    def _add_hotkey_watch(self, press_bases: set[str], release_bases: set[str], spec: Optional[HotkeySpec]) -> None:
+        if spec is None:
+            return
+        press_bases.add(spec.base)
+        release_bases.add(spec.base)
+        press_bases.update(spec.modifiers)
+        release_bases.update(spec.modifiers)
+
+    def _refresh_input_watch(self) -> None:
+        press_bases: set[str] = set()
+        release_bases: set[str] = set()
+        self._add_hotkey_watch(press_bases, release_bases, self.general.start_hotkey)
+        self._add_hotkey_watch(press_bases, release_bases, self.general.helper.hotkey)
+        if self.general.smart_pause:
+            press_bases.update({"tab", "enter", "t", "m"})
+        for profile in self.profiles:
+            self._add_hotkey_watch(press_bases, release_bases, profile.profile_hotkey)
+            if profile.start_mode == 2:
+                self._add_hotkey_watch(press_bases, release_bases, self.general.start_hotkey)
+            if profile.quick_pause.enabled:
+                self._add_hotkey_watch(press_bases, release_bases, profile.quick_pause.trigger)
+            for skill in profile.skills:
+                if skill.action == 5:
+                    self._add_hotkey_watch(press_bases, release_bases, skill.trigger)
+        self._watched_press_bases = press_bases
+        self._watched_release_bases = release_bases
+
+    def needs_keyboard_listener(self) -> bool:
+        watched = self._watched_press_bases | self._watched_release_bases
+        return any(not base.startswith("mouse:") and not base.startswith("wheel_") for base in watched)
+
+    def needs_mouse_listener(self) -> bool:
+        watched = self._watched_press_bases | self._watched_release_bases
+        return any(base.startswith("mouse:") or base.startswith("wheel_") for base in watched)
+
+    def _wait_until(self, stop_event: threading.Event, deadline: float) -> bool:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            return False
+        return stop_event.wait(remaining)
+
     def on_key_press(self, base: str) -> None:
+        if base not in self._watched_press_bases:
+            return
         with self._lock:
             if self.synthetic_filter.consume(base, SYNTHETIC_PHASE_PRESS):
                 return
@@ -997,6 +1043,8 @@ class MacroApp:
         self._dispatch_press(base)
 
     def on_key_release(self, base: str) -> None:
+        if base not in self._watched_release_bases:
+            return
         with self._lock:
             if self.synthetic_filter.consume(base, SYNTHETIC_PHASE_RELEASE):
                 return
@@ -1006,6 +1054,8 @@ class MacroApp:
         self._dispatch_release(base)
 
     def on_scroll(self, direction: str) -> None:
+        if direction not in self._watched_press_bases:
+            return
         self._dispatch_press(direction)
 
     def _dispatch_press(self, base: str) -> None:
@@ -1248,12 +1298,7 @@ class MacroApp:
             while not stop_event.is_set():
                 phase_s = self._compute_phase_seconds(skill.interval_ms, skill.delay_ms, skill.randomize_delay)
                 due = cycle_start + phase_s
-                while not stop_event.is_set():
-                    remaining = due - time.monotonic()
-                    if remaining <= 0:
-                        break
-                    time.sleep(min(remaining, 0.02))
-                if stop_event.is_set():
+                if self._wait_until(stop_event, due):
                     break
                 self._execute_skill(skill)
                 cycle_start += interval_s
@@ -1329,12 +1374,7 @@ class MacroApp:
             while not stop_event.is_set():
                 phase_s = self._compute_phase_seconds(interval_ms, delay_ms, randomize_delay)
                 due = cycle_start + phase_s
-                while not stop_event.is_set():
-                    remaining = due - time.monotonic()
-                    if remaining <= 0:
-                        break
-                    time.sleep(min(remaining, 0.02))
-                if stop_event.is_set():
+                if self._wait_until(stop_event, due):
                     break
                 with self._lock:
                     paused = self._paused
@@ -1370,12 +1410,7 @@ class MacroApp:
             interval_s = max(self.current_profile.potion_interval_ms, 200) / 1000.0
             cycle_start = time.monotonic()
             while not stop_event.is_set():
-                while not stop_event.is_set():
-                    remaining = cycle_start - time.monotonic()
-                    if remaining <= 0:
-                        break
-                    time.sleep(min(remaining, 0.02))
-                if stop_event.is_set():
+                if self._wait_until(stop_event, cycle_start):
                     break
                 capture = self._capture_game_image()
                 if capture is not None:
@@ -1401,7 +1436,8 @@ class MacroApp:
             while not stop_event.is_set():
                 if self._skill_queue:
                     self._process_skill_queue_once(max(interval_ms, 50))
-                time.sleep(delay_s)
+                if stop_event.wait(delay_s):
+                    break
 
         return worker
 
@@ -1858,7 +1894,8 @@ class MacroApp:
                     running = self._running
                 if running and not self.matcher.matches_active_window():
                     self.stop_macro(reason="检测到窗口焦点已离开游戏")
-                time.sleep(0.3)
+                if self._shutdown_event.wait(0.3):
+                    break
 
         self._focus_thread = threading.Thread(target=monitor, daemon=True)
         self._focus_thread.start()
@@ -2387,10 +2424,12 @@ def main() -> int:
         elif dy < 0:
             app.on_scroll("wheel_down")
 
-    key_listener = keyboard.Listener(on_press=on_key_press, on_release=on_key_release)
-    mouse_listener = mouse.Listener(on_click=on_click, on_scroll=on_scroll)
-    key_listener.start()
-    mouse_listener.start()
+    key_listener = keyboard.Listener(on_press=on_key_press, on_release=on_key_release) if app.needs_keyboard_listener() else None
+    mouse_listener = mouse.Listener(on_click=on_click, on_scroll=on_scroll) if app.needs_mouse_listener() else None
+    if key_listener is not None:
+        key_listener.start()
+    if mouse_listener is not None:
+        mouse_listener.start()
 
     profile = profiles[start_profile_index]
     print(
@@ -2406,8 +2445,10 @@ def main() -> int:
         print("正在退出 Linux 运行器...", flush=True)
     finally:
         app.shutdown()
-        key_listener.stop()
-        mouse_listener.stop()
+        if key_listener is not None:
+            key_listener.stop()
+        if mouse_listener is not None:
+            mouse_listener.stop()
     return 0
 
 

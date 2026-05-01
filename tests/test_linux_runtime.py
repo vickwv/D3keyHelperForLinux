@@ -28,6 +28,16 @@ def get_qt_app() -> QApplication:
 
 
 class ConfigTests(unittest.TestCase):
+    def _make_macro_app(self) -> runtime.MacroApp:
+        tmp_dir = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp_dir.cleanup)
+        config_path = Path(tmp_dir.name) / "d3oldsand.ini"
+        runtime.create_default_config(config_path)
+        general, profiles = runtime.load_config(config_path)
+        sender = mock.Mock()
+        sender._filter = runtime.SyntheticEventFilter()
+        return runtime.MacroApp(general, profiles, 0, sender, matcher=None, capture_backend="x11")
+
     def test_parse_safezone(self) -> None:
         self.assertEqual(runtime.parse_safezone("1, 2, 60, 61, foo"), {1, 2, 60})
 
@@ -132,6 +142,24 @@ class ConfigTests(unittest.TestCase):
             with mock.patch.object(runtime, "play_notification_sound") as play_sound:
                 app.switch_profile(1)
             play_sound.assert_called_once()
+
+    def test_default_profile_does_not_require_mouse_listener(self) -> None:
+        app = self._make_macro_app()
+        self.assertTrue(app.needs_keyboard_listener())
+        self.assertFalse(app.needs_mouse_listener())
+
+    def test_mouse_listener_enabled_for_mouse_hotkeys(self) -> None:
+        app = self._make_macro_app()
+        app.general.helper.hotkey = runtime.HotkeySpec("mouse:x1")
+        app._refresh_input_watch()
+        self.assertTrue(app.needs_mouse_listener())
+
+    def test_irrelevant_mouse_press_is_ignored(self) -> None:
+        app = self._make_macro_app()
+        app.on_key_press("mouse:left")
+        self.assertEqual(app._pressed_bases, set())
+        app.on_key_press("f2")
+        self.assertIn("f2", app._pressed_bases)
 
 
 class GuiParityTests(unittest.TestCase):
