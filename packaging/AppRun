@@ -1,0 +1,4 @@
+#!/bin/sh
+set -eu
+HERE="$(dirname "$(readlink -f "$0")")"
+exec "$HERE/usr/lib/d3keyhelper-linux/D3keyHelper-Linux" "$@"

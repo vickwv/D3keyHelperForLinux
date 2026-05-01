@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.WeijieH.D3keyHelper.desktop</id>
+  <name>D3keyHelper Linux</name>
+  <summary>Linux macro and helper runner for Diablo III</summary>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+  <url type="homepage">https://github.com/WeijieH/D3keyHelper</url>
+  <description>
+    <p>D3keyHelper Linux provides combat macros, helper automation, and a GUI configuration editor for Diablo III on Linux.</p>
+    <p>It targets Arch Linux users running the game through Steam, Proton, X11, or XWayland, and includes AppImage packaging support.</p>
+  </description>
+  <launchable type="desktop-id">io.github.WeijieH.D3keyHelper.desktop</launchable>
+  <categories>
+    <category>Utility</category>
+  </categories>
+</component>

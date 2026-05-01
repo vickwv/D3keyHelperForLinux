@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=D3keyHelper Linux
+Comment=Linux helper and macro runner for Diablo III
+Exec=D3keyHelper-Linux
+Icon=d3keyhelper-linux
+Categories=Utility;
+Terminal=false
+StartupWMClass=D3keyHelper Linux
+X-AppImage-Name=D3keyHelper Linux
