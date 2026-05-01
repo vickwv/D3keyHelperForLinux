@@ -249,6 +249,9 @@ QFrame#sectionSeparator {
 QWidget#pageContainer {
     background: #ffffff;
 }
+QScrollArea > QWidget {
+    background: transparent;
+}
 QTableWidget {
     background: #ffffff;
     alternate-background-color: #ffffff;
@@ -325,6 +328,7 @@ FORM_FIELD_MAX_WIDTH = 180
 FORM_CONTROL_HEIGHT = 26
 TOGGLE_TEXT_WIDTH = 150
 INLINE_LABEL_WIDTH = 76
+GENERAL_TOP_SECTION_HEIGHT = 304
 TOOLBAR_PATH_MIN_WIDTH = 220
 TOOLBAR_PATH_MAX_WIDTH = 320
 TOOLBAR_PROFILE_WIDTH = 190
@@ -529,12 +533,6 @@ def build_section(title: str, hint: str | None = None) -> tuple[QWidget, QVBoxLa
     separator.setObjectName("sectionSeparator")
     layout.addWidget(separator)
     return section, layout
-
-
-def align_section_heights(*sections: QWidget) -> None:
-    height = max(section.sizeHint().height() for section in sections)
-    for section in sections:
-        section.setFixedHeight(height)
 
 
 def build_two_column_form(fields) -> QWidget:
@@ -906,7 +904,10 @@ def tune_skill_widget(widget: QWidget, role: str) -> None:
     elif role == "action":
         width = SKILL_ACTION_WIDTH
     widget.setMinimumWidth(width)
-    widget.setMaximumWidth(width)
+    if role == "triggerbutton":
+        widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+    else:
+        widget.setMaximumWidth(width)
 
 
 def load_parser(config_path: Path) -> configparser.ConfigParser:
@@ -938,6 +939,8 @@ def build_runner_command(config_path: Path, profile: str) -> list[str]:
 class ProfileTab(QWidget):
     def __init__(self, section_name: str, section: configparser.SectionProxy) -> None:
         super().__init__()
+        self.setObjectName("pageContainer")
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground)
         self.widgets: dict[str, object] = {}
         self.section_name = section_name
         root = QVBoxLayout(self)
@@ -1065,6 +1068,9 @@ class ProfileTab(QWidget):
         self.skill_table.horizontalHeader().setDefaultSectionSize(SKILL_NUMBER_WIDTH)
         self.skill_table.horizontalHeader().setMinimumSectionSize(40)
         self.skill_table.horizontalHeader().setFixedHeight(SKILL_TABLE_HEADER_HEIGHT)
+        self.skill_table.horizontalHeader().setDefaultAlignment(
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+        )
         self.skill_table.verticalScrollBar().setEnabled(False)
         self.skill_table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.skill_table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -1116,7 +1122,6 @@ class ProfileTab(QWidget):
         self.skill_table.setColumnWidth(6, SKILL_NUMBER_WIDTH)
         self.skill_table.setColumnWidth(7, SKILL_NUMBER_WIDTH)
         self.skill_table.setColumnWidth(8, 112)
-        self.skill_table.setColumnWidth(9, SKILL_TRIGGER_WIDTH)
         self.widgets["skills"] = skill_widgets
         self.skill_queue_warning = QLabel(
             tr(
@@ -1448,6 +1453,7 @@ class MainWindow(QMainWindow):
     def _build_general_tab(self, section: configparser.SectionProxy, profile_names: list[str]) -> QWidget:
         container = QWidget()
         container.setObjectName("pageContainer")
+        container.setAttribute(Qt.WidgetAttribute.WA_StyledBackground)
         root = QVBoxLayout(container)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(10)
@@ -1506,6 +1512,7 @@ class MainWindow(QMainWindow):
                 ]
             )
         )
+        basic_section.setFixedHeight(GENERAL_TOP_SECTION_HEIGHT)
         columns.addWidget(basic_section, 0, 0, alignment=Qt.AlignmentFlag.AlignTop)
 
         for key, value in [
@@ -1584,6 +1591,7 @@ class MainWindow(QMainWindow):
                 ]
             )
         )
+        helper_section.setFixedHeight(GENERAL_TOP_SECTION_HEIGHT)
         columns.addWidget(helper_section, 0, 1, alignment=Qt.AlignmentFlag.AlignTop)
 
         advanced_section, advanced_layout = build_section(tr("高级", "Advanced"))
@@ -1607,7 +1615,6 @@ class MainWindow(QMainWindow):
         self._sync_helper_speed_preset()
         self._connect_general_dynamic_controls()
         self._refresh_general_state()
-        align_section_heights(basic_section, helper_section)
         columns.addWidget(advanced_section, 1, 1, alignment=Qt.AlignmentFlag.AlignTop)
         root.addStretch(1)
         self._update_runtime_status_widgets()
@@ -1618,6 +1625,7 @@ class MainWindow(QMainWindow):
         tab.setWidgetResizable(True)
         tab.setFrameShape(QFrame.Shape.NoFrame)
         tab.setWidget(widget)
+        tab.viewport().setAutoFillBackground(False)
         return tab
 
     def _combo(self, items, value: int) -> QComboBox:
