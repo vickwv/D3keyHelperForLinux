@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="D3keyHelper Linux icon">
+  <defs>
+    <linearGradient id="plate" x1="92" y1="50" x2="420" y2="462" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2f3747"/>
+      <stop offset="0.58" stop-color="#151a23"/>
+      <stop offset="1" stop-color="#080a0f"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="112" y1="74" x2="404" y2="438" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffdf8a"/>
+      <stop offset="0.42" stop-color="#d98b2d"/>
+      <stop offset="1" stop-color="#763315"/>
+    </linearGradient>
+    <linearGradient id="keyTop" x1="132" y1="148" x2="365" y2="364" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f8fafc"/>
+      <stop offset="0.52" stop-color="#dce5ef"/>
+      <stop offset="1" stop-color="#8b9aad"/>
+    </linearGradient>
+    <linearGradient id="keySide" x1="124" y1="256" x2="375" y2="398" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8290a4"/>
+      <stop offset="1" stop-color="#4d586b"/>
+    </linearGradient>
+    <linearGradient id="ember" x1="331" y1="133" x2="386" y2="266" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffe08d"/>
+      <stop offset="0.4" stop-color="#ff9f37"/>
+      <stop offset="1" stop-color="#d8461d"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="116" fill="url(#plate)"/>
+  <path d="M256 48 415 119v122c0 94-63 176-159 223C160 417 97 335 97 241V119Z" fill="#090b10" opacity="0.48"/>
+  <path d="M256 61 399 126v111c0 83-55 156-143 201-88-45-143-118-143-201V126Z" fill="none" stroke="url(#rim)" stroke-width="18" stroke-linejoin="round"/>
+  <path d="M256 82 376 137v99c0 69-43 131-120 172-77-41-120-103-120-172v-99Z" fill="#151b25" stroke="#323b4c" stroke-width="4" stroke-linejoin="round"/>
+
+  <g filter="url(#shadow)">
+    <path d="M144 201c0-24 19-43 43-43h129c24 0 43 19 43 43v95c0 24-19 43-43 43H187c-24 0-43-19-43-43Z" fill="url(#keySide)"/>
+    <path d="M158 187c0-22 18-40 40-40h108c22 0 40 18 40 40v83c0 22-18 40-40 40H198c-22 0-40-18-40-40Z" fill="url(#keyTop)"/>
+    <path d="M184 187c0-9 7-16 16-16h104c9 0 16 7 16 16v83c0 9-7 16-16 16H200c-9 0-16-7-16-16Z" fill="#eef3f8" opacity="0.36"/>
+    <path d="M162 215h184" fill="none" stroke="#a9b5c6" stroke-width="8" stroke-linecap="round" opacity="0.55"/>
+    <path d="M251 147v163" fill="none" stroke="#a9b5c6" stroke-width="8" stroke-linecap="round" opacity="0.5"/>
+  </g>
+
+  <path d="M330 154c28 23 54 56 54 93 0 46-35 81-86 81-26 0-50-8-67-23 52 3 79-18 79-49 0-28-23-46-23-73 0-23 16-42 43-29Z" fill="#0b0d12" opacity="0.35"/>
+  <path d="M337 135c31 26 61 65 61 108 0 53-42 94-103 94-31 0-59-10-78-27 60 4 92-21 92-57 0-32-27-54-27-85 0-27 18-49 55-33Z" fill="url(#ember)"/>
+  <path d="M341 189c15 15 30 39 30 64 0 28-22 51-57 51-13 0-27-3-37-9 33-4 49-21 49-42 0-19-14-35-14-52 0-15 11-26 29-12Z" fill="#fff2a8" opacity="0.86"/>
+
+  <g font-family="Inter, Segoe UI, DejaVu Sans, Arial, sans-serif" font-weight="900" text-anchor="middle">
+    <text x="252" y="270" font-size="94" fill="#10141d" opacity="0.32">D3</text>
+    <text x="249" y="262" font-size="94" fill="#18202c">D3</text>
+    <text x="249" y="259" font-size="94" fill="#f7fafc">D3</text>
+  </g>
+
+  <path d="M171 371h166" fill="none" stroke="#ffb454" stroke-width="16" stroke-linecap="round"/>
+  <path d="M194 400h120" fill="none" stroke="#7dd56f" stroke-width="16" stroke-linecap="round"/>
+  <circle cx="337" cy="371" r="12" fill="#ffb454"/>
+  <circle cx="317" cy="400" r="12" fill="#7dd56f"/>
+</svg>

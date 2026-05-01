@@ -104,11 +104,25 @@ sudo pacman -S python python-pip
 python d3keyhelper_linux.py --init-config
 ```
 
+The default config path is:
+
+```bash
+~/.config/d3helperforlinux/d3oldsand.ini
+```
+
+If `XDG_CONFIG_HOME` is set, the file is created under:
+
+```bash
+$XDG_CONFIG_HOME/d3helperforlinux/d3oldsand.ini
+```
+
 ### 3. Launch the GUI
 
 ```bash
 python d3keyhelper_linux.py --gui
 ```
+
+The GUI now uses the localized **通用 / General** tab name. By default it stays in Chinese to match the original workflow; set `D3HELPER_LANG=en` if you want the main shell chrome in English.
 
 ### 4. Or launch the runner directly
 

@@ -104,11 +104,25 @@ sudo pacman -S python python-pip
 python d3keyhelper_linux.py --init-config
 ```
 
+默认配置文件路径现在是：
+
+```bash
+~/.config/d3helperforlinux/d3oldsand.ini
+```
+
+如果设置了 `XDG_CONFIG_HOME`，则会创建到：
+
+```bash
+$XDG_CONFIG_HOME/d3helperforlinux/d3oldsand.ini
+```
+
 ### 3. 启动 GUI
 
 ```bash
 python d3keyhelper_linux.py --gui
 ```
+
+GUI 里的主标签页现在默认显示为 **通用**。如果你想切换主要界面外壳为英文，可以在启动前设置 `D3HELPER_LANG=en`。
 
 ### 4. 或直接启动运行器
 

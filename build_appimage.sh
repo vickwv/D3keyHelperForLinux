@@ -6,6 +6,8 @@ BUILD_DIR="${ROOT_DIR}/build/appimage"
 DIST_DIR="${ROOT_DIR}/dist"
 APP_NAME="D3keyHelper-Linux"
 APPDIR="${BUILD_DIR}/AppDir"
+ICON_NAME="d3keyhelper-linux"
+ICON_DIR="${ROOT_DIR}/packaging/icons"
 PYTHON_BIN="${PYTHON_BIN:-python}"
 USER_CONFIG_PATH="${DIST_DIR}/${APP_NAME}/d3oldsand.ini"
 USER_CONFIG_BACKUP="${BUILD_DIR}/preserved-d3oldsand.ini"
@@ -40,17 +42,27 @@ fi
   --hidden-import PySide6.QtDBus \
   --collect-submodules PySide6 \
   --add-data "${ROOT_DIR}/mainwindow.png:." \
+  --add-data "${ICON_DIR}/${ICON_NAME}-256.png:." \
   "${ROOT_DIR}/d3keyhelper_linux_gui.py"
 
 mkdir -p "${APPDIR}/usr/lib/d3keyhelper-linux"
 mkdir -p "${APPDIR}/usr/share/applications"
 mkdir -p "${APPDIR}/usr/share/metainfo"
+mkdir -p "${APPDIR}/usr/share/icons/hicolor/scalable/apps"
+for size in 16 32 48 64 128 256 512; do
+  mkdir -p "${APPDIR}/usr/share/icons/hicolor/${size}x${size}/apps"
+done
 cp -a "${DIST_DIR}/${APP_NAME}/." "${APPDIR}/usr/lib/d3keyhelper-linux/"
 cp "${ROOT_DIR}/packaging/AppRun" "${APPDIR}/AppRun"
 cp "${ROOT_DIR}/packaging/D3keyHelper.desktop" "${APPDIR}/io.github.WeijieH.D3keyHelper.desktop"
 cp "${ROOT_DIR}/packaging/D3keyHelper.desktop" "${APPDIR}/usr/share/applications/io.github.WeijieH.D3keyHelper.desktop"
 cp "${ROOT_DIR}/packaging/D3keyHelper.appdata.xml" "${APPDIR}/usr/share/metainfo/io.github.WeijieH.D3keyHelper.appdata.xml"
-cp "${ROOT_DIR}/mainwindow.png" "${APPDIR}/d3keyhelper-linux.png"
+cp "${ICON_DIR}/${ICON_NAME}-256.png" "${APPDIR}/${ICON_NAME}.png"
+cp "${ICON_DIR}/${ICON_NAME}-256.png" "${APPDIR}/.DirIcon"
+cp "${ICON_DIR}/${ICON_NAME}.svg" "${APPDIR}/usr/share/icons/hicolor/scalable/apps/${ICON_NAME}.svg"
+for size in 16 32 48 64 128 256 512; do
+  cp "${ICON_DIR}/${ICON_NAME}-${size}.png" "${APPDIR}/usr/share/icons/hicolor/${size}x${size}/apps/${ICON_NAME}.png"
+done
 chmod +x "${APPDIR}/AppRun"
 
 APPIMAGETOOL="${BUILD_DIR}/appimagetool-x86_64.AppImage"

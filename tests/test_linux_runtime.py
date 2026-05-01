@@ -56,6 +56,13 @@ class ConfigTests(unittest.TestCase):
             self.assertEqual(parser["General"]["sendmode"], "Event")
             self.assertEqual(parser["General"]["compactmode"], "0")
 
+    def test_default_config_path_uses_xdg_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir, mock.patch.dict(os.environ, {"XDG_CONFIG_HOME": tmp_dir}, clear=False):
+            config_path = runtime.default_config_path()
+            self.assertEqual(config_path, Path(tmp_dir) / "d3helperforlinux" / "d3oldsand.ini")
+            runtime.create_default_config(config_path)
+            self.assertTrue(config_path.exists())
+
     def test_describe_enabled_helpers(self) -> None:
         helper = runtime.HelperConfig(
             hotkey=runtime.HotkeySpec("f5"),
@@ -278,9 +285,13 @@ class GuiParityTests(unittest.TestCase):
                 profile.refresh_dynamic_state()
                 app.processEvents()
                 self.assertFalse(profile.skill_queue_warning.isHidden())
+                self.assertEqual(window.tabs.tabText(0), "通用")
                 window.general_widgets["compactmode"].setChecked(True)
                 app.processEvents()
                 self.assertFalse(window.log.isVisible())
+                self.assertTrue(window.activity_panel.isVisible())
+                self.assertIn("最近日志", window.activity_log_label.text())
+                self.assertEqual(window.general_widgets["statusconfig"].text(), str(config_path))
                 self.assertEqual((window.width(), window.height()), gui.COMPACT_WINDOW_SIZE)
             finally:
                 window.close()

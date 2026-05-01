@@ -48,6 +48,8 @@ except ImportError:
 
 
 DEFAULT_VERSION = "260403"
+CONFIG_DIR_NAME = "d3helperforlinux"
+CONFIG_FILE_NAME = "d3oldsand.ini"
 DEFAULT_PROFILE_NAMES = ["配置1", "配置2", "配置3", "配置4"]
 START_METHOD_MOUSE = {
     1: "mouse:right",
@@ -2245,7 +2247,19 @@ def default_skill_hotkey(index: int) -> str:
     return defaults[index]
 
 
+def default_config_dir() -> Path:
+    base_dir = os.environ.get("XDG_CONFIG_HOME", "").strip()
+    if base_dir:
+        return Path(base_dir).expanduser() / CONFIG_DIR_NAME
+    return Path.home() / ".config" / CONFIG_DIR_NAME
+
+
+def default_config_path() -> Path:
+    return default_config_dir() / CONFIG_FILE_NAME
+
+
 def create_default_config(config_path: Path) -> None:
+    config_path.parent.mkdir(parents=True, exist_ok=True)
     parser = configparser.ConfigParser(interpolation=None)
     parser.optionxform = str.lower
     parser["General"] = {
@@ -2380,7 +2394,11 @@ def normalize_mouse_button(button_event) -> Optional[str]:
 
 def build_argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Linux native combat macro runner for D3keyHelper.")
-    parser.add_argument("--config", default="d3oldsand.ini", help="配置文件路径，默认 d3oldsand.ini")
+    parser.add_argument(
+        "--config",
+        default=str(default_config_path()),
+        help=f"配置文件路径，默认 {default_config_path()}",
+    )
     parser.add_argument("--gui", action="store_true", help="启动 Linux 图形界面配置器")
     parser.add_argument("--init-config", action="store_true", help="生成一份默认配置文件后退出")
     parser.add_argument("--list-profiles", action="store_true", help="列出配置文件中的所有配置后退出")

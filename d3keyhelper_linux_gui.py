@@ -2,16 +2,19 @@
 from __future__ import annotations
 
 import configparser
+import os
 import subprocess
 import sys
 from pathlib import Path
 
 from PySide6.QtCore import QProcess, QTimer, Qt
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
     QComboBox,
     QDoubleSpinBox,
+    QFrame,
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
@@ -21,6 +24,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QPlainTextEdit,
+    QScrollArea,
     QSpinBox,
     QTabWidget,
     QVBoxLayout,
@@ -28,12 +32,135 @@ from PySide6.QtWidgets import (
 )
 
 try:
-    from .d3keyhelper_linux import DEFAULT_VERSION, create_default_config, main as runtime_main
+    from .d3keyhelper_linux import DEFAULT_VERSION, create_default_config, default_config_path, main as runtime_main
 except ImportError:
     try:
-        from linux_port.d3keyhelper_linux import DEFAULT_VERSION, create_default_config, main as runtime_main
+        from linux_port.d3keyhelper_linux import DEFAULT_VERSION, create_default_config, default_config_path, main as runtime_main
     except ImportError:
-        from d3keyhelper_linux import DEFAULT_VERSION, create_default_config, main as runtime_main
+        from d3keyhelper_linux import DEFAULT_VERSION, create_default_config, default_config_path, main as runtime_main
+
+
+UI_LANGUAGE_ENV = "D3HELPER_LANG"
+
+
+def resolve_ui_language() -> str:
+    value = os.environ.get(UI_LANGUAGE_ENV, "").strip().lower()
+    if value.startswith("en"):
+        return "en"
+    return "zh"
+
+
+UI_LANGUAGE = resolve_ui_language()
+
+
+def tr(chinese: str, english: str) -> str:
+    return english if UI_LANGUAGE == "en" else chinese
+
+
+def app_icon_path() -> Path | None:
+    filename = "d3keyhelper-linux-256.png"
+    candidates = [
+        Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent)) / filename,
+        Path(__file__).resolve().parent / filename,
+        Path(__file__).resolve().parent / "packaging" / "icons" / filename,
+    ]
+    for path in candidates:
+        if path.exists():
+            return path
+    return None
+
+
+APP_STYLE_SHEET = """
+QMainWindow {
+    background: #f4f7fb;
+}
+QTabWidget::pane {
+    border: 1px solid #d9e0ea;
+    border-radius: 14px;
+    background: #ffffff;
+    top: -1px;
+}
+QTabBar::tab {
+    background: #e8edf5;
+    border: 1px solid #d9e0ea;
+    border-bottom: none;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    padding: 10px 18px;
+    margin-right: 6px;
+    color: #3c4858;
+}
+QTabBar::tab:selected {
+    background: #ffffff;
+    color: #1f2d3d;
+}
+QGroupBox {
+    border: 1px solid #d9e0ea;
+    border-radius: 14px;
+    margin-top: 14px;
+    padding-top: 10px;
+    background: #ffffff;
+    font-weight: 600;
+}
+QGroupBox::title {
+    subcontrol-origin: margin;
+    left: 12px;
+    padding: 0 6px;
+    color: #42566e;
+}
+QPushButton {
+    background: #2f6feb;
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-weight: 600;
+}
+QPushButton:hover {
+    background: #1f5fd4;
+}
+QPushButton:pressed {
+    background: #184eb0;
+}
+QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox, QPlainTextEdit {
+    border: 1px solid #ccd6e2;
+    border-radius: 10px;
+    padding: 6px 8px;
+    background: #ffffff;
+    selection-background-color: #2f6feb;
+}
+QComboBox::drop-down {
+    border: none;
+}
+QPlainTextEdit {
+    background: #0f172a;
+    color: #dbeafe;
+    padding: 10px;
+}
+QCheckBox {
+    spacing: 6px;
+}
+QLabel#pathLabel {
+    background: #eaf0f7;
+    color: #526173;
+    border-radius: 10px;
+    padding: 8px 10px;
+}
+QLabel#statusBadge {
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-weight: 700;
+}
+QFrame#activityPanel {
+    background: #ffffff;
+    border: 1px solid #d9e0ea;
+    border-radius: 14px;
+}
+QLabel#activityTitle {
+    font-weight: 700;
+    color: #42566e;
+}
+"""
 
 
 START_METHOD_ITEMS = [
@@ -145,7 +272,7 @@ CUSTOM_POTION_TOOLTIP = "开启后，用这里填写的按键替代默认的药�
 PROFILE_HOTKEY_TOOLTIP = "按下这个按键可以快速切换到当前配置"
 SEND_MODE_TOOLTIP = "Linux 版保留 sendmode 配置项以兼容原版配置；当前统一使用 Linux 输入后端，不直接映射 AHK SendMode"
 SOUND_ON_SWITCH_TOOLTIP = "开启后，使用快捷键切换配置成功时播放提示音"
-COMPACT_MODE_TOOLTIP = "开启后切换到更紧凑的窗口布局，并隐藏日志区域"
+COMPACT_MODE_TOOLTIP = "开启后切换到更紧凑的窗口布局，并保留运行状态与最近日志摘要"
 LEGACY_SAFEZONE_SENTINEL = "61,62,63"
 
 
@@ -244,7 +371,7 @@ class ProfileTab(QWidget):
         self.section_name = section_name
         root = QVBoxLayout(self)
 
-        header = QGroupBox("配置")
+        header = QGroupBox(tr("配置", "Profile"))
         header_grid = QGridLayout(header)
         self.widgets["name"] = QLineEdit(section_name)
         self.widgets["profilehkmethod"] = self._combo(COMMON_METHOD_ITEMS, int(section.get("profilehkmethod", "1")))
@@ -287,17 +414,28 @@ class ProfileTab(QWidget):
         )
         root.addWidget(header)
 
-        skill_group = QGroupBox("技能")
+        skill_group = QGroupBox(tr("技能", "Skills"))
         skill_grid = QGridLayout(skill_group)
-        headers = ["槽位", "按键", "策略", "间隔", "延迟", "随机", "优先级", "重复", "重复间隔", "触发键"]
+        headers = [
+            tr("槽位", "Slot"),
+            tr("按键", "Key"),
+            tr("策略", "Action"),
+            tr("间隔", "Interval"),
+            tr("延迟", "Delay"),
+            tr("随机", "Random"),
+            tr("优先级", "Priority"),
+            tr("重复", "Repeat"),
+            tr("重复间隔", "Repeat gap"),
+            tr("触发键", "Trigger"),
+        ]
         header_tooltips = {
-            "策略": SKILL_ACTION_TOOLTIP,
-            "延迟": DELAY_TOOLTIP,
-            "随机": RANDOM_TOOLTIP,
-            "优先级": PRIORITY_TOOLTIP,
-            "重复": REPEAT_TOOLTIP,
-            "重复间隔": REPEAT_INTERVAL_TOOLTIP,
-            "触发键": TRIGGER_BUTTON_TOOLTIP,
+            tr("策略", "Action"): SKILL_ACTION_TOOLTIP,
+            tr("延迟", "Delay"): DELAY_TOOLTIP,
+            tr("随机", "Random"): RANDOM_TOOLTIP,
+            tr("优先级", "Priority"): PRIORITY_TOOLTIP,
+            tr("重复", "Repeat"): REPEAT_TOOLTIP,
+            tr("重复间隔", "Repeat gap"): REPEAT_INTERVAL_TOOLTIP,
+            tr("触发键", "Trigger"): TRIGGER_BUTTON_TOOLTIP,
         }
         for column, text in enumerate(headers):
             label = QLabel(text)
@@ -326,7 +464,7 @@ class ProfileTab(QWidget):
             row["triggerbutton"].setToolTip(TRIGGER_BUTTON_TOOLTIP)
             if index in {5, 6}:
                 row["hotkey"].setReadOnly(True)
-            skill_grid.addWidget(QLabel(f"技能{index}"), index, 0)
+            skill_grid.addWidget(QLabel(tr(f"技能{index}", f"Skill {index}")), index, 0)
             skill_grid.addWidget(row["hotkey"], index, 1)
             skill_grid.addWidget(row["action"], index, 2)
             skill_grid.addWidget(row["interval"], index, 3)
@@ -338,7 +476,12 @@ class ProfileTab(QWidget):
             skill_grid.addWidget(row["triggerbutton"], index, 9)
             skill_widgets.append(row)
         self.widgets["skills"] = skill_widgets
-        self.skill_queue_warning = QLabel("注意：当前按键队列可能跟不上连点技能的入队速度")
+        self.skill_queue_warning = QLabel(
+            tr(
+                "注意：当前按键队列可能跟不上连点技能的入队速度",
+                "Warning: the single-threaded skill queue may be slower than the spam inputs.",
+            )
+        )
         self.skill_queue_warning.setStyleSheet("color: #c62828;")
         self.skill_queue_warning.hide()
         root.addWidget(skill_group)
@@ -492,6 +635,7 @@ class MainWindow(QMainWindow):
         self.process: Optional[QProcess] = None
         self.general_widgets: dict[str, object] = {}
         self.profile_tabs: list[ProfileTab] = []
+        self._last_log_line = tr("尚无日志。", "No log messages yet.")
         self._suspend_config_watch = False
         self._config_apply_timer = QTimer(self)
         self._config_apply_timer.setSingleShot(True)
@@ -500,7 +644,9 @@ class MainWindow(QMainWindow):
         self.tabs = QTabWidget()
         self.log = QPlainTextEdit()
         self.log.setReadOnly(True)
+        self.log.setMaximumBlockCount(500)
         self.setWindowTitle("D3keyHelper Linux")
+        self.setStyleSheet(APP_STYLE_SHEET)
         self.resize(*FULL_WINDOW_SIZE)
         self._build_shell()
         self.reload_config()
@@ -510,50 +656,78 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(central)
         toolbar = QHBoxLayout()
         self.path_label = QLabel(str(self.config_path))
+        self.path_label.setObjectName("pathLabel")
+        self.path_label.setToolTip(str(self.config_path))
         self.profile_line = QLineEdit()
-        self.profile_line.setPlaceholderText("启动时可选：配置名或编号")
-        reload_button = QPushButton("重新载入")
+        self.profile_line.setPlaceholderText(tr("启动时可选：配置名或编号", "Optional: profile name or number"))
+        reload_button = QPushButton(tr("重新载入", "Reload"))
         reload_button.clicked.connect(self.reload_config)
-        save_button = QPushButton("保存配置")
+        save_button = QPushButton(tr("保存配置", "Save"))
         save_button.clicked.connect(self.save_config)
-        start_button = QPushButton("启动运行器")
+        start_button = QPushButton(tr("启动运行器", "Start runner"))
         start_button.clicked.connect(self.start_runner)
-        stop_button = QPushButton("停止运行器")
+        stop_button = QPushButton(tr("停止运行器", "Stop runner"))
         stop_button.clicked.connect(self.stop_runner)
+        self.status_badge = QLabel()
+        self.status_badge.setObjectName("statusBadge")
+        self.status_badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
         toolbar.addWidget(self.path_label, 1)
         toolbar.addWidget(self.profile_line)
         toolbar.addWidget(reload_button)
         toolbar.addWidget(save_button)
         toolbar.addWidget(start_button)
         toolbar.addWidget(stop_button)
+        toolbar.addWidget(self.status_badge)
         layout.addLayout(toolbar)
         layout.addWidget(self.tabs, 3)
+        self.activity_panel = QFrame()
+        self.activity_panel.setObjectName("activityPanel")
+        activity_layout = QVBoxLayout(self.activity_panel)
+        activity_header = QHBoxLayout()
+        activity_title = QLabel(tr("运行状态", "Runtime status"))
+        activity_title.setObjectName("activityTitle")
+        self.activity_mode_label = QLabel()
+        activity_header.addWidget(activity_title)
+        activity_header.addStretch(1)
+        activity_header.addWidget(self.activity_mode_label)
+        self.activity_runner_label = QLabel()
+        self.activity_log_label = QLabel()
+        self.activity_log_label.setWordWrap(True)
+        activity_layout.addLayout(activity_header)
+        activity_layout.addWidget(self.activity_runner_label)
+        activity_layout.addWidget(self.activity_log_label)
+        layout.addWidget(self.activity_panel)
         layout.addWidget(self.log, 1)
         self.setCentralWidget(central)
+        self._update_runtime_status_widgets()
 
     def reload_config(self) -> None:
         self._config_apply_timer.stop()
         self._suspend_config_watch = True
         parser = load_parser(self.config_path)
         self.tabs.clear()
+        self.general_widgets.clear()
         self.profile_tabs.clear()
-        self.log.appendPlainText(f"已载入配置：{self.config_path}")
+        self.path_label.setText(str(self.config_path))
+        self.path_label.setToolTip(str(self.config_path))
+        self._append_log(tr(f"已载入配置：{self.config_path}", f"Loaded config: {self.config_path}"))
         general_name = next(name for name in parser.sections() if name.lower() == "general")
-        self.tabs.addTab(self._build_general_tab(parser[general_name]), "General")
+        self.tabs.addTab(self._build_general_tab(parser[general_name]), tr("通用", "General"))
         for name in parser.sections():
             if name.lower() == "general":
                 continue
             tab = ProfileTab(name, parser[name])
             self.profile_tabs.append(tab)
-            self.tabs.addTab(tab, name)
+            self.tabs.addTab(self._wrap_scroll_tab(tab), name)
         self._refresh_general_state()
         self._apply_compact_mode()
         self._connect_config_change_watchers()
         self._suspend_config_watch = False
+        self._update_runtime_status_widgets()
 
     def _build_general_tab(self, section: configparser.SectionProxy) -> QWidget:
-        tab = QWidget()
-        root = QVBoxLayout(tab)
+        container = QWidget()
+        root = QVBoxLayout(container)
         summary_grid = QGridLayout()
         helper_speed_preset = helper_speed_preset_from_values(
             int(section.get("helpermousespeed", "2")),
@@ -561,7 +735,7 @@ class MainWindow(QMainWindow):
             int(section.get("helperspeed", "3")),
         )
 
-        basic = QGroupBox("基础")
+        basic = QGroupBox(tr("基础", "Basics"))
         basic_grid = QGridLayout(basic)
         self.general_widgets["activatedprofile"] = self._spin(1, 99, int(section.get("activatedprofile", "1")))
         self.general_widgets["startmethod"] = self._combo(START_METHOD_ITEMS, int(section.get("startmethod", "7")))
@@ -599,7 +773,7 @@ class MainWindow(QMainWindow):
         )
         summary_grid.addWidget(basic, 0, 0)
 
-        helper = QGroupBox("助手/输入")
+        helper = QGroupBox(tr("助手/输入", "Helpers / Input"))
         helper_grid = QGridLayout(helper)
         for key, value in [
             ("customstanding", section.get("customstanding", "0") == "1"),
@@ -668,7 +842,32 @@ class MainWindow(QMainWindow):
         summary_grid.setColumnStretch(0, 1)
         summary_grid.setColumnStretch(1, 1)
         root.addLayout(summary_grid)
-        root.addStretch(1)
+
+        status_box = QGroupBox(tr("运行状态", "Runtime status"))
+        status_grid = QGridLayout(status_box)
+        self.general_widgets["statusrunner"] = QLabel()
+        self.general_widgets["statuslayout"] = QLabel()
+        self.general_widgets["statusconfig"] = QLabel(str(self.config_path))
+        self.general_widgets["statuslog"] = QLabel()
+        self.general_widgets["statusconfig"].setWordWrap(True)
+        self.general_widgets["statuslog"].setWordWrap(True)
+        status_grid.addWidget(QLabel(tr("运行器", "Runner")), 0, 0)
+        status_grid.addWidget(self.general_widgets["statusrunner"], 0, 1)
+        status_grid.addWidget(QLabel(tr("界面布局", "Layout")), 1, 0)
+        status_grid.addWidget(self.general_widgets["statuslayout"], 1, 1)
+        status_grid.addWidget(QLabel(tr("配置文件", "Config file")), 2, 0)
+        status_grid.addWidget(self.general_widgets["statusconfig"], 2, 1)
+        status_grid.addWidget(QLabel(tr("最近日志", "Latest log")), 3, 0)
+        status_grid.addWidget(self.general_widgets["statuslog"], 3, 1)
+        root.addWidget(status_box, 1)
+        self._update_runtime_status_widgets()
+        return self._wrap_scroll_tab(container)
+
+    def _wrap_scroll_tab(self, widget: QWidget) -> QScrollArea:
+        tab = QScrollArea()
+        tab.setWidgetResizable(True)
+        tab.setFrameShape(QFrame.Shape.NoFrame)
+        tab.setWidget(widget)
         return tab
 
     def _combo(self, items, value: int) -> QComboBox:
@@ -803,8 +1002,53 @@ class MainWindow(QMainWindow):
         compact = self.general_widgets.get("compactmode")
         enabled = bool(compact.isChecked()) if isinstance(compact, QCheckBox) else False
         self.log.setVisible(not enabled)
+        self.activity_panel.setMaximumHeight(108 if enabled else 82)
+        self.activity_panel.setVisible(True)
         width, height = COMPACT_WINDOW_SIZE if enabled else FULL_WINDOW_SIZE
         self.resize(width, height)
+        self._update_runtime_status_widgets()
+
+    def _append_log(self, text: str) -> None:
+        message = text.rstrip()
+        if not message:
+            return
+        self.log.appendPlainText(message)
+        self._last_log_line = message.splitlines()[-1]
+        self._update_runtime_status_widgets()
+
+    def _update_runtime_status_widgets(self) -> None:
+        running = self._runner_is_active()
+        compact_enabled = False
+        compact_widget = self.general_widgets.get("compactmode")
+        if isinstance(compact_widget, QCheckBox):
+            compact_enabled = compact_widget.isChecked()
+        runner_text = tr("运行中", "Running") if running else tr("未运行", "Stopped")
+        layout_text = tr("紧凑布局", "Compact layout") if compact_enabled else tr("完整布局", "Full layout")
+        latest_text = self._last_log_line
+        self.status_badge.setText(runner_text)
+        self.status_badge.setStyleSheet(
+            "QLabel#statusBadge {"
+            + (
+                "background: #dcfce7; color: #166534;"
+                if running
+                else "background: #e2e8f0; color: #475569;"
+            )
+            + "}"
+        )
+        self.activity_mode_label.setText(layout_text)
+        self.activity_runner_label.setText(f"{tr('运行器：', 'Runner: ')}{runner_text}")
+        self.activity_log_label.setText(f"{tr('最近日志：', 'Latest log: ')}{latest_text}")
+        self.activity_log_label.setToolTip(latest_text)
+        if "statusrunner" in self.general_widgets:
+            self.general_widgets["statusrunner"].setText(runner_text)
+        if "statuslayout" in self.general_widgets:
+            self.general_widgets["statuslayout"].setText(layout_text)
+        if "statusconfig" in self.general_widgets:
+            self.general_widgets["statusconfig"].setText(str(self.config_path))
+            self.general_widgets["statusconfig"].setToolTip(str(self.config_path))
+        if "statuslog" in self.general_widgets:
+            self.general_widgets["statuslog"].setText(latest_text)
+            self.general_widgets["statuslog"].setToolTip(latest_text)
 
     def save_config(self, log_message: str = "已保存配置。") -> None:
         parser = configparser.ConfigParser(interpolation=None)
@@ -879,11 +1123,12 @@ class MainWindow(QMainWindow):
                 parser[name][f"repeatinterval_{index}"] = str(row["repeatinterval"].value())
                 parser[name][f"triggerbutton_{index}"] = row["triggerbutton"].text().strip() or "LButton"
 
+        self.config_path.parent.mkdir(parents=True, exist_ok=True)
         with self.config_path.open("w", encoding="utf-16") as handle:
             handle.write("; Linux GUI config for D3keyHelper\r\n")
             parser.write(handle)
         if log_message:
-            self.log.appendPlainText(log_message)
+            self._append_log(log_message)
         for index, tab in enumerate(self.profile_tabs, start=1):
             self.tabs.setTabText(index, tab.widgets["name"].text().strip() or tab.section_name)
 
@@ -902,11 +1147,14 @@ class MainWindow(QMainWindow):
         self.process.finished.connect(self._runner_finished)
         self.process.start(command[0], command[1:])
         if not self.process.waitForStarted(5000):
-            QMessageBox.critical(self, "启动失败", "无法启动 Linux 运行器。")
+            QMessageBox.critical(self, tr("启动失败", "Start failed"), tr("无法启动 Linux 运行器。", "Failed to start the Linux runner."))
             self.process = None
+            self._update_runtime_status_widgets()
             return
         if log_message:
-            self.log.appendPlainText(log_message)
+            self._append_log(log_message)
+        else:
+            self._update_runtime_status_widgets()
 
     def stop_runner(self, log_message: str | None = "已停止运行器。") -> None:
         if self.process is None:
@@ -921,8 +1169,9 @@ class MainWindow(QMainWindow):
             self.process.kill()
             self.process.waitForFinished(1000)
         if log_message:
-            self.log.appendPlainText(log_message)
+            self._append_log(log_message)
         self.process = None
+        self._update_runtime_status_widgets()
 
     def _read_process_output(self) -> None:
         if self.process is None:
@@ -934,14 +1183,15 @@ class MainWindow(QMainWindow):
             ):
                 QApplication.beep()
                 text = text.replace("\a", "")
-            self.log.appendPlainText(text.rstrip())
+            self._append_log(text)
 
     def _runner_finished(self, exit_code: int, exit_status: QProcess.ExitStatus) -> None:
         if exit_status == QProcess.ExitStatus.NormalExit:
-            self.log.appendPlainText(f"运行器已退出，返回码：{exit_code}")
+            self._append_log(tr(f"运行器已退出，返回码：{exit_code}", f"Runner exited with code: {exit_code}"))
         else:
-            self.log.appendPlainText(f"运行器异常退出，返回码：{exit_code}")
+            self._append_log(tr(f"运行器异常退出，返回码：{exit_code}", f"Runner crashed with code: {exit_code}"))
         self.process = None
+        self._update_runtime_status_widgets()
 
     def _runner_is_active(self) -> bool:
         return self.process is not None and self.process.state() != QProcess.ProcessState.NotRunning
@@ -993,9 +1243,15 @@ def main() -> int:
             return runtime_main()
         finally:
             sys.argv = original_argv
-    config_path = Path(sys.argv[1]).expanduser().resolve() if len(sys.argv) > 1 else Path("d3oldsand.ini").resolve()
+    config_path = Path(sys.argv[1]).expanduser().resolve() if len(sys.argv) > 1 else default_config_path().resolve()
     app = QApplication(sys.argv)
+    app.setStyle("Fusion")
+    icon_path = app_icon_path()
+    if icon_path is not None:
+        app.setWindowIcon(QIcon(str(icon_path)))
     window = MainWindow(config_path)
+    if icon_path is not None:
+        window.setWindowIcon(QIcon(str(icon_path)))
     window.show()
     return app.exec()
 
