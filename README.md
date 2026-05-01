@@ -220,18 +220,3 @@ python -m unittest discover -s tests
 └── README.md
 ```
 
-## 发布到 GitHub 的建议
-
-如果你把本项目单独发布到 GitHub：
-
-1. 仓库名可使用：`D3keyHelperForLinux`
-2. 仓库描述建议写清：
-   - Diablo III helper for Linux
-   - Steam / Proton supported
-   - GUI + AppImage
-3. Release 建议附上：
-   - AppImage
-   - `requirements.txt`
-   - README 中的使用说明
-4. 请保留对原作者和原项目的致谢
-5. 请保留 MIT 许可证
