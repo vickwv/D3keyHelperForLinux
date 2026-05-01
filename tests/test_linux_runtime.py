@@ -161,6 +161,46 @@ class ConfigTests(unittest.TestCase):
         app.on_key_press("f2")
         self.assertIn("f2", app._pressed_bases)
 
+    def test_live_buff_check_uses_region_capture(self) -> None:
+        app = self._make_macro_app()
+        window = runtime.WindowInfo(1, "Diablo III", "class", 0, 0, 3440, 1440)
+
+        class FakeCapture:
+            def __init__(self):
+                self.calls = []
+
+            def get_active_window(self):
+                return window
+
+            def capture_region(self, point_x, point_y, width, height):
+                self.calls.append((point_x, point_y, width, height))
+                pixels = np.zeros((1, 1, 4), dtype=np.uint8)
+                pixels[0, 0] = [10, 120, 10, 255]
+                return window, pixels
+
+        fake_capture = FakeCapture()
+        app._capture = fake_capture
+        self.assertTrue(app._is_buff_active_live(3440, 1440, 1))
+        self.assertEqual(len(fake_capture.calls), 1)
+        self.assertEqual(fake_capture.calls[0][2:], (1, 1))
+
+    def test_region_rgb_converts_small_capture_without_full_frame(self) -> None:
+        app = self._make_macro_app()
+        window = runtime.WindowInfo(1, "Diablo III", "class", 0, 0, 3440, 1440)
+
+        class FakeCapture:
+            def get_active_window(self):
+                return window
+
+            def capture_region(self, point_x, point_y, width, height):
+                pixels = np.zeros((2, 2, 4), dtype=np.uint8)
+                pixels[:, :] = [30, 20, 10, 255]
+                return window, pixels
+
+        app._capture = FakeCapture()
+        region = app._capture_region_rgb(10, 20, 2, 2)
+        self.assertEqual(region, [[10, 10, 10, 10], [20, 20, 20, 20], [30, 30, 30, 30]])
+
 
 class GuiParityTests(unittest.TestCase):
     def test_main_window_has_tooltips_and_speed_presets(self) -> None:

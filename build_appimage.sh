@@ -7,8 +7,15 @@ DIST_DIR="${ROOT_DIR}/dist"
 APP_NAME="D3keyHelper-Linux"
 APPDIR="${BUILD_DIR}/AppDir"
 PYTHON_BIN="${PYTHON_BIN:-python}"
+USER_CONFIG_PATH="${DIST_DIR}/${APP_NAME}/d3oldsand.ini"
+USER_CONFIG_BACKUP="${BUILD_DIR}/preserved-d3oldsand.ini"
 
 mkdir -p "${BUILD_DIR}"
+if [[ -f "${USER_CONFIG_PATH}" ]]; then
+  cp "${USER_CONFIG_PATH}" "${USER_CONFIG_BACKUP}"
+else
+  rm -f "${USER_CONFIG_BACKUP}"
+fi
 rm -rf "${APPDIR}" "${DIST_DIR}/${APP_NAME}" "${ROOT_DIR}/build/${APP_NAME}.spec"
 
 "${PYTHON_BIN}" -m pip install --upgrade pyinstaller
@@ -47,5 +54,9 @@ if [[ ! -x "${APPIMAGETOOL}" ]]; then
 fi
 
 QT_QPA_PLATFORM=offscreen ARCH=x86_64 "${APPIMAGETOOL}" --appimage-extract-and-run "${APPDIR}" "${BUILD_DIR}/${APP_NAME}-x86_64.AppImage"
+
+if [[ -f "${USER_CONFIG_BACKUP}" ]]; then
+  cp "${USER_CONFIG_BACKUP}" "${USER_CONFIG_PATH}"
+fi
 
 echo "Built AppImage at ${BUILD_DIR}/${APP_NAME}-x86_64.AppImage"

@@ -545,6 +545,30 @@ def arrays_equal(array_a, array_b, tolerance: int = 0) -> bool:
     return all(abs(int(a) - int(b)) <= tolerance for a, b in zip(array_a, array_b))
 
 
+def pixels_to_adjusted_rgb(pixel, gamma: float) -> list[int]:
+    return adjusted_rgb((int(pixel[2]), int(pixel[1]), int(pixel[0])), gamma)
+
+
+def pixels_region_to_rgb(pixels, gamma: float, agg_func: str = ""):
+    if pixels.size == 0:
+        if agg_func:
+            return [0, 0, 0]
+        return [[], [], []]
+    rgb = pixels[:, :, :3][:, :, ::-1]
+    if agg_func:
+        flat = rgb.reshape(-1, 3)
+        if agg_func.lower() == "max":
+            result = flat.max(axis=0)
+        else:
+            result = flat.mean(axis=0)
+        return adjusted_rgb((int(result[0]), int(result[1]), int(result[2])), gamma)
+    corrected = np.vectorize(int)(rgb)
+    r = corrected[:, :, 0].reshape(-1).tolist()
+    g = corrected[:, :, 1].reshape(-1).tolist()
+    b = corrected[:, :, 2].reshape(-1).tolist()
+    return [r, g, b]
+
+
 def parse_resolution(text: str) -> Optional[tuple[int, int]]:
     match = re.fullmatch(r"\s*(\d+)\s*x\s*(\d+)\s*", text or "", re.IGNORECASE)
     if not match:
@@ -564,7 +588,7 @@ class GameImage:
         x = clamp(int(round(point[0])), 0, self.width - 1)
         y = clamp(int(round(point[1])), 0, self.height - 1)
         pixel = self._pixels[y, x]
-        return adjusted_rgb((int(pixel[2]), int(pixel[1]), int(pixel[0])), self._gamma)
+        return pixels_to_adjusted_rgb(pixel, self._gamma)
 
     def get_pixels_rgb(
         self,
@@ -579,23 +603,7 @@ class GameImage:
         x2 = clamp(x1 + max(int(round(width)), 1), 1, self.width)
         y2 = clamp(y1 + max(int(round(height)), 1), 1, self.height)
         region = self._pixels[y1:y2, x1:x2]
-        if region.size == 0:
-            if agg_func:
-                return [0, 0, 0]
-            return [[], [], []]
-        rgb = region[:, :, :3][:, :, ::-1]
-        if agg_func:
-            flat = rgb.reshape(-1, 3)
-            if agg_func.lower() == "max":
-                result = flat.max(axis=0)
-            else:
-                result = flat.mean(axis=0)
-            return adjusted_rgb((int(result[0]), int(result[1]), int(result[2])), self._gamma)
-        corrected = np.vectorize(int)(rgb)
-        r = corrected[:, :, 0].reshape(-1).tolist()
-        g = corrected[:, :, 1].reshape(-1).tolist()
-        b = corrected[:, :, 2].reshape(-1).tolist()
-        return [r, g, b]
+        return pixels_region_to_rgb(region, self._gamma, agg_func)
 
 
 class X11GameCapture:
@@ -619,6 +627,19 @@ class X11GameCapture:
         )
         pixels = np.asarray(shot)
         return GameImage(window, pixels, self.general.game_gamma)
+
+    def capture_region(self, point_x: int, point_y: int, width: int, height: int):
+        window = self.get_active_window()
+        if window is None:
+            return None
+        x = clamp(int(round(point_x)), 0, max(window.width - 1, 0))
+        y = clamp(int(round(point_y)), 0, max(window.height - 1, 0))
+        region_w = clamp(max(int(round(width)), 1), 1, max(window.width - x, 1))
+        region_h = clamp(max(int(round(height)), 1), 1, max(window.height - y, 1))
+        shot = self._grabber.grab(
+            {"left": window.x + x, "top": window.y + y, "width": region_w, "height": region_h}
+        )
+        return window, np.asarray(shot)
 
 
 class SpectacleGameCapture:
@@ -666,6 +687,17 @@ class SpectacleGameCapture:
             return GameImage(window, pixels, self.general.game_gamma)
         finally:
             Path(tmp_path).unlink(missing_ok=True)
+
+    def capture_region(self, point_x: int, point_y: int, width: int, height: int):
+        image = self.capture()
+        if image is None:
+            return None
+        x1 = clamp(int(round(point_x)), 0, image.width - 1)
+        y1 = clamp(int(round(point_y)), 0, image.height - 1)
+        x2 = clamp(x1 + max(int(round(width)), 1), 1, image.width)
+        y2 = clamp(y1 + max(int(round(height)), 1), 1, image.height)
+        region = image._pixels[y1:y2, x1:x2].copy()
+        return image.window, region
 
 
 def get_skill_button_buff_pos(width: int, height: int, button_id: int, percent: float) -> list[int]:
@@ -1325,19 +1357,29 @@ class MacroApp:
             return
         if skill.action != 4:
             return
-        capture = self._capture_game_image()
-        if capture is None:
+        active_window = self._active_window()
+        if active_window is None:
             return
-        image, width, height = capture
+        resolution = parse_resolution(self.general.game_resolution)
+        if resolution is not None:
+            width, height = resolution
+        else:
+            width, height = active_window.width, active_window.height
         current_profile = self.current_profile
         for other in current_profile.skills:
             if other is skill:
                 continue
             if other.action == 4 and other.priority > skill.priority and other.hotkey is not None:
-                if self._is_buff_active(image, width, height, current_profile.skills.index(other) + 1):
+                other_active = self._is_buff_active_live(width, height, current_profile.skills.index(other) + 1)
+                if other_active is None:
+                    return
+                if other_active:
                     return
         skill_index = current_profile.skills.index(skill) + 1
-        if self._is_buff_active(image, width, height, skill_index):
+        current_active = self._is_buff_active_live(width, height, skill_index)
+        if current_active is None:
+            return
+        if current_active:
             return
         if use_queue:
             self._skill_queue.append((skill.hotkey, 4))
@@ -1349,6 +1391,22 @@ class MacroApp:
     def _is_buff_active(self, image: GameImage, width: int, height: int, button_id: int) -> bool:
         point = get_skill_button_buff_pos(width, height, button_id, self.general.buff_percent)
         rgb = image.get_pixel_rgb(point)
+        return rgb[1] >= 95
+
+    def _capture_region_rgb(self, point_x: int, point_y: int, width: int, height: int, agg_func: str = ""):
+        if self._capture is None or not hasattr(self._capture, "capture_region"):
+            return None
+        captured = self._capture.capture_region(point_x, point_y, width, height)
+        if captured is None:
+            return None
+        _window, pixels = captured
+        return pixels_region_to_rgb(pixels, self.general.game_gamma, agg_func)
+
+    def _is_buff_active_live(self, width: int, height: int, button_id: int) -> Optional[bool]:
+        point = get_skill_button_buff_pos(width, height, button_id, self.general.buff_percent)
+        rgb = self._capture_region_rgb(point[0], point[1], 1, 1, "max")
+        if rgb is None:
+            return None
         return rgb[1] >= 95
 
     def _make_send_worker(
@@ -1412,15 +1470,22 @@ class MacroApp:
             while not stop_event.is_set():
                 if self._wait_until(stop_event, cycle_start):
                     break
-                capture = self._capture_game_image()
-                if capture is not None:
-                    image, width, height = capture
-                    region = image.get_pixels_rgb(
+                active_window = self._active_window()
+                if active_window is not None:
+                    resolution = parse_resolution(self.general.game_resolution)
+                    if resolution is not None:
+                        width, height = resolution
+                    else:
+                        width, height = active_window.width, active_window.height
+                    region = self._capture_region_rgb(
                         round(width / 2 - (3440 / 2 - 1822) * height / 1440.0),
                         round(1340 * height / 1440.0),
                         round(66 * height / 1440.0),
                         round(66 * height / 1440.0),
                     )
+                    if region is None:
+                        cycle_start += interval_s
+                        continue
                     current_flat = region[0] + region[1] + region[2]
                     if last_region is not None and arrays_equal(last_region, current_flat, 0):
                         self.sender.tap(potion_key)
