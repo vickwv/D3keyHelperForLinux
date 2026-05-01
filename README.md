@@ -88,7 +88,7 @@
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -r requirements-linux.txt
+pip install -r requirements.txt
 ```
 
 如果你是 Arch Linux，通常至少需要：
@@ -213,7 +213,7 @@ python -m unittest discover -s tests
 ├── d3keyhelper_linux.py
 ├── d3keyhelper_linux_gui.py
 ├── build_appimage.sh
-├── requirements-linux.txt
+├── requirements.txt
 ├── packaging/
 ├── tests/
 ├── LICENSE
@@ -231,7 +231,7 @@ python -m unittest discover -s tests
    - GUI + AppImage
 3. Release 建议附上：
    - AppImage
-   - `requirements-linux.txt`
+   - `requirements.txt`
    - README 中的使用说明
 4. 请保留对原作者和原项目的致谢
 5. 请保留 MIT 许可证

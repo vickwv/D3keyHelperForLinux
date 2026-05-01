@@ -329,7 +329,7 @@ class SyntheticEventFilter:
 class InputSender:
     def __init__(self, event_filter: SyntheticEventFilter) -> None:
         if keyboard is None or mouse is None:
-            raise ConfigError("缺少 Linux 运行依赖，请先安装 requirements-linux.txt 中的依赖。")
+            raise ConfigError("缺少 Linux 运行依赖，请先安装 requirements.txt 中的依赖。")
         self._filter = event_filter
         self._keyboard = keyboard.Controller()
         self._mouse = mouse.Controller()
@@ -2235,15 +2235,15 @@ def resolve_profile_index(profiles: list[ProfileConfig], selection: Optional[str
 
 def ensure_runtime_dependencies() -> None:
     if keyboard is None or mouse is None:
-        raise ConfigError("未安装 pynput，请先执行：pip install -r requirements-linux.txt")
+        raise ConfigError("未安装 pynput，请先执行：pip install -r requirements.txt")
     if xdisplay is None or X is None:
-        raise ConfigError("未安装 python-xlib，请先执行：pip install -r requirements-linux.txt")
+        raise ConfigError("未安装 python-xlib，请先执行：pip install -r requirements.txt")
     if mss is None:
-        raise ConfigError("未安装 mss，请先执行：pip install -r requirements-linux.txt")
+        raise ConfigError("未安装 mss，请先执行：pip install -r requirements.txt")
     if np is None:
-        raise ConfigError("未安装 numpy，请先执行：pip install -r requirements-linux.txt")
+        raise ConfigError("未安装 numpy，请先执行：pip install -r requirements.txt")
     if Image is None:
-        raise ConfigError("未安装 Pillow，请先执行：pip install -r requirements-linux.txt")
+        raise ConfigError("未安装 Pillow，请先执行：pip install -r requirements.txt")
 
 
 def normalize_keyboard_event(key_event) -> Optional[str]:
