@@ -10,23 +10,32 @@ from pathlib import Path
 from PySide6.QtCore import QProcess, QTimer, Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
+    QAbstractSpinBox,
     QApplication,
     QCheckBox,
     QComboBox,
     QDoubleSpinBox,
     QFrame,
+    QFormLayout,
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QListWidget,
+    QListWidgetItem,
     QMainWindow,
     QMessageBox,
     QPushButton,
     QPlainTextEdit,
     QScrollArea,
+    QSizePolicy,
+    QSpacerItem,
+    QSplitter,
+    QTableWidget,
+    QTableWidgetItem,
     QSpinBox,
-    QTabWidget,
+    QStackedWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -72,93 +81,196 @@ def app_icon_path() -> Path | None:
 
 APP_STYLE_SHEET = """
 QMainWindow {
-    background: #f4f7fb;
+    background: #f6f7f9;
 }
-QTabWidget::pane {
-    border: 1px solid #d9e0ea;
-    border-radius: 14px;
+QScrollArea {
+    border: none;
+    background: transparent;
+}
+QListWidget#navigationList {
+    background: #fbfcfd;
+    border: 1px solid #e1e5eb;
+    border-radius: 4px;
+    padding: 4px;
+    outline: none;
+}
+QListWidget#navigationList::item {
+    padding: 6px 8px;
+    margin: 2px 0;
+    border-radius: 3px;
+    color: #233142;
+}
+QListWidget#navigationList::item:hover {
+    background: #f1f4f8;
+}
+QListWidget#navigationList::item:selected {
+    background: #e7f0ff;
+    color: #1d4f91;
+    font-weight: 600;
+}
+QStackedWidget {
     background: #ffffff;
-    top: -1px;
 }
-QTabBar::tab {
-    background: #e8edf5;
-    border: 1px solid #d9e0ea;
-    border-bottom: none;
-    border-top-left-radius: 10px;
-    border-top-right-radius: 10px;
-    padding: 10px 18px;
-    margin-right: 6px;
-    color: #3c4858;
-}
-QTabBar::tab:selected {
-    background: #ffffff;
-    color: #1f2d3d;
+QSplitter::handle {
+    background: transparent;
+    width: 8px;
 }
 QGroupBox {
-    border: 1px solid #d9e0ea;
-    border-radius: 14px;
-    margin-top: 14px;
-    padding-top: 10px;
-    background: #ffffff;
+    border: none;
+    margin-top: 8px;
+    padding-top: 4px;
+    background: transparent;
     font-weight: 600;
 }
 QGroupBox::title {
     subcontrol-origin: margin;
-    left: 12px;
-    padding: 0 6px;
-    color: #42566e;
+    left: 0;
+    padding: 0 2px;
+    color: #404b5a;
 }
 QPushButton {
-    background: #2f6feb;
-    color: #ffffff;
-    border: none;
-    border-radius: 10px;
-    padding: 8px 14px;
+    background: #ffffff;
+    color: #204a87;
+    border: 1px solid #cdd3db;
+    border-radius: 4px;
+    padding: 0 10px;
+    min-height: 26px;
     font-weight: 600;
 }
 QPushButton:hover {
-    background: #1f5fd4;
+    background: #f4f6f8;
+    border-color: #b8c1cc;
 }
 QPushButton:pressed {
-    background: #184eb0;
+    background: #e8ebef;
 }
-QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox, QPlainTextEdit {
-    border: 1px solid #ccd6e2;
-    border-radius: 10px;
-    padding: 6px 8px;
+QPushButton#primaryButton {
+    background: #2f72c4;
+    color: #ffffff;
+    border-color: #2f72c4;
+}
+QPushButton#primaryButton:hover {
+    background: #295fa0;
+    border-color: #295fa0;
+}
+QPushButton#primaryButton:pressed {
+    background: #234d81;
+    border-color: #234d81;
+}
+QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox {
+    border: 1px solid #cdd3db;
+    border-radius: 6px;
+    padding: 2px 6px;
     background: #ffffff;
-    selection-background-color: #2f6feb;
+    selection-background-color: #3584e4;
+    min-height: 26px;
+}
+QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus {
+    border: 1px solid #2f72c4;
 }
 QComboBox::drop-down {
     border: none;
 }
 QPlainTextEdit {
-    background: #0f172a;
-    color: #dbeafe;
-    padding: 10px;
+    background: #fbfcfd;
+    color: #233142;
+    border: 1px solid #d9dde3;
+    border-radius: 4px;
+    padding: 6px;
 }
 QCheckBox {
-    spacing: 6px;
+    spacing: 4px;
+}
+QCheckBox::indicator {
+    width: 16px;
+    height: 16px;
 }
 QLabel#pathLabel {
-    background: #eaf0f7;
-    color: #526173;
-    border-radius: 10px;
-    padding: 8px 10px;
-}
-QLabel#statusBadge {
-    border-radius: 10px;
-    padding: 8px 12px;
-    font-weight: 700;
-}
-QFrame#activityPanel {
     background: #ffffff;
-    border: 1px solid #d9e0ea;
-    border-radius: 14px;
+    color: #526173;
+    border: 1px solid #d9dde3;
+    border-radius: 4px;
+    padding: 4px 8px;
 }
-QLabel#activityTitle {
+QFrame#statusStrip {
+    background: #ffffff;
+    border-top: 1px solid #d9dde3;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+}
+QLabel#statusStripLabel {
+    font-weight: 600;
+    color: #48566a;
+}
+QLabel#statusStripValue {
+    color: #233142;
+}
+QFrame#statusDot {
+    border-radius: 5px;
+    background: #9aa5b1;
+}
+QFrame#statusDot[running="true"] {
+    background: #2ca36c;
+}
+QFrame#logPanel {
+    background: transparent;
+    border: none;
+}
+QFrame#contentPanel {
+    background: #ffffff;
+}
+QFrame#toolbarFrame {
+    background: transparent;
+}
+QLabel#sectionHint {
+    color: #5d6978;
+}
+QLabel#pageTitle {
     font-weight: 700;
-    color: #42566e;
+    color: #1f2933;
+    padding-top: 2px;
+}
+QLabel#pageSubtitle {
+    color: #5d6875;
+}
+QLabel#sectionTitle {
+    font-weight: 600;
+    color: #1f2933;
+}
+QLabel#inlineParamLabel {
+    color: #48566a;
+}
+QFrame#sectionSeparator {
+    background: #e6e9ee;
+    min-height: 1px;
+    max-height: 1px;
+}
+QWidget#pageContainer {
+    background: #ffffff;
+}
+QTableWidget {
+    background: #ffffff;
+    alternate-background-color: #ffffff;
+    border: 1px solid #e1e5eb;
+    border-radius: 4px;
+    gridline-color: #f0f2f5;
+    selection-background-color: #dbeafe;
+    selection-color: #1f2933;
+}
+QHeaderView::section {
+    background: #f6f7f9;
+    color: #344054;
+    border: none;
+    border-bottom: 1px solid #e6e9ee;
+    padding: 3px 6px;
+    font-weight: 600;
+}
+QTableWidget QLineEdit, QTableWidget QComboBox, QTableWidget QSpinBox {
+    border-color: #d7dce2;
+    border-radius: 4px;
+    padding: 1px 5px;
+    min-height: 24px;
 }
 """
 
@@ -205,9 +317,24 @@ QUICK_PAUSE_ACTION_ITEMS = [(1, "暂停宏"), (2, "暂停宏并连点左键")]
 HELPER_SPEED_PRESET_ITEMS = [(1, "非常快"), (2, "快速"), (3, "中等"), (4, "慢速"), (5, "自定义")]
 HELPER_SPEED_PRESET_VALUES = {1: (0, 50), 2: (1, 100), 3: (2, 150), 4: (3, 200)}
 SEND_MODE_ITEMS = [("Event", "Event"), ("Input", "Input")]
-FULL_WINDOW_SIZE = (1600, 950)
-COMPACT_WINDOW_SIZE = (1180, 760)
+FULL_WINDOW_SIZE = (1120, 720)
 DEFAULT_SKILLS = {1: "1", 2: "2", 3: "3", 4: "4", 5: "LButton", 6: "RButton"}
+FORM_LABEL_WIDTH = 116
+FORM_FIELD_MIN_WIDTH = 120
+FORM_FIELD_MAX_WIDTH = 180
+FORM_CONTROL_HEIGHT = 26
+TOGGLE_TEXT_WIDTH = 150
+INLINE_LABEL_WIDTH = 76
+TOOLBAR_PATH_MIN_WIDTH = 220
+TOOLBAR_PATH_MAX_WIDTH = 320
+TOOLBAR_PROFILE_WIDTH = 190
+NAV_WIDTH = 150
+SKILL_TEXT_WIDTH = 76
+SKILL_TRIGGER_WIDTH = 64
+SKILL_ACTION_WIDTH = 126
+SKILL_NUMBER_WIDTH = 68
+SKILL_TABLE_ROW_HEIGHT = 30
+SKILL_TABLE_HEADER_HEIGHT = 28
 
 AUTOSTART_TOOLTIP = "开启后，以懒人模式启动的战斗宏可以在运行中无缝切换"
 START_MODE_TOOLTIP = (
@@ -272,7 +399,6 @@ CUSTOM_POTION_TOOLTIP = "开启后，用这里填写的按键替代默认的药�
 PROFILE_HOTKEY_TOOLTIP = "按下这个按键可以快速切换到当前配置"
 SEND_MODE_TOOLTIP = "Linux 版保留 sendmode 配置项以兼容原版配置；当前统一使用 Linux 输入后端，不直接映射 AHK SendMode"
 SOUND_ON_SWITCH_TOOLTIP = "开启后，使用快捷键切换配置成功时播放提示音"
-COMPACT_MODE_TOOLTIP = "开启后切换到更紧凑的窗口布局，并保留运行状态与最近日志摘要"
 LEGACY_SAFEZONE_SENTINEL = "61,62,63"
 
 
@@ -321,21 +447,466 @@ def helper_speed_preset_from_values(mouse_speed: int, animation_delay: int, conf
     return configured_preset if configured_preset in {1, 2, 3, 4, 5} else 5
 
 
-def add_compact_rows(layout: QGridLayout, fields, columns: int = 2) -> None:
-    for index, field in enumerate(fields):
+def build_profile_selector(profile_names: list[str], active_profile: int) -> QComboBox:
+    combo = QComboBox()
+    count = max(len(profile_names), active_profile, 1)
+    for index in range(1, count + 1):
+        name = profile_names[index - 1] if index <= len(profile_names) else f"配置{index}"
+        combo.addItem(f"{index} - {name}", index)
+    set_combo_value(combo, active_profile)
+    return combo
+
+
+def build_form_layout() -> QFormLayout:
+    layout = QFormLayout()
+    layout.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.FieldsStayAtSizeHint)
+    layout.setFormAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
+    layout.setLabelAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+    layout.setHorizontalSpacing(10)
+    layout.setVerticalSpacing(4)
+    return layout
+
+
+def build_settings_grid(fields) -> QWidget:
+    wrapper = QWidget()
+    layout = QGridLayout(wrapper)
+    layout.setContentsMargins(0, 0, 0, 0)
+    layout.setHorizontalSpacing(10)
+    layout.setVerticalSpacing(4)
+    for row, field in enumerate(fields):
         label, widget = field[0], field[1]
         tooltip = field[2] if len(field) > 2 else ""
-        row = index // columns
-        column = (index % columns) * 2
         label_widget = QLabel(label)
+        label_widget.setFixedWidth(FORM_LABEL_WIDTH)
+        label_widget.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        if tooltip:
+            label_widget.setToolTip(tooltip)
+            widget.setToolTip(tooltip)
+        tune_form_widget(widget)
+        layout.addWidget(label_widget, row, 0)
+        layout.addWidget(widget, row, 1)
+    layout.setColumnMinimumWidth(0, FORM_LABEL_WIDTH)
+    layout.setColumnMinimumWidth(1, FORM_FIELD_MIN_WIDTH)
+    layout.setColumnStretch(0, 0)
+    layout.setColumnStretch(1, 0)
+    layout.setColumnStretch(2, 1)
+    return wrapper
+
+
+def add_form_rows(layout: QFormLayout, fields) -> None:
+    for field in fields:
+        label, widget = field[0], field[1]
+        tooltip = field[2] if len(field) > 2 else ""
+        if label is None:
+            if tooltip:
+                widget.setToolTip(tooltip)
+            layout.addRow(widget)
+            continue
+        label_widget = QLabel(label)
+        label_widget.setFixedWidth(FORM_LABEL_WIDTH)
         label_widget.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         if tooltip:
             label_widget.setToolTip(tooltip)
             widget.setToolTip(tooltip)
-        layout.addWidget(label_widget, row, column)
-        layout.addWidget(widget, row, column + 1)
-    for column in range(columns * 2):
-        layout.setColumnStretch(column, 1 if column % 2 else 0)
+        tune_form_widget(widget)
+        layout.addRow(label_widget, widget)
+
+
+def build_section(title: str, hint: str | None = None) -> tuple[QWidget, QVBoxLayout]:
+    section = QWidget()
+    layout = QVBoxLayout(section)
+    layout.setContentsMargins(0, 0, 0, 0)
+    layout.setSpacing(6)
+    title_label = QLabel(title)
+    title_label.setObjectName("sectionTitle")
+    layout.addWidget(title_label)
+    if hint:
+        hint_label = QLabel(hint)
+        hint_label.setObjectName("sectionHint")
+        hint_label.setWordWrap(True)
+        layout.addWidget(hint_label)
+    separator = QFrame()
+    separator.setObjectName("sectionSeparator")
+    layout.addWidget(separator)
+    return section, layout
+
+
+def align_section_heights(*sections: QWidget) -> None:
+    height = max(section.sizeHint().height() for section in sections)
+    for section in sections:
+        section.setFixedHeight(height)
+
+
+def build_two_column_form(fields) -> QWidget:
+    wrapper = QWidget()
+    layout = QHBoxLayout(wrapper)
+    layout.setContentsMargins(0, 0, 0, 0)
+    layout.setSpacing(28)
+    split_index = (len(fields) + 1) // 2
+    left_form = build_form_layout()
+    right_form = build_form_layout()
+    add_form_rows(left_form, fields[:split_index])
+    add_form_rows(right_form, fields[split_index:])
+    left_widget = QWidget()
+    left_widget.setLayout(left_form)
+    right_widget = QWidget()
+    right_widget.setLayout(right_form)
+    layout.addWidget(left_widget, 1)
+    layout.addWidget(right_widget, 1)
+    return wrapper
+
+
+def build_inline_field(*widgets: QWidget) -> QWidget:
+    wrapper = QWidget()
+    layout = QHBoxLayout(wrapper)
+    layout.setContentsMargins(0, 0, 0, 0)
+    layout.setSpacing(8)
+    for widget in widgets:
+        if isinstance(widget, QWidget):
+            layout.addWidget(widget)
+    layout.addStretch(1)
+    return wrapper
+
+
+def build_checkbox_field(
+    checkbox: QCheckBox,
+    text: str,
+    tooltip: str = "",
+    trailing_label: str | None = None,
+    trailing_widget: QWidget | None = None,
+) -> QWidget:
+    checkbox.setText(text)
+    if tooltip:
+        checkbox.setToolTip(tooltip)
+    widgets: list[QWidget] = [checkbox]
+    if trailing_label:
+        label = QLabel(trailing_label)
+        if tooltip:
+            label.setToolTip(tooltip)
+        widgets.append(label)
+    if trailing_widget is not None:
+        widgets.append(trailing_widget)
+    return build_inline_field(*widgets)
+
+
+def build_toggle_grid(rows) -> QWidget:
+    wrapper = QWidget()
+    layout = QGridLayout(wrapper)
+    layout.setContentsMargins(0, 0, 0, 0)
+    layout.setHorizontalSpacing(10)
+    layout.setVerticalSpacing(4)
+    for row_index, row in enumerate(rows):
+        checkbox, text = row[0], row[1]
+        tooltip = row[2] if len(row) > 2 else ""
+        trailing_label = row[3] if len(row) > 3 else None
+        trailing_widget = row[4] if len(row) > 4 else None
+        checkbox.setText(text)
+        checkbox.setMinimumHeight(FORM_CONTROL_HEIGHT)
+        checkbox.setFixedWidth(TOGGLE_TEXT_WIDTH)
+        checkbox.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        if tooltip:
+            checkbox.setToolTip(tooltip)
+        layout.addWidget(checkbox, row_index, 0)
+        if trailing_label:
+            label = QLabel(trailing_label)
+            label.setObjectName("inlineParamLabel")
+            label.setFixedWidth(INLINE_LABEL_WIDTH)
+            label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            if tooltip:
+                label.setToolTip(tooltip)
+            layout.addWidget(label, row_index, 1)
+        else:
+            layout.addItem(QSpacerItem(INLINE_LABEL_WIDTH, FORM_CONTROL_HEIGHT), row_index, 1)
+        if trailing_widget is not None:
+            tune_form_widget(trailing_widget)
+            layout.addWidget(trailing_widget, row_index, 2)
+        else:
+            layout.addItem(QSpacerItem(FORM_FIELD_MIN_WIDTH, FORM_CONTROL_HEIGHT), row_index, 2)
+    layout.setColumnStretch(0, 0)
+    layout.setColumnStretch(1, 0)
+    layout.setColumnStretch(2, 0)
+    layout.setColumnStretch(3, 1)
+    return wrapper
+
+
+def build_option_grid(rows) -> QWidget:
+    wrapper = QWidget()
+    layout = QGridLayout(wrapper)
+    layout.setContentsMargins(0, 0, 0, 0)
+    layout.setHorizontalSpacing(10)
+    layout.setVerticalSpacing(4)
+    for row_index, row in enumerate(rows):
+        label_text, widget = row[0], row[1]
+        tooltip = row[2] if len(row) > 2 else ""
+        label = QLabel(label_text)
+        label.setFixedWidth(TOGGLE_TEXT_WIDTH)
+        label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        if tooltip:
+            label.setToolTip(tooltip)
+            widget.setToolTip(tooltip)
+        tune_form_widget(widget)
+        layout.addWidget(label, row_index, 0)
+        layout.addWidget(widget, row_index, 1)
+    layout.setColumnStretch(0, 0)
+    layout.setColumnStretch(1, 0)
+    layout.setColumnStretch(2, 1)
+    return wrapper
+
+
+def build_helper_grid(rows) -> QWidget:
+    wrapper = QWidget()
+    layout = QGridLayout(wrapper)
+    layout.setContentsMargins(0, 0, 0, 0)
+    layout.setHorizontalSpacing(10)
+    layout.setVerticalSpacing(4)
+    for row_index, row in enumerate(rows):
+        label_text, main_widget = row[0], row[1]
+        tooltip = row[2] if len(row) > 2 else ""
+        param_label = row[3] if len(row) > 3 else None
+        param_widget = row[4] if len(row) > 4 else None
+        label = QLabel(label_text)
+        label.setFixedWidth(TOGGLE_TEXT_WIDTH)
+        label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        if tooltip:
+            label.setToolTip(tooltip)
+            main_widget.setToolTip(tooltip)
+        tune_form_widget(main_widget)
+        layout.addWidget(label, row_index, 0)
+        if param_label or isinstance(main_widget, QCheckBox):
+            layout.addWidget(main_widget, row_index, 1)
+        else:
+            layout.addItem(QSpacerItem(24, FORM_CONTROL_HEIGHT), row_index, 1)
+        if param_label:
+            trailing_label = QLabel(param_label)
+            trailing_label.setObjectName("inlineParamLabel")
+            trailing_label.setFixedWidth(INLINE_LABEL_WIDTH)
+            trailing_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            if tooltip:
+                trailing_label.setToolTip(tooltip)
+            layout.addWidget(trailing_label, row_index, 2)
+        else:
+            layout.addItem(QSpacerItem(INLINE_LABEL_WIDTH, FORM_CONTROL_HEIGHT), row_index, 2)
+        if param_widget is not None:
+            tune_form_widget(param_widget)
+            layout.addWidget(param_widget, row_index, 3)
+        elif not isinstance(main_widget, QCheckBox):
+            layout.addWidget(main_widget, row_index, 3)
+        else:
+            layout.addItem(QSpacerItem(FORM_FIELD_MIN_WIDTH, FORM_CONTROL_HEIGHT), row_index, 3)
+    layout.setColumnStretch(0, 0)
+    layout.setColumnStretch(1, 0)
+    layout.setColumnStretch(2, 0)
+    layout.setColumnStretch(3, 0)
+    layout.setColumnStretch(4, 1)
+    return wrapper
+
+
+def build_helper_list(rows) -> QWidget:
+    wrapper = QWidget()
+    layout = QGridLayout(wrapper)
+    layout.setContentsMargins(0, 0, 0, 0)
+    layout.setHorizontalSpacing(10)
+    layout.setVerticalSpacing(4)
+    for row_index, row in enumerate(rows):
+        checkbox, text = row[0], row[1]
+        tooltip = row[2] if len(row) > 2 else ""
+        param_label = row[3] if len(row) > 3 else None
+        param_widget = row[4] if len(row) > 4 else None
+        checkbox.setText(text)
+        checkbox.setMinimumHeight(FORM_CONTROL_HEIGHT)
+        checkbox.setFixedWidth(TOGGLE_TEXT_WIDTH)
+        checkbox.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        if tooltip:
+            checkbox.setToolTip(tooltip)
+        layout.addWidget(checkbox, row_index, 0)
+        if param_label:
+            label = QLabel(param_label)
+            label.setObjectName("inlineParamLabel")
+            label.setFixedWidth(INLINE_LABEL_WIDTH)
+            label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            if tooltip:
+                label.setToolTip(tooltip)
+            layout.addWidget(label, row_index, 1)
+        else:
+            layout.addItem(QSpacerItem(INLINE_LABEL_WIDTH, FORM_CONTROL_HEIGHT), row_index, 1)
+        if param_widget is not None:
+            tune_form_widget(param_widget)
+            layout.addWidget(param_widget, row_index, 2)
+        else:
+            layout.addItem(QSpacerItem(FORM_FIELD_MIN_WIDTH, FORM_CONTROL_HEIGHT), row_index, 2)
+    layout.setColumnStretch(0, 0)
+    layout.setColumnStretch(1, 0)
+    layout.setColumnStretch(2, 0)
+    layout.setColumnStretch(3, 1)
+    return wrapper
+
+
+def build_helper_section_grid(rows) -> QWidget:
+    wrapper = QWidget()
+    layout = QGridLayout(wrapper)
+    layout.setContentsMargins(0, 0, 0, 0)
+    layout.setHorizontalSpacing(10)
+    layout.setVerticalSpacing(4)
+    for row_index, row in enumerate(rows):
+        kind = row[0]
+        if kind == "option":
+            label_text, widget = row[1], row[2]
+            tooltip = row[3] if len(row) > 3 else ""
+            label = QLabel(label_text)
+            label.setFixedWidth(TOGGLE_TEXT_WIDTH)
+            label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+            if tooltip:
+                label.setToolTip(tooltip)
+                widget.setToolTip(tooltip)
+            tune_form_widget(widget)
+            layout.addWidget(label, row_index, 0)
+            layout.addItem(QSpacerItem(INLINE_LABEL_WIDTH, FORM_CONTROL_HEIGHT), row_index, 1)
+            layout.addWidget(widget, row_index, 2)
+            continue
+
+        checkbox, text = row[1], row[2]
+        tooltip = row[3] if len(row) > 3 else ""
+        param_label = row[4] if len(row) > 4 else None
+        param_widget = row[5] if len(row) > 5 else None
+        checkbox.setText(text)
+        checkbox.setMinimumHeight(FORM_CONTROL_HEIGHT)
+        checkbox.setFixedWidth(TOGGLE_TEXT_WIDTH)
+        checkbox.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        if tooltip:
+            checkbox.setToolTip(tooltip)
+        layout.addWidget(checkbox, row_index, 0)
+        if param_label:
+            label = QLabel(param_label)
+            label.setObjectName("inlineParamLabel")
+            label.setFixedWidth(INLINE_LABEL_WIDTH)
+            label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            if tooltip:
+                label.setToolTip(tooltip)
+            layout.addWidget(label, row_index, 1)
+        else:
+            layout.addItem(QSpacerItem(INLINE_LABEL_WIDTH, FORM_CONTROL_HEIGHT), row_index, 1)
+        if param_widget is not None:
+            tune_form_widget(param_widget)
+            layout.addWidget(param_widget, row_index, 2)
+        else:
+            layout.addItem(QSpacerItem(FORM_FIELD_MIN_WIDTH, FORM_CONTROL_HEIGHT), row_index, 2)
+    layout.setColumnStretch(0, 0)
+    layout.setColumnStretch(1, 0)
+    layout.setColumnStretch(2, 0)
+    layout.setColumnStretch(3, 1)
+    return wrapper
+
+
+def build_parameter_section_grid(rows) -> QWidget:
+    wrapper = QWidget()
+    layout = QGridLayout(wrapper)
+    layout.setContentsMargins(0, 0, 0, 0)
+    layout.setHorizontalSpacing(10)
+    layout.setVerticalSpacing(4)
+    for row_index, row in enumerate(rows):
+        kind = row[0]
+        if kind == "option":
+            label_text, widget = row[1], row[2]
+            tooltip = row[3] if len(row) > 3 else ""
+            label = QLabel(label_text)
+            label.setFixedWidth(TOGGLE_TEXT_WIDTH)
+            label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+            if tooltip:
+                label.setToolTip(tooltip)
+                widget.setToolTip(tooltip)
+            tune_form_widget(widget)
+            layout.addWidget(label, row_index, 0)
+            layout.addItem(QSpacerItem(INLINE_LABEL_WIDTH, FORM_CONTROL_HEIGHT), row_index, 1)
+            layout.addWidget(widget, row_index, 2)
+            continue
+
+        checkbox, text = row[1], row[2]
+        tooltip = row[3] if len(row) > 3 else ""
+        param_label = row[4] if len(row) > 4 else None
+        param_widget = row[5] if len(row) > 5 else None
+        checkbox.setText(text)
+        checkbox.setMinimumHeight(FORM_CONTROL_HEIGHT)
+        checkbox.setFixedWidth(TOGGLE_TEXT_WIDTH)
+        checkbox.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        if tooltip:
+            checkbox.setToolTip(tooltip)
+        layout.addWidget(checkbox, row_index, 0)
+        if param_label:
+            label = QLabel(param_label)
+            label.setObjectName("inlineParamLabel")
+            label.setFixedWidth(INLINE_LABEL_WIDTH)
+            label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            if tooltip:
+                label.setToolTip(tooltip)
+            layout.addWidget(label, row_index, 1)
+        else:
+            layout.addItem(QSpacerItem(INLINE_LABEL_WIDTH, FORM_CONTROL_HEIGHT), row_index, 1)
+        if param_widget is not None:
+            tune_form_widget(param_widget)
+            layout.addWidget(param_widget, row_index, 2)
+        else:
+            layout.addItem(QSpacerItem(FORM_FIELD_MIN_WIDTH, FORM_CONTROL_HEIGHT), row_index, 2)
+    layout.setColumnStretch(0, 0)
+    layout.setColumnStretch(1, 0)
+    layout.setColumnStretch(2, 0)
+    layout.setColumnStretch(3, 1)
+    return wrapper
+
+
+def build_page_header(title: str, subtitle: str) -> QWidget:
+    header = QWidget()
+    header.setFixedHeight(64)
+    layout = QVBoxLayout(header)
+    layout.setContentsMargins(0, 0, 0, 0)
+    layout.setSpacing(4)
+    title_label = QLabel(title)
+    title_label.setObjectName("pageTitle")
+    subtitle_label = QLabel(subtitle)
+    subtitle_label.setObjectName("pageSubtitle")
+    separator = QFrame()
+    separator.setObjectName("sectionSeparator")
+    layout.addWidget(title_label)
+    layout.addWidget(subtitle_label)
+    layout.addStretch(1)
+    layout.addWidget(separator)
+    header.title_label = title_label
+    header.subtitle_label = subtitle_label
+    return header
+
+
+def tune_form_widget(widget: QWidget) -> None:
+    if isinstance(widget, QCheckBox):
+        widget.setMinimumHeight(FORM_CONTROL_HEIGHT)
+        if widget.text():
+            widget.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Fixed)
+        else:
+            widget.setFixedWidth(24)
+            widget.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        return
+    if isinstance(widget, (QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox)):
+        widget.setMinimumHeight(FORM_CONTROL_HEIGHT)
+        widget.setMinimumWidth(FORM_FIELD_MIN_WIDTH)
+        widget.setMaximumWidth(FORM_FIELD_MAX_WIDTH)
+        widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+
+
+def tune_skill_widget(widget: QWidget, role: str) -> None:
+    if isinstance(widget, QCheckBox):
+        widget.setFixedWidth(28)
+        widget.setMinimumHeight(FORM_CONTROL_HEIGHT)
+        return
+    if not isinstance(widget, (QLineEdit, QComboBox, QSpinBox)):
+        return
+    widget.setMinimumHeight(FORM_CONTROL_HEIGHT)
+    width = SKILL_NUMBER_WIDTH
+    if role in {"hotkey", "triggerbutton"}:
+        width = SKILL_TEXT_WIDTH
+    if role == "triggerbutton":
+        width = SKILL_TRIGGER_WIDTH
+    elif role == "action":
+        width = SKILL_ACTION_WIDTH
+    widget.setMinimumWidth(width)
+    widget.setMaximumWidth(width)
 
 
 def load_parser(config_path: Path) -> configparser.ConfigParser:
@@ -370,9 +941,16 @@ class ProfileTab(QWidget):
         self.widgets: dict[str, object] = {}
         self.section_name = section_name
         root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(8)
+        self.page_header_title = section_name
+        self.page_header = build_page_header(
+            self.page_header_title,
+            tr("配置档基础选项与技能策略", "Profile basics and skill strategies."),
+        )
+        self.page_header.setFixedHeight(46)
+        root.addWidget(self.page_header)
 
-        header = QGroupBox(tr("配置", "Profile"))
-        header_grid = QGridLayout(header)
         self.widgets["name"] = QLineEdit(section_name)
         self.widgets["profilehkmethod"] = self._combo(COMMON_METHOD_ITEMS, int(section.get("profilehkmethod", "1")))
         self.widgets["profilehkkey"] = QLineEdit(section.get("profilehkkey", ""))
@@ -390,58 +968,109 @@ class ProfileTab(QWidget):
         self.widgets["quickpausemethod3"] = self._combo(QUICK_PAUSE_ACTION_ITEMS, int(section.get("quickpausemethod3", "1")))
         self.widgets["quickpausedelay"] = self._spin(50, 5000, int(section.get("quickpausedelay", "1500")))
 
-        add_compact_rows(
-            header_grid,
-            [
-                ("配置名", self.widgets["name"]),
-                ("快速切换类型", self.widgets["profilehkmethod"], PROFILE_HOTKEY_TOOLTIP),
-                ("快速切换按键", self.widgets["profilehkkey"], PROFILE_HOTKEY_TOOLTIP),
-                ("切换后自动启动宏", self.widgets["autostartmarco"], AUTOSTART_TOOLTIP),
-                ("宏启动方式", self.widgets["lazymode"], START_MODE_TOOLTIP),
-                ("走位辅助", self.widgets["movingmethod"]),
-                ("走位间隔（毫秒）", self.widgets["movinginterval"]),
-                ("药水辅助", self.widgets["potionmethod"], POTION_TOOLTIP),
-                ("药水间隔（毫秒）", self.widgets["potioninterval"]),
-                ("单线程按键队列", self.widgets["useskillqueue"], SKILL_QUEUE_TOOLTIP),
-                ("按键队列间隔（毫秒）", self.widgets["useskillqueueinterval"], SKILL_QUEUE_INTERVAL_TOOLTIP),
-                ("快速暂停", self.widgets["enablequickpause"]),
-                ("快速暂停触发方式", self.widgets["quickpausemethod1"]),
-                ("快速暂停按键", self.widgets["quickpausemethod2"]),
-                ("快速暂停动作", self.widgets["quickpausemethod3"]),
-                ("快速暂停时长（毫秒）", self.widgets["quickpausedelay"]),
-            ],
-            columns=2,
-        )
-        root.addWidget(header)
+        settings_columns = QHBoxLayout()
+        settings_columns.setContentsMargins(0, 0, 0, 0)
+        settings_columns.setSpacing(32)
+        settings_left = QVBoxLayout()
+        settings_left.setSpacing(16)
+        settings_right = QVBoxLayout()
+        settings_right.setSpacing(16)
+        settings_columns.addLayout(settings_left, 1)
+        settings_columns.addLayout(settings_right, 1)
+        root.addLayout(settings_columns)
 
-        skill_group = QGroupBox(tr("技能", "Skills"))
-        skill_grid = QGridLayout(skill_group)
-        headers = [
-            tr("槽位", "Slot"),
-            tr("按键", "Key"),
-            tr("策略", "Action"),
-            tr("间隔", "Interval"),
-            tr("延迟", "Delay"),
-            tr("随机", "Random"),
-            tr("优先级", "Priority"),
-            tr("重复", "Repeat"),
-            tr("重复间隔", "Repeat gap"),
-            tr("触发键", "Trigger"),
-        ]
-        header_tooltips = {
-            tr("策略", "Action"): SKILL_ACTION_TOOLTIP,
-            tr("延迟", "Delay"): DELAY_TOOLTIP,
-            tr("随机", "Random"): RANDOM_TOOLTIP,
-            tr("优先级", "Priority"): PRIORITY_TOOLTIP,
-            tr("重复", "Repeat"): REPEAT_TOOLTIP,
-            tr("重复间隔", "Repeat gap"): REPEAT_INTERVAL_TOOLTIP,
-            tr("触发键", "Trigger"): TRIGGER_BUTTON_TOOLTIP,
-        }
-        for column, text in enumerate(headers):
-            label = QLabel(text)
-            if text in header_tooltips:
-                label.setToolTip(header_tooltips[text])
-            skill_grid.addWidget(label, 0, column)
+        basics_section, basics_layout = build_section(tr("基础", "Basics"))
+        basics_layout.addWidget(
+            build_option_grid(
+                [
+                    ("配置名", self.widgets["name"]),
+                    ("宏启动方式", self.widgets["lazymode"], START_MODE_TOOLTIP),
+                    ("切换类型", self.widgets["profilehkmethod"], PROFILE_HOTKEY_TOOLTIP),
+                    ("切换按键", self.widgets["profilehkkey"], PROFILE_HOTKEY_TOOLTIP),
+                ]
+            )
+        )
+        basics_layout.addWidget(
+            build_toggle_grid(
+                [
+                    (self.widgets["autostartmarco"], "切换后自动启动宏", AUTOSTART_TOOLTIP),
+                ]
+            )
+        )
+        settings_left.addWidget(basics_section)
+
+        movement_section, movement_layout = build_section(tr("走位与药水", "Movement & Potion"))
+        movement_layout.addWidget(
+            build_option_grid(
+                [
+                    ("走位辅助", self.widgets["movingmethod"]),
+                    ("走位间隔", self.widgets["movinginterval"]),
+                    ("药水辅助", self.widgets["potionmethod"], POTION_TOOLTIP),
+                    ("药水间隔", self.widgets["potioninterval"]),
+                ]
+            )
+        )
+        settings_left.addWidget(movement_section)
+        settings_left.addStretch(1)
+
+        queue_section, queue_layout = build_section(tr("按键队列", "Skill Queue"))
+        queue_layout.addWidget(
+            build_helper_section_grid(
+                [
+                    ("toggle", self.widgets["useskillqueue"], "单线程按键队列", SKILL_QUEUE_TOOLTIP, "间隔", self.widgets["useskillqueueinterval"]),
+                ]
+            )
+        )
+        settings_right.addWidget(queue_section)
+
+        pause_section, pause_layout = build_section(tr("快速暂停", "Quick Pause"))
+        pause_layout.addWidget(
+            build_helper_section_grid(
+                [
+                    ("toggle", self.widgets["enablequickpause"], "启用快速暂停", ""),
+                    ("option", "暂停触发", self.widgets["quickpausemethod1"]),
+                    ("option", "暂停按键", self.widgets["quickpausemethod2"]),
+                    ("option", "暂停动作", self.widgets["quickpausemethod3"]),
+                    ("option", "暂停时长", self.widgets["quickpausedelay"]),
+                ]
+            )
+        )
+        settings_right.addWidget(pause_section)
+        settings_right.addStretch(1)
+
+        skill_section, skill_layout = build_section(tr("技能表", "Skill table"))
+        self.skill_table = QTableWidget(6, 10)
+        self.skill_table.viewport().setStyleSheet("background: #ffffff;")
+        self.skill_table.setHorizontalHeaderLabels(
+            [
+                tr("槽位", "Slot"),
+                tr("按键", "Key"),
+                tr("策略", "Action"),
+                tr("间隔", "Interval"),
+                tr("延迟", "Delay"),
+                tr("随机", "Random"),
+                tr("优先级", "Priority"),
+                tr("重复", "Repeat"),
+                tr("重复间隔", "Repeat gap"),
+                tr("触发", "Trigger"),
+            ]
+        )
+        self.skill_table.verticalHeader().setVisible(False)
+        self.skill_table.setSelectionMode(QTableWidget.SelectionMode.NoSelection)
+        self.skill_table.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.skill_table.setShowGrid(False)
+        self.skill_table.setAlternatingRowColors(False)
+        self.skill_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.skill_table.horizontalHeader().setStretchLastSection(True)
+        self.skill_table.horizontalHeader().setDefaultSectionSize(SKILL_NUMBER_WIDTH)
+        self.skill_table.horizontalHeader().setMinimumSectionSize(40)
+        self.skill_table.horizontalHeader().setFixedHeight(SKILL_TABLE_HEADER_HEIGHT)
+        self.skill_table.verticalScrollBar().setEnabled(False)
+        self.skill_table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.skill_table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        for row_index in range(6):
+            self.skill_table.setRowHeight(row_index, SKILL_TABLE_ROW_HEIGHT)
+        self.skill_table.setFixedHeight(SKILL_TABLE_HEADER_HEIGHT + SKILL_TABLE_ROW_HEIGHT * 6 + 4)
 
         skill_widgets = []
         for index in range(1, 7):
@@ -462,19 +1091,32 @@ class ProfileTab(QWidget):
             row["repeat"].setToolTip(REPEAT_TOOLTIP)
             row["repeatinterval"].setToolTip(REPEAT_INTERVAL_TOOLTIP)
             row["triggerbutton"].setToolTip(TRIGGER_BUTTON_TOOLTIP)
+            for key in ["hotkey", "action", "interval", "delay", "random", "priority", "repeat", "repeatinterval", "triggerbutton"]:
+                tune_skill_widget(row[key], key)
             if index in {5, 6}:
                 row["hotkey"].setReadOnly(True)
-            skill_grid.addWidget(QLabel(tr(f"技能{index}", f"Skill {index}")), index, 0)
-            skill_grid.addWidget(row["hotkey"], index, 1)
-            skill_grid.addWidget(row["action"], index, 2)
-            skill_grid.addWidget(row["interval"], index, 3)
-            skill_grid.addWidget(row["delay"], index, 4)
-            skill_grid.addWidget(row["random"], index, 5, alignment=Qt.AlignmentFlag.AlignCenter)
-            skill_grid.addWidget(row["priority"], index, 6)
-            skill_grid.addWidget(row["repeat"], index, 7)
-            skill_grid.addWidget(row["repeatinterval"], index, 8)
-            skill_grid.addWidget(row["triggerbutton"], index, 9)
+            slot_item = QTableWidgetItem(tr(f"技能{index}", f"Skill {index}"))
+            self.skill_table.setItem(index - 1, 0, slot_item)
+            self.skill_table.setCellWidget(index - 1, 1, row["hotkey"])
+            self.skill_table.setCellWidget(index - 1, 2, row["action"])
+            self.skill_table.setCellWidget(index - 1, 3, row["interval"])
+            self.skill_table.setCellWidget(index - 1, 4, row["delay"])
+            self.skill_table.setCellWidget(index - 1, 5, build_inline_field(row["random"]))
+            self.skill_table.setCellWidget(index - 1, 6, row["priority"])
+            self.skill_table.setCellWidget(index - 1, 7, row["repeat"])
+            self.skill_table.setCellWidget(index - 1, 8, row["repeatinterval"])
+            self.skill_table.setCellWidget(index - 1, 9, row["triggerbutton"])
             skill_widgets.append(row)
+        self.skill_table.setColumnWidth(0, 62)
+        self.skill_table.setColumnWidth(1, SKILL_TEXT_WIDTH)
+        self.skill_table.setColumnWidth(2, SKILL_ACTION_WIDTH)
+        self.skill_table.setColumnWidth(3, SKILL_NUMBER_WIDTH)
+        self.skill_table.setColumnWidth(4, SKILL_NUMBER_WIDTH)
+        self.skill_table.setColumnWidth(5, 52)
+        self.skill_table.setColumnWidth(6, SKILL_NUMBER_WIDTH)
+        self.skill_table.setColumnWidth(7, SKILL_NUMBER_WIDTH)
+        self.skill_table.setColumnWidth(8, 112)
+        self.skill_table.setColumnWidth(9, SKILL_TRIGGER_WIDTH)
         self.widgets["skills"] = skill_widgets
         self.skill_queue_warning = QLabel(
             tr(
@@ -484,8 +1126,10 @@ class ProfileTab(QWidget):
         )
         self.skill_queue_warning.setStyleSheet("color: #c62828;")
         self.skill_queue_warning.hide()
-        root.addWidget(skill_group)
-        root.addWidget(self.skill_queue_warning)
+        skill_layout.addWidget(self.skill_table)
+        skill_layout.addWidget(self.skill_queue_warning)
+        root.addWidget(skill_section)
+        root.addStretch(1)
         self._start_method_conflict = False
         self._connect_dynamic_controls()
         self.refresh_dynamic_state()
@@ -499,6 +1143,7 @@ class ProfileTab(QWidget):
 
     def _spin(self, minimum: int, maximum: int, value: int) -> QSpinBox:
         widget = QSpinBox()
+        widget.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
         widget.setRange(minimum, maximum)
         widget.setValue(value)
         return widget
@@ -635,109 +1280,200 @@ class MainWindow(QMainWindow):
         self.process: Optional[QProcess] = None
         self.general_widgets: dict[str, object] = {}
         self.profile_tabs: list[ProfileTab] = []
+        self.profile_nav_items: list[QListWidgetItem] = []
         self._last_log_line = tr("尚无日志。", "No log messages yet.")
+        self._path_text = str(self.config_path)
+        self._log_expanded = False
         self._suspend_config_watch = False
         self._config_apply_timer = QTimer(self)
         self._config_apply_timer.setSingleShot(True)
         self._config_apply_timer.setInterval(500)
         self._config_apply_timer.timeout.connect(self._apply_live_config_change)
-        self.tabs = QTabWidget()
+        self.navigation = QListWidget()
+        self.page_stack = QStackedWidget()
         self.log = QPlainTextEdit()
         self.log.setReadOnly(True)
         self.log.setMaximumBlockCount(500)
         self.setWindowTitle("D3keyHelper Linux")
         self.setStyleSheet(APP_STYLE_SHEET)
         self.resize(*FULL_WINDOW_SIZE)
+        self.setMinimumSize(960, 620)
         self._build_shell()
         self.reload_config()
 
     def _build_shell(self) -> None:
         central = QWidget()
         layout = QVBoxLayout(central)
-        toolbar = QHBoxLayout()
-        self.path_label = QLabel(str(self.config_path))
+        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(8)
+        self.root_layout = layout
+        toolbar_frame = QFrame()
+        toolbar_frame.setObjectName("toolbarFrame")
+        toolbar_frame.setFixedHeight(44)
+        toolbar = QHBoxLayout(toolbar_frame)
+        toolbar.setContentsMargins(0, 0, 0, 0)
+        toolbar.setSpacing(8)
+        self.toolbar_layout = toolbar
+        self.path_label = QLabel()
         self.path_label.setObjectName("pathLabel")
-        self.path_label.setToolTip(str(self.config_path))
+        self.path_label.setMinimumWidth(TOOLBAR_PATH_MIN_WIDTH)
+        self.path_label.setMaximumWidth(TOOLBAR_PATH_MAX_WIDTH)
+        self.path_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.profile_line = QLineEdit()
         self.profile_line.setPlaceholderText(tr("启动时可选：配置名或编号", "Optional: profile name or number"))
+        self.profile_line.setFixedWidth(TOOLBAR_PROFILE_WIDTH)
         reload_button = QPushButton(tr("重新载入", "Reload"))
         reload_button.clicked.connect(self.reload_config)
         save_button = QPushButton(tr("保存配置", "Save"))
         save_button.clicked.connect(self.save_config)
         start_button = QPushButton(tr("启动运行器", "Start runner"))
+        start_button.setObjectName("primaryButton")
         start_button.clicked.connect(self.start_runner)
         stop_button = QPushButton(tr("停止运行器", "Stop runner"))
         stop_button.clicked.connect(self.stop_runner)
-        self.status_badge = QLabel()
-        self.status_badge.setObjectName("statusBadge")
-        self.status_badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        toolbar.addWidget(self.path_label, 1)
+        toolbar.addWidget(self.path_label)
         toolbar.addWidget(self.profile_line)
+        toolbar.addStretch(1)
         toolbar.addWidget(reload_button)
         toolbar.addWidget(save_button)
         toolbar.addWidget(start_button)
         toolbar.addWidget(stop_button)
-        toolbar.addWidget(self.status_badge)
-        layout.addLayout(toolbar)
-        layout.addWidget(self.tabs, 3)
-        self.activity_panel = QFrame()
-        self.activity_panel.setObjectName("activityPanel")
-        activity_layout = QVBoxLayout(self.activity_panel)
-        activity_header = QHBoxLayout()
-        activity_title = QLabel(tr("运行状态", "Runtime status"))
-        activity_title.setObjectName("activityTitle")
-        self.activity_mode_label = QLabel()
-        activity_header.addWidget(activity_title)
-        activity_header.addStretch(1)
-        activity_header.addWidget(self.activity_mode_label)
-        self.activity_runner_label = QLabel()
-        self.activity_log_label = QLabel()
-        self.activity_log_label.setWordWrap(True)
-        activity_layout.addLayout(activity_header)
-        activity_layout.addWidget(self.activity_runner_label)
-        activity_layout.addWidget(self.activity_log_label)
-        layout.addWidget(self.activity_panel)
-        layout.addWidget(self.log, 1)
+        layout.addWidget(toolbar_frame)
+        self.navigation.setObjectName("navigationList")
+        self.navigation.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.navigation.setVerticalScrollMode(QListWidget.ScrollMode.ScrollPerPixel)
+        self.navigation.setSpacing(2)
+        self.navigation.setFixedWidth(NAV_WIDTH)
+        self.navigation.currentRowChanged.connect(self._select_page)
+        content_widget = QFrame()
+        content_widget.setObjectName("contentPanel")
+        content_layout = QVBoxLayout(content_widget)
+        content_layout.setContentsMargins(30, 18, 24, 0)
+        content_layout.setSpacing(8)
+        self.content_layout = content_layout
+        self.log_panel = QFrame()
+        self.log_panel.setObjectName("logPanel")
+        log_layout = QVBoxLayout(self.log_panel)
+        log_layout.setContentsMargins(0, 0, 0, 0)
+        log_layout.setSpacing(4)
+        self.log_panel_title = QLabel(tr("运行日志", "Runner log"))
+        self.log_panel_title.setObjectName("sectionHint")
+        log_layout.addWidget(self.log_panel_title)
+        log_layout.addWidget(self.log)
+        content_layout.addWidget(self.page_stack, 1)
+        content_layout.addWidget(self.log_panel)
+        splitter = QSplitter(Qt.Orientation.Horizontal)
+        splitter.addWidget(self.navigation)
+        splitter.addWidget(content_widget)
+        splitter.setChildrenCollapsible(False)
+        splitter.setStretchFactor(0, 0)
+        splitter.setStretchFactor(1, 1)
+        splitter.setSizes([NAV_WIDTH, FULL_WINDOW_SIZE[0] - NAV_WIDTH])
+        self.body_splitter = splitter
+        layout.addWidget(splitter, 1)
+        self.status_strip = QFrame()
+        self.status_strip.setObjectName("statusStrip")
+        self.status_strip.setFixedHeight(34)
+        status_layout = QHBoxLayout(self.status_strip)
+        status_layout.setContentsMargins(10, 4, 12, 4)
+        status_layout.setSpacing(8)
+        self.status_strip_layout = status_layout
+        self.status_dot = QFrame()
+        self.status_dot.setObjectName("statusDot")
+        self.status_dot.setFixedSize(10, 10)
+        self.status_runner_label = QLabel()
+        self.status_runner_label.setObjectName("statusStripLabel")
+        self.status_log_title = QLabel(tr("最近日志", "Latest log"))
+        self.status_log_title.setObjectName("statusStripLabel")
+        self.status_log_value = QLabel()
+        self.status_log_value.setObjectName("statusStripValue")
+        self.status_log_value.setMinimumWidth(0)
+        self.status_log_value.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        self.log_toggle_button = QPushButton(tr("展开日志", "Show Log"))
+        self.log_toggle_button.setCheckable(True)
+        self.log_toggle_button.setFixedHeight(24)
+        self.log_toggle_button.setMinimumWidth(76)
+        self.log_toggle_button.toggled.connect(self._set_log_expanded)
+        status_layout.addWidget(self.status_dot)
+        status_layout.addWidget(self.status_runner_label)
+        status_layout.addSpacing(16)
+        status_layout.addWidget(self.status_log_title)
+        status_layout.addWidget(self.status_log_value, 1)
+        status_layout.addWidget(self.log_toggle_button)
+        layout.addWidget(self.status_strip)
         self.setCentralWidget(central)
+        self._set_log_expanded(False)
+        self._update_path_label()
         self._update_runtime_status_widgets()
+
+    def _select_page(self, index: int) -> None:
+        if 0 <= index < self.page_stack.count():
+            self.page_stack.setCurrentIndex(index)
+
+    def _clear_page_stack(self) -> None:
+        while self.page_stack.count():
+            widget = self.page_stack.widget(0)
+            self.page_stack.removeWidget(widget)
+            widget.deleteLater()
 
     def reload_config(self) -> None:
         self._config_apply_timer.stop()
         self._suspend_config_watch = True
         parser = load_parser(self.config_path)
-        self.tabs.clear()
+        self.navigation.clear()
+        self._clear_page_stack()
         self.general_widgets.clear()
         self.profile_tabs.clear()
-        self.path_label.setText(str(self.config_path))
-        self.path_label.setToolTip(str(self.config_path))
+        self.profile_nav_items.clear()
+        self._path_text = str(self.config_path)
+        self._update_path_label()
         self._append_log(tr(f"已载入配置：{self.config_path}", f"Loaded config: {self.config_path}"))
         general_name = next(name for name in parser.sections() if name.lower() == "general")
-        self.tabs.addTab(self._build_general_tab(parser[general_name]), tr("通用", "General"))
-        for name in parser.sections():
-            if name.lower() == "general":
-                continue
+        profile_names = [name for name in parser.sections() if name.lower() != "general"]
+        self.navigation.addItem(QListWidgetItem(tr("通用", "General")))
+        self.page_stack.addWidget(self._build_general_tab(parser[general_name], profile_names))
+        for name in profile_names:
             tab = ProfileTab(name, parser[name])
             self.profile_tabs.append(tab)
-            self.tabs.addTab(self._wrap_scroll_tab(tab), name)
+            item = QListWidgetItem(name)
+            self.profile_nav_items.append(item)
+            self.navigation.addItem(item)
+            self.page_stack.addWidget(self._wrap_scroll_tab(tab))
+        self.navigation.setCurrentRow(0)
         self._refresh_general_state()
-        self._apply_compact_mode()
         self._connect_config_change_watchers()
         self._suspend_config_watch = False
         self._update_runtime_status_widgets()
 
-    def _build_general_tab(self, section: configparser.SectionProxy) -> QWidget:
+    def _build_general_tab(self, section: configparser.SectionProxy, profile_names: list[str]) -> QWidget:
         container = QWidget()
+        container.setObjectName("pageContainer")
         root = QVBoxLayout(container)
-        summary_grid = QGridLayout()
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(10)
         helper_speed_preset = helper_speed_preset_from_values(
             int(section.get("helpermousespeed", "2")),
             int(section.get("helperanimationdelay", "150")),
             int(section.get("helperspeed", "3")),
         )
+        root.addWidget(
+            build_page_header(
+                tr("通用设置", "General settings"),
+                tr("编辑全局热键、助手行为、输入方式与高级参数", "Edit global hotkeys, helper behavior, input mode, and advanced options."),
+            )
+        )
+        columns = QGridLayout()
+        columns.setContentsMargins(0, 0, 0, 0)
+        columns.setHorizontalSpacing(32)
+        columns.setVerticalSpacing(24)
+        columns.setColumnStretch(0, 1)
+        columns.setColumnStretch(1, 1)
+        columns.setRowStretch(0, 0)
+        columns.setRowStretch(1, 0)
+        columns.setRowStretch(2, 1)
+        root.addLayout(columns)
 
-        basic = QGroupBox(tr("基础", "Basics"))
-        basic_grid = QGridLayout(basic)
-        self.general_widgets["activatedprofile"] = self._spin(1, 99, int(section.get("activatedprofile", "1")))
+        self.general_widgets["activatedprofile"] = build_profile_selector(profile_names, int(section.get("activatedprofile", "1")))
         self.general_widgets["startmethod"] = self._combo(START_METHOD_ITEMS, int(section.get("startmethod", "7")))
         self.general_widgets["starthotkey"] = QLineEdit(section.get("starthotkey", "F2"))
         self.general_widgets["oldsandhelpermethod"] = self._combo(COMMON_METHOD_ITEMS, int(section.get("oldsandhelpermethod", "7")))
@@ -747,34 +1483,31 @@ class MainWindow(QMainWindow):
         self.general_widgets["d3only"] = self._check(section.get("d3only", "1") == "1")
         self.general_widgets["enablesmartpause"] = self._check(section.get("enablesmartpause", "1") == "1")
         self.general_widgets["enablesoundplay"] = self._check(section.get("enablesoundplay", "1") == "1")
-        self.general_widgets["compactmode"] = self._check(section.get("compactmode", "0") == "1")
         self.general_widgets["gameresolution"] = QLineEdit(section.get("gameresolution", "Auto"))
         self.general_widgets["gamegamma"] = self._float_spin(0.5, 1.5, float(section.get("gamegamma", "1.0")), 6)
         self.general_widgets["buffpercent"] = self._float_spin(0.0, 1.0, float(section.get("buffpercent", "0.05")), 6)
-        add_compact_rows(
-            basic_grid,
-            [
-                ("当前激活配置", self.general_widgets["activatedprofile"]),
-                ("战斗宏启动方式", self.general_widgets["startmethod"]),
-                ("战斗宏启动热键", self.general_widgets["starthotkey"]),
-                ("助手启动方式", self.general_widgets["oldsandhelpermethod"], HELPER_HOTKEY_TOOLTIP),
-                ("助手启动热键", self.general_widgets["oldsandhelperhk"], HELPER_HOTKEY_TOOLTIP),
-                ("发送模式", self.general_widgets["sendmode"], SEND_MODE_TOOLTIP),
-                ("宏启动瞬间执行一次", self.general_widgets["runonstart"], RUN_ON_START_TOOLTIP),
-                ("只作用于 Diablo III 前台窗口", self.general_widgets["d3only"]),
-                ("智能暂停", self.general_widgets["enablesmartpause"], SMART_PAUSE_TOOLTIP),
-                ("切换配置提示音", self.general_widgets["enablesoundplay"], SOUND_ON_SWITCH_TOOLTIP),
-                ("紧凑布局", self.general_widgets["compactmode"], COMPACT_MODE_TOOLTIP),
-                ("游戏分辨率（Auto/宽x高）", self.general_widgets["gameresolution"], GAME_RESOLUTION_TOOLTIP),
-                ("游戏 Gamma", self.general_widgets["gamegamma"], GAME_GAMMA_TOOLTIP),
-                ("Buff 续按阈值", self.general_widgets["buffpercent"], BUFF_PERCENT_TOOLTIP),
-            ],
-            columns=2,
+        basic_section, basic_layout = build_section(tr("基础", "Basics"))
+        basic_layout.addWidget(
+            build_option_grid(
+                [
+                    ("当前激活配置", self.general_widgets["activatedprofile"]),
+                    ("战斗宏启动方式", self.general_widgets["startmethod"]),
+                    ("战斗宏启动热键", self.general_widgets["starthotkey"]),
+                ]
+            )
         )
-        summary_grid.addWidget(basic, 0, 0)
+        basic_layout.addWidget(
+            build_toggle_grid(
+                [
+                    (self.general_widgets["runonstart"], "宏启动瞬间执行一次", RUN_ON_START_TOOLTIP),
+                    (self.general_widgets["d3only"], "只作用于 Diablo III 前台窗口", ""),
+                    (self.general_widgets["enablesmartpause"], "智能暂停", SMART_PAUSE_TOOLTIP),
+                    (self.general_widgets["enablesoundplay"], "切换配置提示音", SOUND_ON_SWITCH_TOOLTIP),
+                ]
+            )
+        )
+        columns.addWidget(basic_section, 0, 0, alignment=Qt.AlignmentFlag.AlignTop)
 
-        helper = QGroupBox(tr("助手/输入", "Helpers / Input"))
-        helper_grid = QGridLayout(helper)
         for key, value in [
             ("customstanding", section.get("customstanding", "0") == "1"),
             ("custommoving", section.get("custommoving", "0") == "1"),
@@ -801,65 +1534,82 @@ class MainWindow(QMainWindow):
         self.general_widgets["safezone"] = QLineEdit(section.get("safezone", "61,62,63"))
         self.general_widgets["maxreforge"] = self._spin(1, 999, int(section.get("maxreforge", "10")))
         self.general_widgets["safezonestatus"] = QLabel()
+        self.general_widgets["enablegamblehelper"].setToolTip(GAMBLE_TOOLTIP)
+        self.general_widgets["gamblehelpertimes"].setToolTip(GAMBLE_TOOLTIP)
+        self.general_widgets["enableloothelper"].setToolTip(LOOT_TOOLTIP)
+        self.general_widgets["loothelpertimes"].setToolTip(LOOT_TOOLTIP)
+        self.general_widgets["enablesalvagehelper"].setToolTip(SALVAGE_ENABLE_TOOLTIP)
+        self.general_widgets["salvagehelpermethod"].setToolTip(SALVAGE_METHOD_TOOLTIP)
+        self.general_widgets["enablereforgehelper"].setToolTip(make_reforge_method_tooltip(self.general_widgets["maxreforge"].value()))
+        self.general_widgets["reforgehelpermethod"].setToolTip(make_reforge_method_tooltip(self.general_widgets["maxreforge"].value()))
+        self.general_widgets["enableupgradehelper"].setToolTip(UPGRADE_TOOLTIP)
+        self.general_widgets["enableconverthelper"].setToolTip(CONVERT_TOOLTIP)
+        self.general_widgets["enableabandonhelper"].setToolTip(ABANDON_TOOLTIP)
         self.general_widgets["helperspeed"].currentIndexChanged.connect(self._apply_helper_speed_preset)
         self.general_widgets["helpermousespeed"].valueChanged.connect(self._sync_helper_speed_preset)
         self.general_widgets["helperanimationdelay"].valueChanged.connect(self._sync_helper_speed_preset)
-        add_compact_rows(
-            helper_grid,
-            [
-                ("自定义强制站立", self.general_widgets["customstanding"], CUSTOM_STANDING_TOOLTIP),
-                ("强制站立按键", self.general_widgets["customstandinghk"], CUSTOM_STANDING_TOOLTIP),
-                ("自定义强制移动", self.general_widgets["custommoving"], CUSTOM_MOVING_TOOLTIP),
-                ("强制移动按键", self.general_widgets["custommovinghk"], CUSTOM_MOVING_TOOLTIP),
-                ("自定义药水按键", self.general_widgets["custompotion"], CUSTOM_POTION_TOOLTIP),
-                ("药水按键", self.general_widgets["custompotionhk"], CUSTOM_POTION_TOOLTIP),
-                ("赌博助手", self.general_widgets["enablegamblehelper"], GAMBLE_TOOLTIP),
-                ("赌博点击次数", self.general_widgets["gamblehelpertimes"]),
-                ("拾取助手", self.general_widgets["enableloothelper"], LOOT_TOOLTIP),
-                ("拾取点击次数", self.general_widgets["loothelpertimes"]),
-                ("分解助手", self.general_widgets["enablesalvagehelper"], SALVAGE_ENABLE_TOOLTIP),
-                ("分解策略", self.general_widgets["salvagehelpermethod"], SALVAGE_METHOD_TOOLTIP),
-                ("重铸助手", self.general_widgets["enablereforgehelper"], "当魔盒打开且在重铸页面时，按下助手快捷键可以自动执行所选择的重铸策略\n***最大重铸次数可以通过配置文件中的 maxreforge 变量修改***"),
-                ("重铸策略", self.general_widgets["reforgehelpermethod"], make_reforge_method_tooltip(self.general_widgets["maxreforge"].value())),
-                ("升级助手", self.general_widgets["enableupgradehelper"], UPGRADE_TOOLTIP),
-                ("转化助手", self.general_widgets["enableconverthelper"], CONVERT_TOOLTIP),
-                ("丢装助手", self.general_widgets["enableabandonhelper"], ABANDON_TOOLTIP),
-                ("动画速度预设", self.general_widgets["helperspeed"], HELPER_SPEED_PRESET_TOOLTIP),
-                ("辅助鼠标速度", self.general_widgets["helpermousespeed"], HELPER_SPEED_TOOLTIP),
-                ("辅助动画延迟（毫秒）", self.general_widgets["helperanimationdelay"], HELPER_SPEED_TOOLTIP),
-                ("安全格", self.general_widgets["safezone"], SAFEZONE_TOOLTIP),
-                ("最大重铸次数", self.general_widgets["maxreforge"]),
-            ],
-            columns=2,
+        input_section, input_layout = build_section(tr("输入", "Input"))
+        input_layout.addWidget(
+            build_parameter_section_grid(
+                [
+                    ("option", "发送模式", self.general_widgets["sendmode"], SEND_MODE_TOOLTIP),
+                    ("toggle", self.general_widgets["customstanding"], "自定义强制站立", CUSTOM_STANDING_TOOLTIP, "按键", self.general_widgets["customstandinghk"]),
+                    ("toggle", self.general_widgets["custommoving"], "自定义强制移动", CUSTOM_MOVING_TOOLTIP, "按键", self.general_widgets["custommovinghk"]),
+                    ("toggle", self.general_widgets["custompotion"], "自定义药水按键", CUSTOM_POTION_TOOLTIP, "按键", self.general_widgets["custompotionhk"]),
+                ]
+            )
         )
-        helper_grid.addWidget(self.general_widgets["safezonestatus"], helper_grid.rowCount(), 0, 1, 4)
+        columns.addWidget(input_section, 1, 0, alignment=Qt.AlignmentFlag.AlignTop)
+
+        helper_section, helper_layout = build_section(tr("助手", "Helpers"))
+        helper_layout.addWidget(
+            build_helper_section_grid(
+                [
+                    ("option", "助手启动方式", self.general_widgets["oldsandhelpermethod"], HELPER_HOTKEY_TOOLTIP),
+                    ("option", "助手启动热键", self.general_widgets["oldsandhelperhk"], HELPER_HOTKEY_TOOLTIP),
+                    ("toggle", self.general_widgets["enablegamblehelper"], "赌博助手", GAMBLE_TOOLTIP, "点击次数", self.general_widgets["gamblehelpertimes"]),
+                    ("toggle", self.general_widgets["enableloothelper"], "拾取助手", LOOT_TOOLTIP, "点击次数", self.general_widgets["loothelpertimes"]),
+                    ("toggle", self.general_widgets["enablesalvagehelper"], "分解助手", SALVAGE_ENABLE_TOOLTIP, "分解策略", self.general_widgets["salvagehelpermethod"]),
+                    (
+                        "toggle",
+                        self.general_widgets["enablereforgehelper"],
+                        "重铸助手",
+                        make_reforge_method_tooltip(self.general_widgets["maxreforge"].value()),
+                        "重铸策略",
+                        self.general_widgets["reforgehelpermethod"],
+                    ),
+                    ("toggle", self.general_widgets["enableupgradehelper"], "升级助手", UPGRADE_TOOLTIP),
+                    ("toggle", self.general_widgets["enableconverthelper"], "转化助手", CONVERT_TOOLTIP),
+                    ("toggle", self.general_widgets["enableabandonhelper"], "丢装助手", ABANDON_TOOLTIP),
+                ]
+            )
+        )
+        columns.addWidget(helper_section, 0, 1, alignment=Qt.AlignmentFlag.AlignTop)
+
+        advanced_section, advanced_layout = build_section(tr("高级", "Advanced"))
+        advanced_layout.addWidget(
+            build_option_grid(
+                [
+                    ("游戏分辨率", self.general_widgets["gameresolution"], GAME_RESOLUTION_TOOLTIP),
+                    ("游戏 Gamma", self.general_widgets["gamegamma"], GAME_GAMMA_TOOLTIP),
+                    ("Buff 续按阈值", self.general_widgets["buffpercent"], BUFF_PERCENT_TOOLTIP),
+                    ("动画速度预设", self.general_widgets["helperspeed"], HELPER_SPEED_PRESET_TOOLTIP),
+                    ("辅助鼠标速度", self.general_widgets["helpermousespeed"], HELPER_SPEED_TOOLTIP),
+                    ("辅助动画延迟", self.general_widgets["helperanimationdelay"], HELPER_SPEED_TOOLTIP),
+                    ("安全格", self.general_widgets["safezone"], SAFEZONE_TOOLTIP),
+                    ("最大重铸次数", self.general_widgets["maxreforge"]),
+                ]
+            )
+        )
+        advanced_layout.addWidget(self.general_widgets["safezonestatus"])
         self.general_widgets["maxreforge"].valueChanged.connect(self._sync_reforge_tooltip)
         self._sync_reforge_tooltip()
         self._sync_helper_speed_preset()
         self._connect_general_dynamic_controls()
         self._refresh_general_state()
-        summary_grid.addWidget(helper, 0, 1)
-        summary_grid.setColumnStretch(0, 1)
-        summary_grid.setColumnStretch(1, 1)
-        root.addLayout(summary_grid)
-
-        status_box = QGroupBox(tr("运行状态", "Runtime status"))
-        status_grid = QGridLayout(status_box)
-        self.general_widgets["statusrunner"] = QLabel()
-        self.general_widgets["statuslayout"] = QLabel()
-        self.general_widgets["statusconfig"] = QLabel(str(self.config_path))
-        self.general_widgets["statuslog"] = QLabel()
-        self.general_widgets["statusconfig"].setWordWrap(True)
-        self.general_widgets["statuslog"].setWordWrap(True)
-        status_grid.addWidget(QLabel(tr("运行器", "Runner")), 0, 0)
-        status_grid.addWidget(self.general_widgets["statusrunner"], 0, 1)
-        status_grid.addWidget(QLabel(tr("界面布局", "Layout")), 1, 0)
-        status_grid.addWidget(self.general_widgets["statuslayout"], 1, 1)
-        status_grid.addWidget(QLabel(tr("配置文件", "Config file")), 2, 0)
-        status_grid.addWidget(self.general_widgets["statusconfig"], 2, 1)
-        status_grid.addWidget(QLabel(tr("最近日志", "Latest log")), 3, 0)
-        status_grid.addWidget(self.general_widgets["statuslog"], 3, 1)
-        root.addWidget(status_box, 1)
+        align_section_heights(basic_section, helper_section)
+        columns.addWidget(advanced_section, 1, 1, alignment=Qt.AlignmentFlag.AlignTop)
+        root.addStretch(1)
         self._update_runtime_status_widgets()
         return self._wrap_scroll_tab(container)
 
@@ -879,12 +1629,14 @@ class MainWindow(QMainWindow):
 
     def _spin(self, minimum: int, maximum: int, value: int) -> QSpinBox:
         widget = QSpinBox()
+        widget.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
         widget.setRange(minimum, maximum)
         widget.setValue(value)
         return widget
 
     def _float_spin(self, minimum: float, maximum: float, value: float, decimals: int) -> QDoubleSpinBox:
         widget = QDoubleSpinBox()
+        widget.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
         widget.setRange(minimum, maximum)
         widget.setDecimals(decimals)
         widget.setSingleStep(0.01)
@@ -943,8 +1695,6 @@ class MainWindow(QMainWindow):
         self.general_widgets["enableabandonhelper"].toggled.connect(self._refresh_general_state)
         self.general_widgets["salvagehelpermethod"].currentIndexChanged.connect(self._refresh_general_state)
         self.general_widgets["safezone"].editingFinished.connect(self._refresh_general_state)
-        self.general_widgets["compactmode"].toggled.connect(self._apply_compact_mode)
-
     def _refresh_general_state(self, *_args) -> None:
         start_method = combo_value(self.general_widgets["startmethod"])
         helper_method = combo_value(self.general_widgets["oldsandhelpermethod"])
@@ -998,16 +1748,6 @@ class MainWindow(QMainWindow):
             status.setToolTip("请填写 1-60 之间的格子编号，使用英文逗号分隔，例如：1,2,3")
         status.show()
 
-    def _apply_compact_mode(self, *_args) -> None:
-        compact = self.general_widgets.get("compactmode")
-        enabled = bool(compact.isChecked()) if isinstance(compact, QCheckBox) else False
-        self.log.setVisible(not enabled)
-        self.activity_panel.setMaximumHeight(108 if enabled else 82)
-        self.activity_panel.setVisible(True)
-        width, height = COMPACT_WINDOW_SIZE if enabled else FULL_WINDOW_SIZE
-        self.resize(width, height)
-        self._update_runtime_status_widgets()
-
     def _append_log(self, text: str) -> None:
         message = text.rstrip()
         if not message:
@@ -1016,46 +1756,56 @@ class MainWindow(QMainWindow):
         self._last_log_line = message.splitlines()[-1]
         self._update_runtime_status_widgets()
 
+    def _set_log_expanded(self, expanded: bool) -> None:
+        self._log_expanded = expanded
+        self.log_toggle_button.blockSignals(True)
+        self.log_toggle_button.setChecked(expanded)
+        self.log_toggle_button.blockSignals(False)
+        self.log_toggle_button.setText(tr("收起日志", "Hide Log") if expanded else tr("展开日志", "Show Log"))
+        self.log_panel.setVisible(expanded)
+
+    def _update_path_label(self) -> None:
+        available = self.path_label.width()
+        if available <= 0:
+            available = TOOLBAR_PATH_MAX_WIDTH - 24
+        text = self.path_label.fontMetrics().elidedText(
+            self._path_text,
+            Qt.TextElideMode.ElideMiddle,
+            max(available - 12, 120),
+        )
+        self.path_label.setText(text)
+        self.path_label.setToolTip(self._path_text)
+
     def _update_runtime_status_widgets(self) -> None:
         running = self._runner_is_active()
-        compact_enabled = False
-        compact_widget = self.general_widgets.get("compactmode")
-        if isinstance(compact_widget, QCheckBox):
-            compact_enabled = compact_widget.isChecked()
         runner_text = tr("运行中", "Running") if running else tr("未运行", "Stopped")
-        layout_text = tr("紧凑布局", "Compact layout") if compact_enabled else tr("完整布局", "Full layout")
         latest_text = self._last_log_line
-        self.status_badge.setText(runner_text)
-        self.status_badge.setStyleSheet(
-            "QLabel#statusBadge {"
-            + (
-                "background: #dcfce7; color: #166534;"
-                if running
-                else "background: #e2e8f0; color: #475569;"
-            )
-            + "}"
+        self.status_dot.setProperty("running", running)
+        self.status_dot.style().unpolish(self.status_dot)
+        self.status_dot.style().polish(self.status_dot)
+        self.status_runner_label.setText(runner_text)
+        available = self.status_log_value.width()
+        if available <= 0:
+            available = 420
+        log_text = self.status_log_value.fontMetrics().elidedText(
+            latest_text,
+            Qt.TextElideMode.ElideRight,
+            max(available - 6, 120),
         )
-        self.activity_mode_label.setText(layout_text)
-        self.activity_runner_label.setText(f"{tr('运行器：', 'Runner: ')}{runner_text}")
-        self.activity_log_label.setText(f"{tr('最近日志：', 'Latest log: ')}{latest_text}")
-        self.activity_log_label.setToolTip(latest_text)
-        if "statusrunner" in self.general_widgets:
-            self.general_widgets["statusrunner"].setText(runner_text)
-        if "statuslayout" in self.general_widgets:
-            self.general_widgets["statuslayout"].setText(layout_text)
-        if "statusconfig" in self.general_widgets:
-            self.general_widgets["statusconfig"].setText(str(self.config_path))
-            self.general_widgets["statusconfig"].setToolTip(str(self.config_path))
-        if "statuslog" in self.general_widgets:
-            self.general_widgets["statuslog"].setText(latest_text)
-            self.general_widgets["statuslog"].setToolTip(latest_text)
+        self.status_log_value.setText(log_text)
+        self.status_log_value.setToolTip(latest_text)
+
+    def resizeEvent(self, event) -> None:
+        super().resizeEvent(event)
+        self._update_path_label()
+        self._update_runtime_status_widgets()
 
     def save_config(self, log_message: str = "已保存配置。") -> None:
         parser = configparser.ConfigParser(interpolation=None)
         parser.optionxform = str.lower
         parser["General"] = {
             "version": DEFAULT_VERSION,
-            "activatedprofile": str(self.general_widgets["activatedprofile"].value()),
+            "activatedprofile": str(combo_value(self.general_widgets["activatedprofile"])),
             "oldsandhelpermethod": str(combo_value(self.general_widgets["oldsandhelpermethod"])),
             "oldsandhelperhk": self.general_widgets["oldsandhelperhk"].text().strip(),
             "sendmode": str(combo_data(self.general_widgets["sendmode"])),
@@ -1090,7 +1840,7 @@ class MainWindow(QMainWindow):
             "helperanimationdelay": str(self.general_widgets["helperanimationdelay"].value()),
             "d3only": self._bool_text(self.general_widgets["d3only"]),
             "maxreforge": str(self.general_widgets["maxreforge"].value()),
-            "compactmode": self._bool_text(self.general_widgets["compactmode"]),
+            "compactmode": "0",
         }
 
         for tab in self.profile_tabs:
@@ -1129,8 +1879,11 @@ class MainWindow(QMainWindow):
             parser.write(handle)
         if log_message:
             self._append_log(log_message)
-        for index, tab in enumerate(self.profile_tabs, start=1):
-            self.tabs.setTabText(index, tab.widgets["name"].text().strip() or tab.section_name)
+        for item, tab in zip(self.profile_nav_items, self.profile_tabs):
+            title = tab.widgets["name"].text().strip() or tab.section_name
+            item.setText(title)
+            if hasattr(tab, "page_header") and hasattr(tab.page_header, "title_label"):
+                tab.page_header.title_label.setText(title)
 
     def start_runner(self) -> None:
         self._launch_runner(save_first=True, log_message="已启动运行器。")
