@@ -18,6 +18,14 @@ else
 fi
 rm -rf "${APPDIR}" "${DIST_DIR}/${APP_NAME}" "${ROOT_DIR}/build/${APP_NAME}.spec"
 
+if ! "${PYTHON_BIN}" -m pip --version >/dev/null 2>&1; then
+  "${PYTHON_BIN}" -m ensurepip --upgrade >/dev/null 2>&1 || true
+fi
+if ! "${PYTHON_BIN}" -m pip --version >/dev/null 2>&1; then
+  echo "Error: ${PYTHON_BIN} does not provide pip. Set PYTHON_BIN to a Python interpreter with pip." >&2
+  exit 1
+fi
+
 "${PYTHON_BIN}" -m pip install --upgrade pyinstaller
 
 "${PYTHON_BIN}" -m PyInstaller \

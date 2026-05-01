@@ -917,7 +917,9 @@ class MainWindow(QMainWindow):
         except Exception:
             pass
         self.process.terminate()
-        self.process.waitForFinished(3000)
+        if not self.process.waitForFinished(3000):
+            self.process.kill()
+            self.process.waitForFinished(1000)
         if log_message:
             self.log.appendPlainText(log_message)
         self.process = None

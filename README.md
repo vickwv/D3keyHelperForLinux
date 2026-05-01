@@ -1,89 +1,90 @@
 # D3keyHelperForLinux
 
+[![AppImage Build](https://github.com/vickwv/D3keyHelperForLinux/actions/workflows/build-appimage.yml/badge.svg)](https://github.com/vickwv/D3keyHelperForLinux/actions/workflows/build-appimage.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-`D3keyHelperForLinux` 是基于原项目 **D3keyHelper** 改造的 Linux 原生版本，面向 **Diablo III + Steam + Proton** 使用场景，目标是在 **Arch Linux / KDE / X11 / XWayland** 环境下，提供尽量接近原版 AHK 的战斗宏与助手体验。
+**Language:** English | [简体中文](./README.zh-CN.md)
 
-这个仓库是一个**可单独发布的独立项目**：源码、GUI、测试、打包脚本、截图资源和许可证都在当前目录内，不依赖父仓库。
+`D3keyHelperForLinux` is a native Linux port of the original **D3keyHelper** project, focused on **Diablo III running through Steam + Proton**. It provides combat macros, helper automation, a Qt GUI editor, AppImage packaging, and compatibility with the original `d3oldsand.ini` configuration format.
 
-## 致谢与许可证
+## Credits and license
 
-本项目基于原作者 **Weijie Huang** 的 **D3keyHelper** 移植而来。感谢原作者公开原始项目、配置格式和功能设计。
+This project is based on the original **D3keyHelper** by **Weijie Huang**. Thanks to the original author for publishing the project, its configuration format, and the feature design that made this port possible.
 
-本项目继续遵循 **MIT License**。发布、分发或二次修改时，请保留原作者版权声明与许可证文本，不要移除 `LICENSE` 中的内容。
+This repository continues to use the **MIT License**. If you redistribute or modify it, keep the original copyright notice and the license text in `LICENSE`.
 
-## 适用场景
+## Current target environment
 
-当前最推荐的使用环境：
+Recommended environment, in order:
 
-1. **Arch Linux / 其他 Linux 发行版**
-2. **Steam + Proton** 启动战网 / Diablo III
-3. **X11**，或 **Wayland 下运行 XWayland 游戏窗口**
-4. KDE 桌面下也支持一部分 Wayland 图像识别链路
+1. **Linux desktop running X11**
+2. **Wayland session with Diablo III running as an XWayland window**
+3. **Steam + Proton + Battle.net + Diablo III**
+4. **KDE Plasma** is supported especially well because the project includes a KDE-oriented screenshot path
 
-当前完整度排序：
+Current completeness:
 
-1. **X11 / XWayland：最完整、最稳定**
-2. **KDE Wayland + XWayland 游戏窗口：可用**
-3. **纯 Wayland 原生全链路：仍有限制**
+1. **X11 / XWayland:** best supported
+2. **KDE Wayland + XWayland game window:** usable
+3. **Pure native Wayland end-to-end control path:** still limited
 
-## 主要功能
+## Features
 
-### 战斗宏
+### Combat macro features
 
-1. 图形界面编辑 `d3oldsand.ini`
-2. 懒人模式 / 仅按住时 / 仅按一次
-3. 技能策略：
-   - 按住不放
-   - 连点
-   - 保持 Buff
-   - 按键触发
-4. 延迟、随机延迟、优先级、重复发送
-5. 单线程按键队列
-6. 强制站立、强制移动、药水辅助、保持药水 CD
-7. 快速暂停、智能暂停
-8. 快速切换配置
-9. 配置变更自动保存，运行器自动重启
+1. GUI editor for `d3oldsand.ini`
+2. Lazy toggle mode / hold-to-run mode / one-shot mode
+3. Skill actions:
+   - hold key
+   - repeated tapping
+   - keep buff active
+   - trigger-on-key
+4. Delay, randomized delay, priority, repeat count
+5. Single-thread skill queue
+6. Force stand still, force move, potion helper, potion cooldown helper
+7. Quick pause and smart pause
+8. Fast profile switching
+9. Auto-save config changes and auto-restart runner when needed
 
-### 一键助手
+### One-button helper features
 
-1. 赌博助手
-2. 拾取助手
-3. 分解助手
-4. 重铸助手
-5. 升级助手
-6. 转化助手
-7. 丢装 / 存仓助手
+1. Gamble helper
+2. Loot helper
+3. Salvage helper
+4. Reforge helper
+5. Upgrade rare items helper
+6. Convert materials helper
+7. Drop/store items helper
 
-### Linux / Proton 适配
+### Linux / Proton compatibility
 
-1. Steam/Proton 下的 Diablo III 窗口识别
-2. 对标题缺失、乱码标题的兼容
-3. 通过窗口类名和进程命令行识别 `Diablo III64.exe`
-4. safezone 兼容原版默认值 `61,62,63`
-5. 保留原版配置兼容项：`sendmode`、`enablesoundplay`、`compactmode`
+1. Diablo III window detection under Steam/Proton
+2. Handles blank or garbled window titles
+3. Falls back to process command line matching for `Diablo III64.exe`
+4. Supports the original safezone placeholder value `61,62,63`
+5. Preserves config compatibility keys such as `sendmode`, `enablesoundplay`, and `compactmode`
 
-## 界面截图
+## Screenshots
 
-### 主界面
+### Main window
 
 ![Main Window](./mainwindow.png)
 
-### 紧凑界面
+### Compact window
 
 ![Compact Window](./mainwindow_compact.png)
 
-### 配置说明图
+### Settings illustration
 
 ![Settings](./settings.png)
 
-### Safezone 编号示意
+### Safezone slot map
 
 ![Safezone](./safezone.png)
 
-## 快速开始
+## Quick start
 
-### 1. 安装依赖
+### 1. Install dependencies
 
 ```bash
 python -m venv .venv
@@ -91,122 +92,129 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-如果你是 Arch Linux，通常至少需要：
+On Arch Linux, a typical base setup is:
 
 ```bash
 sudo pacman -S python python-pip
 ```
 
-### 2. 生成默认配置
+### 2. Generate the default config
 
 ```bash
 python d3keyhelper_linux.py --init-config
 ```
 
-### 3. 打开 GUI
+### 3. Launch the GUI
 
 ```bash
 python d3keyhelper_linux.py --gui
 ```
 
-### 4. 或直接启动运行器
+### 4. Or launch the runner directly
 
 ```bash
 python d3keyhelper_linux.py
 ```
 
-## 常用命令
+## Common commands
 
 ```bash
-# 图形界面
+# GUI
 python d3keyhelper_linux.py --gui
 
-# 初始化配置
+# Create default config
 python d3keyhelper_linux.py --init-config
 
-# 列出配置
+# List profiles
 python d3keyhelper_linux.py --list-profiles
 
-# 指定配置启动
+# Launch a specific profile
 python d3keyhelper_linux.py --profile 配置1
 
-# 强制使用 KDE Wayland 截图后端
+# Force KDE Wayland capture backend
 python d3keyhelper_linux.py --capture-backend kde-wayland
 
-# 临时忽略 d3only，只对当前前台窗口发按键
+# Ignore d3only for the current run
 python d3keyhelper_linux.py --any-window
 ```
 
-## Steam / Proton 使用建议
+## Steam / Proton notes
 
-如果你是通过 **Steam -> Proton -> 战网 -> Diablo III** 启动游戏，建议优先这样使用：
+If you launch Diablo III through **Steam -> Proton -> Battle.net -> Diablo III**, the most reliable setup is:
 
-1. 游戏尽量跑在 **X11** 或 **XWayland** 窗口下
-2. GUI 里开启 `d3only`
-3. 助手热键优先用：
-   - 键盘按键
-   - 鼠标侧键
-   - 滚轮
-4. 如果窗口标题异常，当前版本也会尝试从 Proton 进程命令行识别游戏
+1. Run the game in **X11** or as an **XWayland** window
+2. Keep `d3only` enabled in the GUI
+3. Prefer helper hotkeys such as:
+   - keyboard keys
+   - mouse side buttons
+   - mouse wheel
+4. If the game window title is empty or broken, this project also matches the Proton process command line
 
-如果你曾经遇到中文标题识别问题，可以尝试为 Steam/Proton 设置统一 locale，例如：
+If you previously hit Chinese title detection issues, setting a consistent locale may help:
 
 ```bash
 LANG=zh_CN.UTF-8 %command%
 ```
 
-## Safezone 说明
+## Safezone behavior
 
-`safezone` 表示一键助手不会处理的背包格子。
+`safezone` defines inventory slots that helpers must not touch.
 
-格式是 **1-60 的格子编号，英文逗号分隔**，例如：
+Expected format:
 
 ```ini
 safezone=1,2,3,10
 ```
 
-特别说明：
-
-原版 AHK 默认使用：
+Special case:
 
 ```ini
 safezone=61,62,63
 ```
 
-这三个格子实际上并不存在，只是原作者用来提示 safezone 配置格式的**历史默认占位值**。当前 Linux GUI 已兼容这一行为，会显示为：
+Those three slot numbers do not actually exist. They were used by the original AHK project as a placeholder showing the expected format. This Linux port treats that value as:
 
-**未设置（沿用原版默认值）**
+**Not configured (legacy default)**
 
-不会再误报为格式错误。
+instead of reporting it as an invalid format.
 
-## AppImage 打包
+## AppImage packaging
 
-### 构建
+### Build locally
 
 ```bash
 ./build_appimage.sh
 ```
 
-### 产物路径
+### Output
 
 ```bash
 build/appimage/D3keyHelper-Linux-x86_64.AppImage
 ```
 
-### 运行
+### Run
 
 ```bash
 chmod +x build/appimage/D3keyHelper-Linux-x86_64.AppImage
 ./build/appimage/D3keyHelper-Linux-x86_64.AppImage
 ```
 
-## 测试
+## GitHub Actions AppImage builds
+
+This repository includes a GitHub Actions workflow that:
+
+1. runs the test suite
+2. builds the AppImage automatically
+3. uploads the AppImage as a workflow artifact
+4. attaches the AppImage to GitHub Releases when a tag like `v1.0.0` is pushed
+
+## Tests
 
 ```bash
 python -m unittest discover -s tests
 ```
 
-## 目录结构
+## Repository layout
 
 ```text
 .
@@ -217,6 +225,6 @@ python -m unittest discover -s tests
 ├── packaging/
 ├── tests/
 ├── LICENSE
-└── README.md
+├── README.md
+└── README.zh-CN.md
 ```
-
