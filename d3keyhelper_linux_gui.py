@@ -927,9 +927,7 @@ def tune_skill_widget(widget: QWidget, role: str) -> None:
         return
     widget.setMinimumHeight(FORM_CONTROL_HEIGHT)
     if role == "action":
-        # Strategy column stretches — let the widget expand to fill the cell
-        widget.setMinimumWidth(SKILL_ACTION_WIDTH)
-        widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        widget.setFixedWidth(SKILL_ACTION_WIDTH)
         return
     width = SKILL_NUMBER_WIDTH
     if role == "hotkey":
@@ -1101,7 +1099,6 @@ class ProfileTab(QWidget):
             Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
         )
         self.skill_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Fixed)
-        self.skill_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
         self.skill_table.verticalScrollBar().setEnabled(False)
         self.skill_table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.skill_table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -1154,7 +1151,7 @@ class ProfileTab(QWidget):
             skill_widgets.append(row)
         self.skill_table.setColumnWidth(0, 50)   # 槽位
         self.skill_table.setColumnWidth(1, SKILL_TEXT_WIDTH)    # 按键
-        # col 2 (策略) — Stretch, set by header resize mode
+        self.skill_table.setColumnWidth(2, SKILL_ACTION_WIDTH)  # 策略 (fixed)
         self.skill_table.setColumnWidth(3, SKILL_NUMBER_WIDTH)  # 间隔
         self.skill_table.setColumnWidth(4, SKILL_NUMBER_WIDTH)  # 延迟
         self.skill_table.setColumnWidth(5, 54)   # 随机
