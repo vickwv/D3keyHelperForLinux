@@ -7,7 +7,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import QProcess, QTimer, Qt
+from PySide6.QtCore import QEvent, QObject, QProcess, QTimer, Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QAbstractSpinBox,
@@ -223,6 +223,10 @@ QFrame#contentPanel {
 }
 QFrame#toolbarFrame {
     background: transparent;
+}
+QLabel#toolbarLabel {
+    color: #48566a;
+    font-size: 12px;
 }
 QLabel#sectionHint {
     color: #5d6978;
@@ -963,6 +967,37 @@ def build_runner_command(config_path: Path, profile: str) -> list[str]:
     return command
 
 
+# Column weight ratios (pixels at baseline window size — distributed proportionally)
+_SKILL_COL_WEIGHTS = [50, 68, 118, 60, 60, 54, 60, 60, 86, 72]
+_SKILL_COL_TOTAL = sum(_SKILL_COL_WEIGHTS)
+
+
+class _SkillColumnDistributor(QObject):
+    """Proportionally fills all skill table columns to the viewport width on resize."""
+
+    def __init__(self, table: QTableWidget) -> None:
+        super().__init__(table.viewport())
+        self._table = table
+        table.viewport().installEventFilter(self)
+        self._distribute()
+
+    def eventFilter(self, obj: QObject, event: QEvent) -> bool:
+        if event.type() == QEvent.Type.Resize:
+            self._distribute()
+        return False
+
+    def _distribute(self) -> None:
+        avail = self._table.viewport().width()
+        if avail < 200:
+            return
+        remainder = avail
+        for i, w in enumerate(_SKILL_COL_WEIGHTS[:-1]):
+            col_w = max(40, int(avail * w / _SKILL_COL_TOTAL))
+            self._table.setColumnWidth(i, col_w)
+            remainder -= col_w
+        self._table.setColumnWidth(len(_SKILL_COL_WEIGHTS) - 1, max(40, remainder))
+
+
 class ProfileTab(QWidget):
     def __init__(self, section_name: str, section: configparser.SectionProxy) -> None:
         super().__init__()
@@ -1105,6 +1140,7 @@ class ProfileTab(QWidget):
         for row_index in range(6):
             self.skill_table.setRowHeight(row_index, SKILL_TABLE_ROW_HEIGHT)
         self.skill_table.setFixedHeight(SKILL_TABLE_HEADER_HEIGHT + SKILL_TABLE_ROW_HEIGHT * 6 + 4)
+        self._col_distributor = _SkillColumnDistributor(self.skill_table)
 
         skill_widgets = []
         for index in range(1, 7):
@@ -1372,6 +1408,13 @@ class MainWindow(QMainWindow):
         stop_button.clicked.connect(self.stop_runner)
         toolbar.addWidget(self.path_label)
         toolbar.addStretch(1)
+        profile_label = QLabel(tr("激活配置:", "Profile:"))
+        profile_label.setObjectName("toolbarLabel")
+        self.toolbar_profile_combo = QComboBox()
+        self.toolbar_profile_combo.setFixedWidth(140)
+        self.toolbar_profile_combo.setToolTip(tr("当前激活配置", "Active profile"))
+        toolbar.addWidget(profile_label)
+        toolbar.addWidget(self.toolbar_profile_combo)
         toolbar.addWidget(reload_button)
         toolbar.addWidget(save_button)
         toolbar.addWidget(start_button)
@@ -1482,6 +1525,44 @@ class MainWindow(QMainWindow):
         self._connect_config_change_watchers()
         self._suspend_config_watch = False
         self._update_runtime_status_widgets()
+        self._sync_toolbar_profile_combo(profile_names)
+
+    def _sync_toolbar_profile_combo(self, profile_names: list[str]) -> None:
+        """Populate toolbar profile combo and wire it to the General tab's activatedprofile widget."""
+        general_combo = self.general_widgets.get("activatedprofile")
+        combo = self.toolbar_profile_combo
+        combo.blockSignals(True)
+        combo.clear()
+        count = max(len(profile_names), 1)
+        for index in range(1, count + 1):
+            name = profile_names[index - 1] if index <= len(profile_names) else f"配置{index}"
+            combo.addItem(f"{index} - {name}", index)
+        if general_combo is not None:
+            set_combo_value(combo, combo_value(general_combo))
+        combo.blockSignals(False)
+        if general_combo is not None:
+            if getattr(self, "_toolbar_profile_synced", False):
+                try:
+                    combo.currentIndexChanged.disconnect()
+                except Exception:
+                    pass
+                try:
+                    general_combo.currentIndexChanged.disconnect(self._on_general_profile_changed)
+                except Exception:
+                    pass
+            self._toolbar_profile_synced = True
+            combo.currentIndexChanged.connect(
+                lambda _: set_combo_value(general_combo, combo_value(combo))
+            )
+            general_combo.currentIndexChanged.connect(self._on_general_profile_changed)
+
+    def _on_general_profile_changed(self) -> None:
+        general_combo = self.general_widgets.get("activatedprofile")
+        if general_combo is None:
+            return
+        self.toolbar_profile_combo.blockSignals(True)
+        set_combo_value(self.toolbar_profile_combo, combo_value(general_combo))
+        self.toolbar_profile_combo.blockSignals(False)
 
     def _build_general_tab(self, section: configparser.SectionProxy, profile_names: list[str]) -> QWidget:
         container = QWidget()
