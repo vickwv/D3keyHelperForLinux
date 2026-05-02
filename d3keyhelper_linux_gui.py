@@ -311,7 +311,7 @@ QListWidget#navigationList {
     outline: none;
 }
 QListWidget#navigationList::item {
-    padding: 8px 12px;
+    padding: 4px 12px;
     margin: 1px 0;
     border-radius: 6px;
     color: #333333;
@@ -514,8 +514,8 @@ FORM_LABEL_WIDTH = 116
 FORM_FIELD_MIN_WIDTH = 120
 FORM_FIELD_MAX_WIDTH = 180
 FORM_CONTROL_HEIGHT = 26
-TOGGLE_TEXT_WIDTH = 150
-INLINE_LABEL_WIDTH = 76
+TOGGLE_TEXT_WIDTH = 180
+INLINE_LABEL_WIDTH = 110
 
 TOOLBAR_PATH_MIN_WIDTH = 80
 TOOLBAR_PATH_MAX_WIDTH = 160
@@ -1181,7 +1181,7 @@ def build_runner_command(config_path: Path, profile: str) -> list[str]:
 
 
 # Column weight ratios (pixels at baseline window size — distributed proportionally)
-_SKILL_COL_WEIGHTS = [50, 68, 118, 60, 60, 54, 60, 60, 86, 72]
+_SKILL_COL_WEIGHTS = [66, 68, 118, 60, 60, 54, 60, 60, 86, 72]
 _SKILL_COL_TOTAL = sum(_SKILL_COL_WEIGHTS)
 
 
@@ -1400,7 +1400,7 @@ class ProfileTab(QWidget):
             self.skill_table.setCellWidget(index - 1, 8, row["repeatinterval"])
             self.skill_table.setCellWidget(index - 1, 9, row["triggerbutton"])
             skill_widgets.append(row)
-        self.skill_table.setColumnWidth(0, 50)   # 槽位
+        self.skill_table.setColumnWidth(0, 72)   # 槽位
         self.skill_table.setColumnWidth(1, SKILL_TEXT_WIDTH)    # 按键
         self.skill_table.setColumnWidth(2, SKILL_ACTION_WIDTH)  # 策略 (fixed)
         self.skill_table.setColumnWidth(3, SKILL_NUMBER_WIDTH)  # 间隔
@@ -1438,6 +1438,7 @@ class ProfileTab(QWidget):
     def _spin(self, minimum: int, maximum: int, value: int) -> SpinBox:
         widget = SpinBox()
         widget.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
+        widget.setSymbolVisible(False)
         widget.setRange(minimum, maximum)
         widget.setValue(value)
         return widget
@@ -2093,6 +2094,7 @@ class MainWindow(QMainWindow):
     def _spin(self, minimum: int, maximum: int, value: int) -> SpinBox:
         widget = SpinBox()
         widget.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
+        widget.setSymbolVisible(False)
         widget.setRange(minimum, maximum)
         widget.setValue(value)
         return widget
@@ -2100,6 +2102,7 @@ class MainWindow(QMainWindow):
     def _float_spin(self, minimum: float, maximum: float, value: float, decimals: int) -> DoubleSpinBox:
         widget = DoubleSpinBox()
         widget.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
+        widget.setSymbolVisible(False)
         widget.setRange(minimum, maximum)
         widget.setDecimals(decimals)
         widget.setSingleStep(0.01)
