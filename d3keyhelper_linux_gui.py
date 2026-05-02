@@ -582,8 +582,8 @@ FORM_CONTROL_HEIGHT = 26
 TOGGLE_TEXT_WIDTH = 150
 INLINE_LABEL_WIDTH = 76
 
-TOOLBAR_PATH_MIN_WIDTH = 220
-TOOLBAR_PATH_MAX_WIDTH = 320
+TOOLBAR_PATH_MIN_WIDTH = 80
+TOOLBAR_PATH_MAX_WIDTH = 160
 NAV_WIDTH = 150
 SKILL_TEXT_WIDTH = 68
 SKILL_TRIGGER_WIDTH = 72
@@ -1685,6 +1685,7 @@ class MainWindow(QMainWindow):
             self.language_combo.addItem(text, data)
         set_combo_value(self.language_combo, UI_LANGUAGE)
         self.language_combo.currentIndexChanged.connect(self._apply_language_selection)
+        toolbar.addWidget(self.language_combo)
         toolbar.addWidget(self.path_label)
         toolbar.addStretch(1)
         profile_label = QLabel(tr("激活配置:", "Profile:"))
@@ -1695,7 +1696,6 @@ class MainWindow(QMainWindow):
         self.toolbar_profile_combo.setToolTip(tr("当前激活配置", "Active profile"))
         toolbar.addWidget(profile_label)
         toolbar.addWidget(self.toolbar_profile_combo)
-        toolbar.addWidget(self.language_combo)
         toolbar.addWidget(reload_button)
         toolbar.addWidget(save_button)
         toolbar.addWidget(start_button)
