@@ -185,23 +185,13 @@ QComboBox::drop-down {
     border: none;
     subcontrol-origin: padding;
     subcontrol-position: top right;
-    width: 24px;
-    background: #eef2f7;
-    border-left: 1px solid #d8dee7;
-    border-top-right-radius: 5px;
-    border-bottom-right-radius: 5px;
+    width: 22px;
+    background: transparent;
 }
 QComboBox::drop-down:hover {
-    background: #e5ebf4;
-}
-QComboBox::down-arrow {
-    image: none;
-    width: 0;
-    height: 0;
-    border-left: 4px solid transparent;
-    border-right: 4px solid transparent;
-    border-top: 5px solid #526173;
-    margin-right: 8px;
+    background: #eef2f7;
+    border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
 }
 QComboBox QAbstractItemView {
     background: #ffffff;
