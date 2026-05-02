@@ -5,93 +5,42 @@
 
 **语言:** [English](./README.md) | 简体中文
 
-`D3keyHelperForLinux` 是给 **Linux 下玩 Diablo III** 的玩家使用的按键助手。它把原版 **[D3keyHelper](https://github.com/WeijieH/D3keyHelper)** 的战斗宏和一键整理功能移植到 Linux，并提供一个新的 Qt 图形界面，用来编辑配置、启动/停止运行器、切换配置和查看运行状态。
+`D3keyHelperForLinux` 是原版 **[D3keyHelper](https://github.com/WeijieH/D3keyHelper)** 的 Linux 移植版，用于在 **Diablo III** 中使用辅助热键和可重复的战斗按键动作。项目尽量保持原版 `d3oldsand.ini` 配置兼容，同时加入 Linux 原生按键发送、窗口识别、截图处理和 Qt 图形界面。
 
-这个项目主要解决三个问题：
-
-1. 在 **Steam + Proton + Battle.net + Diablo III** 环境下继续使用 D3keyHelper 的宏配置。
-2. 用 Linux 原生方式处理按键发送、鼠标操作、窗口识别和背包区域截图。
-3. 用 AppImage 发布，尽量减少手动配置 Python 环境的成本。
-
-它不是通用自动化工具，也不是游戏修改器；它只围绕 Diablo III 的按键循环、辅助操作和原版 `d3oldsand.ini` 配置兼容来设计。
-
-## v1.0.1 重点
-
-`v1.0.1` 是一次以界面为主的大改版：
-
-1. 重新设计主界面布局，减少拥挤的表单堆叠。
-2. 增加左侧导航、运行状态区域和更清晰的日志面板。
-3. 优化配置页、技能表格、工具栏和活动配置显示。
-4. 重做应用图标，改为暗黑风格的 `D3` 主视觉。
-5. 优化 AppImage 打包，减少不必要的 Qt 模块依赖。
+本项目只围绕 Diablo III 的按键循环、城镇助手、背包处理流程和原版配置兼容来设计。它不是通用自动化框架，也不是游戏修改器。
 
 ## 致谢与许可证
 
-本项目基于原作者 **Weijie Huang** 的 **D3keyHelper** 移植而来。感谢原作者公开原始项目、配置格式和功能设计。
+本项目基于原作者 **Weijie Huang** 的 **D3keyHelper** 移植而来：
 
-本项目继续遵循 **MIT License**。发布、分发或二次修改时，请保留原作者版权声明与 `LICENSE` 中的许可证文本。
+<https://github.com/WeijieH/D3keyHelper>
 
-## 适用环境
+感谢原作者公开原始项目、配置格式和功能设计，这些内容让 Linux 移植成为可能。
 
-当前推荐环境，按优先级排序：
+本项目继续遵循 **MIT License**。发布、分发或二次修改时，请保留原作者版权声明与 [LICENSE](./LICENSE) 中的许可证文本。
+
+## 当前状态
+
+推荐环境：
 
 1. **X11 Linux 桌面**
 2. **Wayland 会话下，以 XWayland 窗口运行 Diablo III**
 3. **Steam + Proton + Battle.net + Diablo III**
-4. **KDE Plasma** 兼容性相对更好，因为项目内置了 KDE 侧截图路径
+4. **KDE Plasma**，尤其是使用 KDE 侧截图路径时
 
-当前完整度：
+支持完整度：
 
 1. **X11 / XWayland：最完整、最稳定**
 2. **KDE Wayland + XWayland 游戏窗口：可用**
 3. **纯 Wayland 原生全链路：仍有限制**
 
-## 功能概览
+近期项目重点：
 
-### 战斗宏运行器
-
-运行器负责在游戏中执行按键循环和辅助逻辑。配置仍然保存为原版兼容的 `d3oldsand.ini`。
-
-1. 支持懒人模式、按住运行、单次触发。
-2. 支持 6 个技能位的独立策略：
-   - 按住不放
-   - 连点
-   - 保持 Buff
-   - 按键触发
-3. 支持延迟、随机延迟、优先级、重复发送。
-4. 支持强制站立、强制移动、药水辅助、保持药水 CD。
-5. 支持快速暂停、智能暂停和快速切换配置。
-6. 配置变更后自动保存，运行中修改关键配置时自动重启运行器。
-
-### 图形界面
-
-GUI 是当前版本的主要入口，用来替代手动编辑 ini。
-
-1. 以分区表单编辑通用选项、配置页和技能策略。
-2. 左侧导航显示通用页和所有配置页。
-3. 顶部工具栏显示当前活动配置，并提供启动/停止运行器入口。
-4. 底部日志和状态栏显示配置路径、运行状态和最近操作。
-5. 保留原版配置字段，尽量避免破坏已有配置。
-
-### 一键助手
-
-这些功能主要面向城镇整理、背包处理和批量材料操作：
-
-1. 赌博助手
-2. 拾取助手
-3. 分解助手
-4. 重铸助手
-5. 升级稀有物品助手
-6. 转化材料助手
-7. 丢装 / 存仓助手
-
-### Linux / Proton 兼容
-
-1. 支持 Steam/Proton 下的 Diablo III 窗口识别
-2. 兼容空标题、乱码标题
-3. 可通过进程命令行识别 `Diablo III64.exe`
-4. 兼容原版 safezone 默认占位值 `61,62,63`
-5. 保留原版配置兼容项：`sendmode`、`enablesoundplay`、`compactmode`
+1. Qt GUI 支持配置编辑、运行器控制、语言切换和运行日志。
+2. 刷新 Fluent 风格界面、左侧导航、配置页和应用图标。
+3. Linux 原生按键发送、鼠标操作、窗口匹配和截图后端。
+4. 兼容原版 `d3oldsand.ini` 配置读取与保存。
+5. 支持 AppImage 打包和 GitHub Actions 自动构建。
 
 ## 界面截图
 
@@ -125,7 +74,7 @@ sudo pacman -S python python-pip
 python d3keyhelper_linux.py --init-config
 ```
 
-默认配置文件路径现在是：
+默认配置文件路径：
 
 ```bash
 ~/.config/d3helperforlinux/d3oldsand.ini
@@ -142,6 +91,8 @@ $XDG_CONFIG_HOME/d3helperforlinux/d3oldsand.ini
 ```bash
 python d3keyhelper_linux.py --gui
 ```
+
+GUI 是推荐入口，可以编辑通用选项、配置页、技能策略、助手设置和运行器状态，不需要手动改 ini。
 
 GUI 首次启动会检测当前系统语言：
 
@@ -195,17 +146,62 @@ python d3keyhelper_linux.py --capture-backend kde-wayland
 python d3keyhelper_linux.py --any-window
 ```
 
+## 功能
+
+### 战斗宏运行器
+
+运行器负责在游戏中执行按键循环和辅助逻辑。配置保存为原版兼容的 `d3oldsand.ini`。
+
+1. 支持懒人模式、按住运行、单次触发。
+2. 支持 6 个技能位的独立策略：
+   - 按住不放
+   - 连点
+   - 保持 Buff
+   - 按键触发
+3. 支持延迟、随机延迟、优先级、重复发送。
+4. 支持强制站立、强制移动、药水辅助、保持药水 CD。
+5. 支持快速暂停、智能暂停和快速切换配置。
+6. 配置变更后自动保存，运行中修改关键配置时自动重启运行器。
+
+### 图形界面
+
+1. 以结构化表单编辑通用选项、配置页和技能策略。
+2. 左侧导航显示通用页和所有配置页。
+3. 顶部工具栏显示当前活动配置、语言切换和启动/停止运行器入口。
+4. 底部状态和日志区域显示配置路径、运行状态和最近操作。
+5. 保留原版配置字段，尽量避免破坏已有配置。
+
+### 一键助手
+
+这些功能主要面向城镇整理、背包处理和批量材料操作：
+
+1. 赌博助手
+2. 拾取助手
+3. 分解助手
+4. 重铸助手
+5. 升级稀有物品助手
+6. 转化材料助手
+7. 丢装 / 存仓助手
+
+### Linux / Proton 兼容
+
+1. 支持 Steam/Proton 下的 Diablo III 窗口识别。
+2. 兼容空标题、乱码标题。
+3. 可通过进程命令行识别 `Diablo III64.exe`。
+4. 兼容原版 safezone 默认占位值 `61,62,63`。
+5. 保留原版配置兼容项：`sendmode`、`enablesoundplay`、`compactmode`。
+
 ## Steam / Proton 使用建议
 
 如果你是通过 **Steam -> Proton -> 战网 -> Diablo III** 启动游戏，最推荐的方式是：
 
-1. 尽量让游戏跑在 **X11** 或 **XWayland** 窗口里
-2. 在 GUI 里保持 `d3only` 开启
+1. 尽量让游戏跑在 **X11** 或 **XWayland** 窗口里。
+2. 在 GUI 里保持 `d3only` 开启。
 3. 助手热键优先使用：
    - 键盘按键
    - 鼠标侧键
    - 滚轮
-4. 如果游戏窗口标题为空或乱码，项目也会回退到 Proton 进程命令行识别
+4. 如果游戏窗口标题为空或乱码，项目也会回退到 Proton 进程命令行识别。
 
 如果你曾经遇到中文标题识别问题，可以尝试为游戏统一 locale：
 
@@ -263,7 +259,9 @@ chmod +x build/appimage/D3keyHelper-Linux-x86_64.AppImage
 1. 运行测试
 2. 构建 AppImage
 3. 上传 AppImage 作为 workflow artifact
-4. 当推送 `v1.0.0` 这类 tag 时，把 AppImage 附加到 GitHub Release
+4. 当推送 `v1.0.5` 这类 tag 时，把 AppImage 附加到 GitHub Release
+
+发布说明保存在 [.github/release-notes](./.github/release-notes) 目录。
 
 ## 测试
 

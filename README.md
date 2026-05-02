@@ -5,105 +5,54 @@
 
 **Language:** English | [简体中文](./README.zh-CN.md)
 
-`D3keyHelperForLinux` is a key helper for playing **Diablo III on Linux**. It ports the combat macro runner and one-button helper workflows from the original **[D3keyHelper](https://github.com/WeijieH/D3keyHelper)** project, then adds a new Qt GUI for editing profiles, starting and stopping the runner, switching active configs, and watching runtime status.
+`D3keyHelperForLinux` is a Linux port of the original **[D3keyHelper](https://github.com/WeijieH/D3keyHelper)** project for playing **Diablo III** with helper hotkeys and repeatable combat actions. It keeps the original `d3oldsand.ini`-style configuration compatible where possible, then adds Linux-native input, window detection, screenshot handling, and a Qt GUI.
 
-The project focuses on three practical goals:
+This project is scoped to Diablo III key loops, town helpers, inventory workflows, and compatibility with the original configuration format. It is not a general automation framework or a game modification tool.
 
-1. Keep existing D3keyHelper-style macro configs usable under **Steam + Proton + Battle.net + Diablo III**.
-2. Handle key sending, mouse actions, window detection, and inventory screenshots through Linux-native code.
-3. Ship as an AppImage so users do not have to manage a Python environment manually.
+## Credits And License
 
-It is not a general automation framework or a game modification tool. It is scoped around Diablo III key loops, helper actions, and compatibility with the original `d3oldsand.ini` format.
+This project is based on the original **D3keyHelper** by **Weijie Huang**:
 
-## v1.0.1 highlights
+<https://github.com/WeijieH/D3keyHelper>
 
-`v1.0.1` is primarily a major UI refresh:
+Thanks to the original author for publishing the project, its configuration format, and the feature design that made this Linux port possible.
 
-1. Redesigned the main window layout to reduce dense, stacked forms.
-2. Added left-side navigation, a clearer runtime status area, and a cleaner log panel.
-3. Improved profile pages, skill tables, toolbar behavior, and active profile display.
-4. Reworked the app icon around a dark Diablo-style `D3` mark.
-5. Trimmed AppImage packaging so unrelated Qt modules are no longer bundled.
+This repository continues to use the **MIT License**. If you redistribute or modify it, keep the original copyright notice and the license text in [LICENSE](./LICENSE).
 
-## Credits and license
+## Current Status
 
-This project is based on the original **D3keyHelper** by **Weijie Huang**. Thanks to the original author for publishing the project, its configuration format, and the feature design that made this port possible.
-
-This repository continues to use the **MIT License**. If you redistribute or modify it, keep the original copyright notice and the license text in `LICENSE`.
-
-## Current target environment
-
-Recommended environment, in order:
+Recommended environment:
 
 1. **Linux desktop running X11**
 2. **Wayland session with Diablo III running as an XWayland window**
 3. **Steam + Proton + Battle.net + Diablo III**
-4. **KDE Plasma** is supported especially well because the project includes a KDE-oriented screenshot path
+4. **KDE Plasma**, especially when using the KDE-oriented screenshot path
 
-Current completeness:
+Support level:
 
 1. **X11 / XWayland:** best supported
 2. **KDE Wayland + XWayland game window:** usable
 3. **Pure native Wayland end-to-end control path:** still limited
 
-## Feature Overview
+Recent project highlights:
 
-### Combat macro runner
-
-The runner executes key loops and helper logic in game. Configuration is still saved in the original-compatible `d3oldsand.ini` format.
-
-1. Supports lazy toggle mode, hold-to-run mode, and one-shot mode.
-2. Supports independent actions for six skill slots:
-   - hold key
-   - repeated tapping
-   - keep buff active
-   - trigger-on-key
-3. Supports delay, randomized delay, priority, and repeat count.
-4. Supports force stand still, force move, potion helper, and potion cooldown helper.
-5. Supports quick pause, smart pause, and fast profile switching.
-6. Auto-saves config changes and restarts the runner when a live change requires it.
-
-### Graphical interface
-
-The GUI is the main entry point in the current version and replaces most manual ini editing.
-
-1. Edits general options, profile settings, and skill strategies through structured forms.
-2. Shows the general page and all profiles in left-side navigation.
-3. Shows the active profile in the top toolbar and provides runner start/stop controls.
-4. Shows config path, runtime state, and recent messages in the bottom status/log area.
-5. Preserves original config fields where possible to avoid breaking existing setups.
-
-### One-button helpers
-
-These helpers target town workflows, inventory cleanup, and batch material operations:
-
-1. Gamble helper
-2. Loot helper
-3. Salvage helper
-4. Reforge helper
-5. Upgrade rare items helper
-6. Convert materials helper
-7. Drop/store items helper
-
-### Linux / Proton compatibility
-
-1. Diablo III window detection under Steam/Proton
-2. Handles blank or garbled window titles
-3. Falls back to process command line matching for `Diablo III64.exe`
-4. Supports the original safezone placeholder value `61,62,63`
-5. Preserves config compatibility keys such as `sendmode`, `enablesoundplay`, and `compactmode`
+1. Qt GUI for profile editing, runner control, language switching, and runtime logs.
+2. Refreshed Fluent-style layout, sidebar navigation, profile pages, and app icon.
+3. Linux-native key sending, mouse actions, window matching, and screenshot backends.
+4. Original-compatible `d3oldsand.ini` config loading and saving.
+5. AppImage packaging and GitHub Actions builds.
 
 ## Screenshots
 
-### Main window
+### Main Window
 
 ![Main Window](./mainwindow.png)
 
-### Safezone slot map
+### Safezone Slot Map
 
 ![Safezone](./safezone.png)
 
-## Quick start
+## Quick Start
 
 ### 1. Install dependencies
 
@@ -125,7 +74,7 @@ sudo pacman -S python python-pip
 python d3keyhelper_linux.py --init-config
 ```
 
-The default config path is:
+Default config path:
 
 ```bash
 ~/.config/d3helperforlinux/d3oldsand.ini
@@ -143,14 +92,16 @@ $XDG_CONFIG_HOME/d3helperforlinux/d3oldsand.ini
 python d3keyhelper_linux.py --gui
 ```
 
-On first launch, the GUI detects the current system language:
+The GUI is the recommended entry point. It edits general options, profile settings, skill strategies, helper settings, and runtime controls without requiring manual ini edits.
+
+On first launch, the GUI detects the system language:
 
 1. `en*` uses English
 2. `zh_TW` / `zh_HK` / `zh-Hant` uses Traditional Chinese
 3. `zh*` uses Simplified Chinese
 4. Other languages fall back to Simplified Chinese
 
-You can also switch manually from the compact language selector in the top toolbar, shown as `简 / EN / 繁`. Manual selection is saved to `d3oldsand.ini` and takes priority on later launches.
+You can switch manually from the compact language selector in the top toolbar, shown as `简 / EN / 繁`. Manual selection is saved to `d3oldsand.ini` and takes priority on later launches.
 
 For temporary override, set `D3HELPER_LANG` before launch:
 
@@ -173,7 +124,7 @@ Traditional Chinese aliases such as `zh-hant`, `zh_HK`, `tw`, and `hk` are also 
 python d3keyhelper_linux.py
 ```
 
-## Common commands
+## Common Commands
 
 ```bash
 # GUI
@@ -195,17 +146,62 @@ python d3keyhelper_linux.py --capture-backend kde-wayland
 python d3keyhelper_linux.py --any-window
 ```
 
-## Steam / Proton notes
+## Features
+
+### Combat Macro Runner
+
+The runner executes key loops and helper logic in game. Configuration is saved in the original-compatible `d3oldsand.ini` format.
+
+1. Lazy toggle mode, hold-to-run mode, and one-shot mode.
+2. Independent actions for six skill slots:
+   - hold key
+   - repeated tapping
+   - keep buff active
+   - trigger-on-key
+3. Delay, randomized delay, priority, and repeat count.
+4. Force stand still, force move, potion helper, and potion cooldown helper.
+5. Quick pause, smart pause, and fast profile switching.
+6. Auto-save config changes and restart the runner when a live change requires it.
+
+### Graphical Interface
+
+1. Structured forms for general options, profile settings, and skill strategies.
+2. Left-side navigation for the general page and all profiles.
+3. Top toolbar for active profile display, language switching, and runner start/stop controls.
+4. Bottom status and log area for config path, runtime state, and recent messages.
+5. Preserves original config fields where possible to avoid breaking existing setups.
+
+### One-Button Helpers
+
+These helpers target town workflows, inventory cleanup, and batch material operations:
+
+1. Gamble helper
+2. Loot helper
+3. Salvage helper
+4. Reforge helper
+5. Upgrade rare items helper
+6. Convert materials helper
+7. Drop/store items helper
+
+### Linux / Proton Compatibility
+
+1. Diablo III window detection under Steam/Proton.
+2. Handles blank or garbled window titles.
+3. Falls back to process command line matching for `Diablo III64.exe`.
+4. Supports the original safezone placeholder value `61,62,63`.
+5. Preserves config compatibility keys such as `sendmode`, `enablesoundplay`, and `compactmode`.
+
+## Steam / Proton Notes
 
 If you launch Diablo III through **Steam -> Proton -> Battle.net -> Diablo III**, the most reliable setup is:
 
-1. Run the game in **X11** or as an **XWayland** window
-2. Keep `d3only` enabled in the GUI
+1. Run the game in **X11** or as an **XWayland** window.
+2. Keep `d3only` enabled in the GUI.
 3. Prefer helper hotkeys such as:
    - keyboard keys
    - mouse side buttons
    - mouse wheel
-4. If the game window title is empty or broken, this project also matches the Proton process command line
+4. If the game window title is empty or broken, this project also matches the Proton process command line.
 
 If you previously hit Chinese title detection issues, setting a consistent locale may help:
 
@@ -213,7 +209,7 @@ If you previously hit Chinese title detection issues, setting a consistent local
 LANG=zh_CN.UTF-8 %command%
 ```
 
-## Safezone behavior
+## Safezone Behavior
 
 `safezone` defines inventory slots that helpers must not touch.
 
@@ -235,7 +231,7 @@ Those three slot numbers do not actually exist. They were used by the original A
 
 instead of reporting it as an invalid format.
 
-## AppImage packaging
+## AppImage Packaging
 
 ### Build locally
 
@@ -256,14 +252,16 @@ chmod +x build/appimage/D3keyHelper-Linux-x86_64.AppImage
 ./build/appimage/D3keyHelper-Linux-x86_64.AppImage
 ```
 
-## GitHub Actions AppImage builds
+## GitHub Actions Builds
 
 This repository includes a GitHub Actions workflow that:
 
 1. runs the test suite
 2. builds the AppImage automatically
 3. uploads the AppImage as a workflow artifact
-4. attaches the AppImage to GitHub Releases when a tag like `v1.0.0` is pushed
+4. attaches the AppImage to GitHub Releases when a tag like `v1.0.5` is pushed
+
+Release notes are stored under [.github/release-notes](./.github/release-notes).
 
 ## Tests
 
@@ -271,7 +269,7 @@ This repository includes a GitHub Actions workflow that:
 python -m unittest discover -s tests
 ```
 
-## Repository layout
+## Repository Layout
 
 ```text
 .
