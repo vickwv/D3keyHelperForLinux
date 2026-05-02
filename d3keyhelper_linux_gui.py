@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import configparser
+import locale
 import os
 import subprocess
 import sys
@@ -52,15 +53,56 @@ except ImportError:
 
 
 UI_LANGUAGE_ENV = "D3HELPER_LANG"
+LANGUAGE_ITEMS = [("zh", "简体中文"), ("en", "English"), ("zh_TW", "繁體中文")]
+
+
+def normalize_ui_language(value: str | None) -> str | None:
+    normalized = (value or "").strip().lower().replace(".", "_")
+    if not normalized:
+        return None
+    if normalized.startswith("en"):
+        return "en"
+    if normalized in {"zh_tw", "zh-tw", "zh_hk", "zh-hk", "zh_hant", "zh-hant", "tw", "hk", "traditional"}:
+        return "zh_TW"
+    if normalized.startswith("zh"):
+        return "zh"
+    return None
 
 
 def resolve_ui_language() -> str:
-    value = os.environ.get(UI_LANGUAGE_ENV, "").strip().lower()
-    if value.startswith("en"):
-        return "en"
-    if value in {"tw", "hk", "zh-tw", "zh_tw", "zh-hk", "zh_hk", "zh-hant", "zh_hant", "traditional"}:
-        return "zh_TW"
+    env_language = normalize_ui_language(os.environ.get(UI_LANGUAGE_ENV))
+    if env_language is not None:
+        return env_language
+    candidates = [
+        os.environ.get("LC_ALL"),
+        os.environ.get("LC_MESSAGES"),
+        os.environ.get("LANG"),
+        locale.getlocale()[0],
+    ]
+    for candidate in candidates:
+        detected = normalize_ui_language(candidate)
+        if detected is not None:
+            return detected
     return "zh"
+
+
+def set_ui_language(language: str) -> str:
+    global UI_LANGUAGE
+    UI_LANGUAGE = normalize_ui_language(language) or "zh"
+    return UI_LANGUAGE
+
+
+def configured_ui_language(config_path: Path) -> str | None:
+    if not config_path.exists():
+        return None
+    try:
+        parser = load_parser(config_path)
+    except Exception:
+        return None
+    for section_name in parser.sections():
+        if section_name.lower() == "general":
+            return normalize_ui_language(parser[section_name].get("language", ""))
+    return None
 
 
 UI_LANGUAGE = resolve_ui_language()
@@ -124,6 +166,7 @@ EN_TEXT = {
     "暂停动作": "Pause action",
     "暂停时长": "Pause duration",
     "当前激活配置": "Active profile",
+    "界面语言": "Interface language",
     "战斗宏启动方式": "Macro start method",
     "战斗宏启动热键": "Macro start hotkey",
     "助手启动方式": "Helper start method",
@@ -1577,10 +1620,12 @@ class MainWindow(QMainWindow):
         self.config_path = config_path
         if not self.config_path.exists():
             create_default_config(self.config_path)
+        set_ui_language(configured_ui_language(self.config_path) or resolve_ui_language())
         self.process: Optional[QProcess] = None
         self.general_widgets: dict[str, object] = {}
         self.profile_tabs: list[ProfileTab] = []
         self.profile_nav_items: list[QListWidgetItem] = []
+        self._toolbar_profile_synced = False
         self._last_log_line = tr("尚无日志。", "No log messages yet.")
         self._path_text = str(self.config_path)
         self._log_expanded = False
@@ -1589,17 +1634,20 @@ class MainWindow(QMainWindow):
         self._config_apply_timer.setSingleShot(True)
         self._config_apply_timer.setInterval(500)
         self._config_apply_timer.timeout.connect(self._apply_live_config_change)
-        self.navigation = QListWidget()
-        self.page_stack = QStackedWidget()
-        self.log = QPlainTextEdit()
-        self.log.setReadOnly(True)
-        self.log.setMaximumBlockCount(500)
+        self._init_shell_widgets()
         self.setWindowTitle("D3keyHelper Linux")
         self.setStyleSheet(APP_STYLE_SHEET)
         self.resize(*FULL_WINDOW_SIZE)
         self.setMinimumSize(960, 620)
         self._build_shell()
         self.reload_config()
+
+    def _init_shell_widgets(self) -> None:
+        self.navigation = QListWidget()
+        self.page_stack = QStackedWidget()
+        self.log = QPlainTextEdit()
+        self.log.setReadOnly(True)
+        self.log.setMaximumBlockCount(500)
 
     def _build_shell(self) -> None:
         central = QWidget()
@@ -1811,6 +1859,7 @@ class MainWindow(QMainWindow):
         root.addLayout(columns)
 
         self.general_widgets["activatedprofile"] = build_profile_selector(profile_names, int(section.get("activatedprofile", "1")))
+        self.general_widgets["language"] = self._combo(LANGUAGE_ITEMS, normalize_ui_language(section.get("language", "")) or UI_LANGUAGE)
         self.general_widgets["startmethod"] = self._combo(START_METHOD_ITEMS, int(section.get("startmethod", "7")))
         self.general_widgets["starthotkey"] = QLineEdit(section.get("starthotkey", "F2"))
         self.general_widgets["oldsandhelpermethod"] = self._combo(COMMON_METHOD_ITEMS, int(section.get("oldsandhelpermethod", "7")))
@@ -1863,11 +1912,13 @@ class MainWindow(QMainWindow):
         self.general_widgets["helperspeed"].currentIndexChanged.connect(self._apply_helper_speed_preset)
         self.general_widgets["helpermousespeed"].valueChanged.connect(self._sync_helper_speed_preset)
         self.general_widgets["helperanimationdelay"].valueChanged.connect(self._sync_helper_speed_preset)
+        self.general_widgets["language"].currentIndexChanged.connect(self._apply_language_selection)
         basic_section, basic_layout = build_section(tr("基础", "Basics"))
         basic_layout.addWidget(
             build_option_grid(
                 [
                     ("当前激活配置", self.general_widgets["activatedprofile"]),
+                    ("界面语言", self.general_widgets["language"]),
                     ("战斗宏启动方式", self.general_widgets["startmethod"]),
                     ("战斗宏启动热键", self.general_widgets["starthotkey"]),
                     ("助手启动方式", self.general_widgets["oldsandhelpermethod"], HELPER_HOTKEY_TOOLTIP),
@@ -1983,6 +2034,31 @@ class MainWindow(QMainWindow):
 
     def _bool_text(self, widget: QCheckBox) -> str:
         return "1" if widget.isChecked() else "0"
+
+    def _apply_language_selection(self, *_args) -> None:
+        if self._suspend_config_watch:
+            return
+        selected = normalize_ui_language(str(combo_data(self.general_widgets["language"]))) or "zh"
+        if selected == UI_LANGUAGE:
+            return
+        self._config_apply_timer.stop()
+        self.save_config(log_message="")
+        set_ui_language(selected)
+        self._rebuild_shell()
+
+    def _rebuild_shell(self) -> None:
+        self._suspend_config_watch = True
+        self._toolbar_profile_synced = False
+        old_central = self.centralWidget()
+        if old_central is not None:
+            old_central.deleteLater()
+        self.general_widgets.clear()
+        self.profile_tabs.clear()
+        self.profile_nav_items.clear()
+        self._last_log_line = tr("尚无日志。", "No log messages yet.")
+        self._init_shell_widgets()
+        self._build_shell()
+        self.reload_config()
 
     def _apply_helper_speed_preset(self, *_args) -> None:
         preset = combo_value(self.general_widgets["helperspeed"])
@@ -2139,6 +2215,7 @@ class MainWindow(QMainWindow):
         parser.optionxform = str.lower
         parser["General"] = {
             "version": DEFAULT_VERSION,
+            "language": str(combo_data(self.general_widgets["language"])),
             "activatedprofile": str(combo_value(self.general_widgets["activatedprofile"])),
             "oldsandhelpermethod": str(combo_value(self.general_widgets["oldsandhelpermethod"])),
             "oldsandhelperhk": self.general_widgets["oldsandhelperhk"].text().strip(),
@@ -2294,7 +2371,9 @@ class MainWindow(QMainWindow):
             widget.valueChanged.connect(self._schedule_live_config_change)
 
     def _connect_config_change_watchers(self) -> None:
-        for widget in self.general_widgets.values():
+        for key, widget in self.general_widgets.items():
+            if key == "language":
+                continue
             if isinstance(widget, QWidget):
                 self._connect_widget_change(widget)
         for tab in self.profile_tabs:

@@ -147,7 +147,16 @@ $XDG_CONFIG_HOME/d3helperforlinux/d3oldsand.ini
 python d3keyhelper_linux.py --gui
 ```
 
-The GUI defaults to Simplified Chinese. Set `D3HELPER_LANG` before launch to switch languages:
+On first launch, the GUI detects the current system language:
+
+1. `en*` uses English
+2. `zh_TW` / `zh_HK` / `zh-Hant` uses Traditional Chinese
+3. `zh*` uses Simplified Chinese
+4. Other languages fall back to Simplified Chinese
+
+You can also switch manually in **General settings -> Interface language**. Manual selection is saved to `d3oldsand.ini` and takes priority on later launches.
+
+For temporary override, set `D3HELPER_LANG` before launch:
 
 ```bash
 # Simplified Chinese

@@ -133,6 +133,18 @@ class ConfigTests(unittest.TestCase):
         )
         self.assertIn("zh_TW\n鼠標右鍵\n安全格狀態：格式錯誤", traditional.stdout)
 
+    def test_gui_language_environment_defaults_to_simplified_for_unknown_locale(self) -> None:
+        probe = "import d3keyhelper_linux_gui as g; print(g.UI_LANGUAGE)"
+        completed = subprocess.run(
+            [sys.executable, "-c", probe],
+            check=True,
+            capture_output=True,
+            text=True,
+            env={**os.environ, "D3HELPER_LANG": "", "LC_ALL": "fr_FR.UTF-8", "LC_MESSAGES": "", "LANG": ""},
+            cwd=REPO_ROOT,
+        )
+        self.assertEqual(completed.stdout.strip(), "zh")
+
     def test_cli_init_and_list_profiles(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             config_path = Path(tmp_dir) / "test.ini"
@@ -241,6 +253,11 @@ class GuiParityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp_dir:
             config_path = Path(tmp_dir) / "d3oldsand.ini"
             runtime.create_default_config(config_path)
+            parser = gui.load_parser(config_path)
+            parser["General"]["language"] = "zh"
+            with config_path.open("w", encoding="utf-16") as handle:
+                handle.write("; Linux GUI config for D3keyHelper\r\n")
+                parser.write(handle)
             window = gui.MainWindow(config_path)
             try:
                 self.assertFalse(window.log_panel.isVisible())
@@ -278,7 +295,7 @@ class GuiParityTests(unittest.TestCase):
                 self.assertFalse(window.general_widgets["safezonestatus"].isVisible())
                 window.general_widgets["enableupgradehelper"].setChecked(True)
                 window._refresh_general_state()
-                self.assertIn("原版默认值", window.general_widgets["safezonestatus"].text())
+                self.assertIn(gui.localize_text("安全格状态：未设置"), window.general_widgets["safezonestatus"].text())
                 gui.set_combo_value(window.general_widgets["startmethod"], 1)
                 window._refresh_general_state()
                 self.assertFalse(window.general_widgets["starthotkey"].isEnabled())
@@ -287,10 +304,10 @@ class GuiParityTests(unittest.TestCase):
                 window._refresh_general_state()
                 self.assertTrue(window.general_widgets["safezone"].isEnabled())
                 self.assertTrue(window.general_widgets["safezonestatus"].isVisible())
-                self.assertIn("已设置", window.general_widgets["safezonestatus"].text())
+                self.assertIn(gui.localize_text("安全格状态：已设置"), window.general_widgets["safezonestatus"].text())
                 window.general_widgets["safezone"].setText("bad")
                 window._refresh_general_state()
-                self.assertEqual(window.general_widgets["safezonestatus"].text(), "安全格状态：格式错误")
+                self.assertEqual(window.general_widgets["safezonestatus"].text(), gui.localize_text("安全格状态：格式错误"))
             finally:
                 window.close()
                 app.processEvents()
@@ -300,6 +317,11 @@ class GuiParityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp_dir:
             config_path = Path(tmp_dir) / "d3oldsand.ini"
             runtime.create_default_config(config_path)
+            parser = gui.load_parser(config_path)
+            parser["General"]["language"] = "zh"
+            with config_path.open("w", encoding="utf-16") as handle:
+                handle.write("; Linux GUI config for D3keyHelper\r\n")
+                parser.write(handle)
             window = gui.MainWindow(config_path)
             try:
                 window.show()
@@ -320,7 +342,7 @@ class GuiParityTests(unittest.TestCase):
                 profile.refresh_dynamic_state()
                 app.processEvents()
                 self.assertFalse(profile.skill_queue_warning.isHidden())
-                self.assertEqual(window.navigation.item(0).text(), "通用")
+                self.assertEqual(window.navigation.item(0).text(), gui.tr("通用", "General"))
                 self.assertNotIn("statusconfig", window.general_widgets)
                 self.assertNotIn("compactmode", window.general_widgets)
                 original_size = (window.width(), window.height())
@@ -329,7 +351,7 @@ class GuiParityTests(unittest.TestCase):
                 self.assertTrue(window.log.isVisible())
                 self.assertTrue(window.log_panel.isVisible())
                 self.assertTrue(window.status_strip.isVisible())
-                self.assertIn("已载入配置", window.status_log_value.toolTip())
+                self.assertIn(gui.tr("已载入配置", "Loaded config"), window.status_log_value.toolTip())
                 self.assertEqual(window.path_label.toolTip(), str(config_path))
                 self.assertEqual((window.width(), window.height()), original_size)
             finally:
@@ -341,6 +363,11 @@ class GuiParityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp_dir:
             config_path = Path(tmp_dir) / "d3oldsand.ini"
             runtime.create_default_config(config_path)
+            parser = gui.load_parser(config_path)
+            parser["General"]["language"] = "zh"
+            with config_path.open("w", encoding="utf-16") as handle:
+                handle.write("; Linux GUI config for D3keyHelper\r\n")
+                parser.write(handle)
             window = gui.MainWindow(config_path)
             try:
                 gui.set_combo_value(window.general_widgets["sendmode"], "Input")
@@ -402,12 +429,37 @@ class GuiParityTests(unittest.TestCase):
                 process.waitForFinished.return_value = True
                 window.process = process
                 window.stop_runner()
-                self.assertIn("已停止运行器。", window.log.toPlainText())
+                self.assertIn(gui.localize_text("已停止运行器。"), window.log.toPlainText())
                 process.terminate.assert_called_once()
                 self.assertIsNone(window.process)
             finally:
                 window.close()
                 app.processEvents()
+
+    def test_language_selection_persists_and_rebuilds_gui(self) -> None:
+        app = get_qt_app()
+        previous_language = gui.UI_LANGUAGE
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            config_path = Path(tmp_dir) / "d3oldsand.ini"
+            runtime.create_default_config(config_path)
+            parser = gui.load_parser(config_path)
+            parser["General"]["language"] = "zh"
+            with config_path.open("w", encoding="utf-16") as handle:
+                handle.write("; Linux GUI config for D3keyHelper\r\n")
+                parser.write(handle)
+            window = gui.MainWindow(config_path)
+            try:
+                gui.set_combo_value(window.general_widgets["language"], "en")
+                app.processEvents()
+                parser = gui.load_parser(config_path)
+                self.assertEqual(parser["General"]["language"], "en")
+                self.assertEqual(gui.UI_LANGUAGE, "en")
+                self.assertEqual(window.navigation.item(0).text(), "General")
+                self.assertEqual(window.toolbar_profile_combo.itemText(0), "1 - Profile 1")
+            finally:
+                window.close()
+                app.processEvents()
+                gui.set_ui_language(previous_language)
 
 
 class GeometryTests(unittest.TestCase):
