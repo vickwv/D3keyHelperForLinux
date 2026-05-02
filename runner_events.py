@@ -6,6 +6,8 @@ language-specific message text.
 """
 from __future__ import annotations
 from dataclasses import dataclass
+from typing import TextIO
+import sys
 
 
 @dataclass
@@ -22,6 +24,24 @@ _KNOWN_KINDS = frozenset({
     "macro_resumed",
     "profile_switched",
 })
+
+
+def format_runner_event(kind: str, data: str = "") -> str:
+    """Return the stdout protocol line for a structured runner event."""
+    if kind not in _KNOWN_KINDS:
+        raise ValueError(f"Unknown runner event kind: {kind}")
+    suffix = f":{data}" if data else ""
+    return f"EVENT:{kind}{suffix}"
+
+
+def emit_runner_event(kind: str, data: str = "", stream: TextIO | None = None) -> None:
+    """Print a structured runner event line and flush immediately."""
+    print(format_runner_event(kind, data), file=stream or sys.stdout, flush=True)
+
+
+def emit_runner_log(message: str, stream: TextIO | None = None) -> None:
+    """Print a human-readable runner log line and flush immediately."""
+    print(message, file=stream or sys.stdout, flush=True)
 
 
 def parse_runner_event(line: str) -> RunnerEvent | None:

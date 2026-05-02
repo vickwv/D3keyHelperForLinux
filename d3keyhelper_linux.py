@@ -762,10 +762,10 @@ class MacroApp:
         if skill.action in {SkillAction.SPAM, SkillAction.KEY_TRIGGER}:
             for repeat_index in range(max(skill.repeat, 1)):
                 if use_queue:
-                    # Re-check _running while holding the lock so we never put
+                    # Re-check state while holding the lock so we never put
                     # items into the queue after stop_macro() has drained it.
                     with self._lock:
-                        if not self._running:
+                        if not self._running or self._paused:
                             return
                         self._skill_queue.put((skill.hotkey, QueueReason.SPAM))
                 else:
@@ -801,7 +801,7 @@ class MacroApp:
             return
         if use_queue:
             with self._lock:
-                if not self._running:
+                if not self._running or self._paused:
                     return
                 self._skill_queue.put((skill.hotkey, QueueReason.KEEP_BUFF))
         elif skill.hotkey.base == "mouse:left":

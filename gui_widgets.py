@@ -53,6 +53,38 @@ APP_STYLE_SHEET = """
 QMainWindow {
     background: #f0f2f5;
 }
+QWidget {
+    font-family: "Noto Sans CJK SC", "Source Han Sans SC", "Microsoft YaHei", "WenQuanYi Micro Hei", "DejaVu Sans", sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: #1f2933;
+}
+QLabel {
+    color: #1f2933;
+    font-weight: 500;
+}
+QPushButton,
+QComboBox,
+QLineEdit,
+QSpinBox,
+QDoubleSpinBox,
+QCheckBox,
+QTableWidget {
+    font-size: 13px;
+    font-weight: 500;
+    color: #1f2933;
+}
+QWidget:disabled,
+QLabel:disabled,
+QPushButton:disabled,
+QComboBox:disabled,
+QLineEdit:disabled,
+QSpinBox:disabled,
+QDoubleSpinBox:disabled,
+QCheckBox:disabled {
+    color: #7f8996;
+    font-weight: 500;
+}
 QScrollArea {
     border: none;
     background: transparent;
@@ -63,27 +95,50 @@ QListWidget#navigationList {
     border-radius: 8px;
     padding: 4px;
     outline: none;
+    font-family: "Noto Sans CJK SC", "Source Han Sans SC", "Microsoft YaHei", "WenQuanYi Micro Hei", "DejaVu Sans", sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: #243040;
 }
 QListWidget#navigationList::item {
-    padding: 4px 12px;
+    min-height: 28px;
+    padding: 5px 12px;
     margin: 1px 0;
     border-radius: 6px;
-    color: #333333;
+    color: #202b3a;
     font-size: 13px;
+    font-weight: 500;
 }
 QListWidget#navigationList::item:hover {
-    background: rgba(0, 0, 0, 0.05);
+    background: #edf2f7;
+    color: #182230;
 }
 QListWidget#navigationList::item:selected {
-    background: #e8f0fe;
-    color: #1a73e8;
-    font-weight: 600;
+    background: #dfeafe;
+    color: #174ea6;
+    font-weight: 500;
+}
+QListWidget#navigationList::item:disabled {
+    color: #7f8996;
+    font-weight: 500;
 }
 QWidget#navSidebar {
     background: transparent;
 }
 QFrame#navActions {
     background: transparent;
+}
+QPushButton#navActionButton {
+    color: #243040;
+    font-size: 13px;
+    font-weight: 500;
+    min-height: 30px;
+    padding-left: 8px;
+    padding-right: 8px;
+}
+QPushButton#navActionButton:disabled {
+    color: #7f8996;
+    font-weight: 500;
 }
 QStackedWidget {
     background: #ffffff;
@@ -97,7 +152,7 @@ QGroupBox {
     margin-top: 8px;
     padding-top: 4px;
     background: transparent;
-    font-weight: 600;
+    font-weight: 500;
 }
 QGroupBox::title {
     subcontrol-origin: margin;
@@ -107,10 +162,11 @@ QGroupBox::title {
 }
 QLabel#pathLabel {
     background: #ffffff;
-    color: #526173;
+    color: #445266;
     border: 1px solid #d9dde3;
     border-radius: 4px;
     padding: 4px 8px;
+    font-weight: 500;
 }
 QFrame#statusStrip {
     background: #ffffff;
@@ -120,11 +176,12 @@ QFrame#statusStrip {
     border-bottom: none;
 }
 QLabel#statusStripLabel {
-    font-weight: 600;
-    color: #48566a;
+    font-weight: 500;
+    color: #344256;
 }
 QLabel#statusStripValue {
-    color: #233142;
+    color: #1f2933;
+    font-weight: 500;
 }
 QFrame#statusDot {
     border-radius: 5px;
@@ -144,8 +201,9 @@ QFrame#toolbarFrame {
     background: transparent;
 }
 QLabel#toolbarLabel {
-    color: #48566a;
+    color: #344256;
     font-size: 12px;
+    font-weight: 500;
 }
 QFrame#langSwitcher {
     border: 1px solid #d0d5dc;
@@ -155,7 +213,7 @@ QFrame#langSwitcher {
 QPushButton#langButton {
     border: none;
     background: transparent;
-    color: #48566a;
+    color: #344256;
     font-size: 12px;
     font-weight: 500;
     padding: 0 6px;
@@ -171,22 +229,26 @@ QPushButton#langButton:hover:!checked {
     background: #eef1f5;
 }
 QLabel#sectionHint {
-    color: #5d6978;
+    color: #536173;
+    font-weight: 500;
 }
 QLabel#pageTitle {
-    font-weight: 700;
-    color: #1f2933;
+    font-size: 14px;
+    font-weight: 500;
+    color: #182230;
     padding-top: 2px;
 }
 QLabel#pageSubtitle {
-    color: #5d6875;
+    color: #536173;
+    font-weight: 500;
 }
 QLabel#sectionTitle {
-    font-weight: 600;
-    color: #1f2933;
+    font-weight: 500;
+    color: #182230;
 }
 QLabel#inlineParamLabel {
-    color: #48566a;
+    color: #344256;
+    font-weight: 500;
 }
 QFrame#sectionSeparator {
     background: #e6e9ee;
@@ -207,15 +269,17 @@ QTableWidget {
     gridline-color: #dce8f7;
     selection-background-color: #cfe0fc;
     selection-color: #1a3a6b;
+    color: #1f2933;
+    font-weight: 500;
 }
 QHeaderView::section {
     background: #dce8f7;
-    color: #1a3a6b;
+    color: #17375f;
     border: none;
     border-right: 1px solid #c8d6f0;
     border-bottom: 2px solid #2f72c4;
     padding: 4px 6px;
-    font-weight: 600;
+    font-weight: 500;
 }
 QHeaderView::section:last {
     border-right: none;
@@ -771,7 +835,12 @@ def build_helper_section_grid(rows) -> QWidget:
         tooltip = localize_text(tooltip)
         checkbox.setText(localize_text(text))
         checkbox.setMinimumHeight(FORM_CONTROL_HEIGHT)
-        checkbox.setFixedWidth(TOGGLE_TEXT_WIDTH)
+        checkbox_width = TOGGLE_TEXT_WIDTH
+        param_label_width = INLINE_LABEL_WIDTH
+        if param_label:
+            checkbox_width += 34
+            param_label_width -= 34
+        checkbox.setFixedWidth(checkbox_width)
         checkbox.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         if tooltip:
             checkbox.setToolTip(tooltip)
@@ -779,7 +848,7 @@ def build_helper_section_grid(rows) -> QWidget:
         if param_label:
             label = QLabel(localize_text(param_label))
             label.setObjectName("inlineParamLabel")
-            label.setFixedWidth(INLINE_LABEL_WIDTH)
+            label.setFixedWidth(param_label_width)
             label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             if tooltip:
                 label.setToolTip(tooltip)
@@ -925,5 +994,3 @@ def build_runner_command(config_path: Path, profile: str) -> list[str]:
 # Column weight ratios (pixels at baseline window size — distributed proportionally)
 _SKILL_COL_WEIGHTS = [66, 84, 118, 60, 60, 54, 60, 60, 86, 84]
 _SKILL_COL_TOTAL = sum(_SKILL_COL_WEIGHTS)
-
-

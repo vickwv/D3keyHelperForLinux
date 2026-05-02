@@ -17,6 +17,7 @@ if str(REPO_ROOT) not in sys.path:
 
 import d3keyhelper_linux as runtime  # noqa: E402
 import d3keyhelper_linux_gui as gui  # noqa: E402
+import runner_events  # noqa: E402
 
 
 def get_qt_app() -> QApplication:
@@ -40,6 +41,15 @@ class ConfigTests(unittest.TestCase):
 
     def test_parse_safezone(self) -> None:
         self.assertEqual(runtime.parse_safezone("1, 2, 60, 61, foo"), {1, 2, 60})
+
+    def test_runner_event_format_and_parse_round_trip(self) -> None:
+        line = runner_events.format_runner_event("profile_switched", "配置2")
+        self.assertEqual(line, "EVENT:profile_switched:配置2")
+        parsed = runner_events.parse_runner_event(line)
+        self.assertIsNotNone(parsed)
+        self.assertEqual(parsed.kind, "profile_switched")
+        self.assertEqual(parsed.profile, "配置2")
+        self.assertIsNone(runner_events.parse_runner_event("已切换配置：配置2"))
 
     def test_create_default_config_and_load(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:

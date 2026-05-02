@@ -14,7 +14,7 @@ except ImportError:
     from runner_events import parse_runner_event  # type: ignore[no-redef]
 
 from PySide6.QtCore import QProcess, QTimer, Qt
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import (
     QAbstractSpinBox,
     QApplication,
@@ -171,6 +171,23 @@ def set_ui_language(language: str) -> str:
     return result
 
 
+NAV_FONT_FAMILIES = [
+    "Noto Sans CJK SC",
+    "Source Han Sans SC",
+    "Microsoft YaHei",
+    "WenQuanYi Micro Hei",
+    "DejaVu Sans",
+]
+
+
+def apply_navigation_font_family(font: QFont) -> None:
+    if hasattr(font, "setFamilies"):
+        font.setFamilies(NAV_FONT_FAMILIES)
+    else:
+        font.setFamily(NAV_FONT_FAMILIES[0])
+    font.setStyleHint(QFont.StyleHint.SansSerif)
+
+
 class MainWindow(QMainWindow):
     def __init__(self, config_path: Path) -> None:
         super().__init__()
@@ -267,6 +284,11 @@ class MainWindow(QMainWindow):
         toolbar.addWidget(stop_button)
         layout.addWidget(toolbar_frame)
         self.navigation.setObjectName("navigationList")
+        nav_font = QFont()
+        apply_navigation_font_family(nav_font)
+        nav_font.setPointSize(10)
+        nav_font.setWeight(QFont.Weight.Medium)
+        self.navigation.setFont(nav_font)
         self.navigation.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.navigation.setVerticalScrollMode(QListWidget.ScrollMode.ScrollPerPixel)
         self.navigation.setSpacing(2)
@@ -274,10 +296,14 @@ class MainWindow(QMainWindow):
         self.navigation.currentRowChanged.connect(self._select_page)
         self.navigation.currentRowChanged.connect(lambda _: self._refresh_profile_buttons())
         self.navigation.itemSelectionChanged.connect(self._refresh_profile_buttons)
-        self.add_profile_btn = FluentPushButton(FIF.ADD, tr("添加配置", "Add profile"))
-        self.add_profile_btn.setToolTip(tr("添加新配置（最多20个）", "Add profile (max 20)"))
+        self.add_profile_btn = FluentPushButton(FIF.ADD, tr("添加", "Add"))
+        self.add_profile_btn.setObjectName("navActionButton")
+        self.add_profile_btn.setFixedHeight(32)
+        self.add_profile_btn.setToolTip(tr("添加新配置", "Add profile"))
         self.add_profile_btn.clicked.connect(self._add_profile)
-        self.remove_profile_btn = FluentPushButton(FIF.REMOVE, tr("删除配置", "Remove profile"))
+        self.remove_profile_btn = FluentPushButton(FIF.REMOVE, tr("删除", "Remove"))
+        self.remove_profile_btn.setObjectName("navActionButton")
+        self.remove_profile_btn.setFixedHeight(32)
         self.remove_profile_btn.setToolTip(tr("删除选中配置（可多选）", "Remove selected profiles (multi-select supported)"))
         self.remove_profile_btn.clicked.connect(self._remove_profile)
         sidebar = QWidget()
@@ -288,8 +314,9 @@ class MainWindow(QMainWindow):
         sidebar_layout.setSpacing(0)
         nav_actions = QFrame()
         nav_actions.setObjectName("navActions")
+        nav_actions.setFixedHeight(82)
         nav_actions_layout = QVBoxLayout(nav_actions)
-        nav_actions_layout.setContentsMargins(NAV_ACTION_MARGIN, 0, NAV_ACTION_MARGIN, 0)
+        nav_actions_layout.setContentsMargins(NAV_ACTION_MARGIN, 4, NAV_ACTION_MARGIN, 8)
         nav_actions_layout.setSpacing(4)
         nav_actions_layout.addWidget(self.add_profile_btn)
         nav_actions_layout.addWidget(self.remove_profile_btn)
@@ -379,12 +406,12 @@ class MainWindow(QMainWindow):
         self._append_log(tr(f"已载入配置：{self.config_path}", f"Loaded config: {self.config_path}"))
         general_name = next(name for name in parser.sections() if name.lower() == "general")
         profile_names = [name for name in parser.sections() if name.lower() != "general"]
-        self.navigation.addItem(QListWidgetItem(tr("通用", "General")))
+        self.navigation.addItem(self._navigation_item(tr("通用", "General")))
         self.page_stack.addWidget(self._build_general_tab(parser[general_name], profile_names))
         for name in profile_names:
             tab = ProfileTab(name, parser[name])
             self.profile_tabs.append(tab)
-            item = QListWidgetItem(name)
+            item = self._navigation_item(name)
             self.profile_nav_items.append(item)
             self.navigation.addItem(item)
             self.page_stack.addWidget(self._wrap_scroll_tab(tab))
@@ -395,6 +422,15 @@ class MainWindow(QMainWindow):
         self._update_runtime_status_widgets()
         self._sync_toolbar_profile_combo(profile_names)
         self._refresh_profile_buttons()
+
+    def _navigation_item(self, text: str) -> QListWidgetItem:
+        item = QListWidgetItem(text)
+        font = item.font()
+        apply_navigation_font_family(font)
+        font.setPointSize(10)
+        font.setWeight(QFont.Weight.Medium)
+        item.setFont(font)
+        return item
 
 
     def _sync_toolbar_profile_combo(self, profile_names: list[str]) -> None:
@@ -840,20 +876,20 @@ class MainWindow(QMainWindow):
         state, values = classify_safezone_text(text)
         if state == "set":
             status.setText(localize_text("安全格状态：已设置"))
-            status.setStyleSheet("color: #2e7d32;")
+            status.setStyleSheet("color: #1f7a3f; font-weight: 500;")
             slots = ",".join(str(value) for value in sorted(values))
             status.setToolTip(tr(f"当前安全格：{slots}", f"Current safe slots: {slots}"))
         elif state == "legacy-default":
             status.setText(localize_text("安全格状态：未设置（沿用原版默认值 61,62,63）"))
-            status.setStyleSheet("color: #616161;")
+            status.setStyleSheet("color: #536173; font-weight: 500;")
             status.setToolTip(tr("原版 AHK 默认把 safezone 写成 61,62,63，用来提示格式；这三个格子并不存在。", "The original AHK version used 61,62,63 as a format placeholder; those slots do not exist."))
         elif state == "unset":
             status.setText(localize_text("安全格状态：未设置"))
-            status.setStyleSheet("color: #616161;")
+            status.setStyleSheet("color: #536173; font-weight: 500;")
             status.setToolTip(tr("当前没有启用任何 1-60 的安全格。", "No 1-60 safe slots are enabled."))
         else:
             status.setText(localize_text("安全格状态：格式错误"))
-            status.setStyleSheet("color: #c62828;")
+            status.setStyleSheet("color: #b42318; font-weight: 500;")
             status.setToolTip(tr("请填写 1-60 之间的格子编号，使用英文逗号分隔，例如：1,2,3", "Use slot numbers from 1 to 60, separated by commas, for example: 1,2,3"))
         status.show()
 

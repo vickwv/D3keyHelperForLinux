@@ -192,13 +192,19 @@ class ProfileTab(QWidget):
 
         pause_section, pause_layout = build_section(tr("快速暂停", "Quick Pause"))
         pause_layout.addWidget(
-            build_helper_section_grid(
+            build_toggle_grid(
                 [
-                    ("toggle", self.widgets["enablequickpause"], "启用快速暂停", ""),
-                    ("option", "暂停触发", self.widgets["quickpausemethod1"]),
-                    ("option", "暂停按键", self.widgets["quickpausemethod2"]),
-                    ("option", "暂停动作", self.widgets["quickpausemethod3"]),
-                    ("option", "暂停时长", self.widgets["quickpausedelay"]),
+                    (self.widgets["enablequickpause"], "启用快速暂停"),
+                ]
+            )
+        )
+        pause_layout.addWidget(
+            build_option_grid(
+                [
+                    ("暂停触发", self.widgets["quickpausemethod1"]),
+                    ("暂停按键", self.widgets["quickpausemethod2"]),
+                    ("暂停动作", self.widgets["quickpausemethod3"]),
+                    ("暂停时长", self.widgets["quickpausedelay"]),
                 ]
             )
         )
@@ -306,7 +312,7 @@ class ProfileTab(QWidget):
                 "Warning: the single-threaded skill queue may be slower than the spam inputs.",
             )
         )
-        self.skill_queue_warning.setStyleSheet("color: #c62828;")
+        self.skill_queue_warning.setStyleSheet("color: #b42318; font-weight: 500;")
         self.skill_queue_warning.hide()
         skill_layout.addWidget(self.skill_table)
         skill_layout.addWidget(self.skill_queue_warning)
@@ -453,5 +459,3 @@ class ProfileTab(QWidget):
             self.skill_queue_warning.show()
         else:
             self.skill_queue_warning.hide()
-
-

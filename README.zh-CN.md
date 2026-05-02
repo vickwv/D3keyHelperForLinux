@@ -275,10 +275,20 @@ python -m unittest discover -s tests
 
 ```text
 .
+├── config_io.py
+├── config_schema.py
+├── capture.py
+├── vision.py
+├── enums.py
+├── runner_events.py
 ├── d3keyhelper_linux.py
 ├── d3keyhelper_linux_gui.py
+├── gui_i18n.py
+├── gui_widgets.py
+├── gui_profile_page.py
 ├── build_appimage.sh
 ├── requirements.txt
+├── docs/
 ├── packaging/
 ├── tests/
 ├── LICENSE
