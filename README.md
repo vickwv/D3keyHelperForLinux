@@ -147,7 +147,20 @@ $XDG_CONFIG_HOME/d3helperforlinux/d3oldsand.ini
 python d3keyhelper_linux.py --gui
 ```
 
-The GUI now uses the localized **通用 / General** tab name. By default it stays in Chinese to match the original workflow; set `D3HELPER_LANG=en` if you want the main shell chrome in English.
+The GUI defaults to Simplified Chinese. Set `D3HELPER_LANG` before launch to switch languages:
+
+```bash
+# Simplified Chinese
+D3HELPER_LANG=zh python d3keyhelper_linux.py --gui
+
+# English
+D3HELPER_LANG=en python d3keyhelper_linux.py --gui
+
+# Traditional Chinese
+D3HELPER_LANG=zh_TW python d3keyhelper_linux.py --gui
+```
+
+Traditional Chinese aliases such as `zh-hant`, `zh_HK`, `tw`, and `hk` are also accepted.
 
 ### 4. Or launch the runner directly
 

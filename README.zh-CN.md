@@ -147,7 +147,20 @@ $XDG_CONFIG_HOME/d3helperforlinux/d3oldsand.ini
 python d3keyhelper_linux.py --gui
 ```
 
-GUI 里的主标签页现在默认显示为 **通用**。如果你想切换主要界面外壳为英文，可以在启动前设置 `D3HELPER_LANG=en`。
+GUI 默认使用简体中文。可以通过 `D3HELPER_LANG` 切换界面语言：
+
+```bash
+# 简体中文
+D3HELPER_LANG=zh python d3keyhelper_linux.py --gui
+
+# English
+D3HELPER_LANG=en python d3keyhelper_linux.py --gui
+
+# 繁體中文
+D3HELPER_LANG=zh_TW python d3keyhelper_linux.py --gui
+```
+
+也可以使用 `zh-hant`、`zh_HK`、`tw`、`hk` 这类繁中别名。
 
 ### 4. 或直接启动运行器
 

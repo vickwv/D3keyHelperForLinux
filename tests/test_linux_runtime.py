@@ -107,6 +107,32 @@ class ConfigTests(unittest.TestCase):
         self.assertIn(str(config_path), command)
         self.assertEqual(command[-1], "配置1")
 
+    def test_gui_language_environment_supports_en_and_traditional_chinese(self) -> None:
+        probe = (
+            "import d3keyhelper_linux_gui as g; "
+            "print(g.UI_LANGUAGE); "
+            "print(g.localize_text('鼠标右键')); "
+            "print(g.localize_text('安全格状态：格式错误'))"
+        )
+        english = subprocess.run(
+            [sys.executable, "-c", probe],
+            check=True,
+            capture_output=True,
+            text=True,
+            env={**os.environ, "D3HELPER_LANG": "en"},
+            cwd=REPO_ROOT,
+        )
+        self.assertIn("en\nRight mouse\nSafe slots: invalid format", english.stdout)
+        traditional = subprocess.run(
+            [sys.executable, "-c", probe],
+            check=True,
+            capture_output=True,
+            text=True,
+            env={**os.environ, "D3HELPER_LANG": "zh_TW"},
+            cwd=REPO_ROOT,
+        )
+        self.assertIn("zh_TW\n鼠標右鍵\n安全格狀態：格式錯誤", traditional.stdout)
+
     def test_cli_init_and_list_profiles(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             config_path = Path(tmp_dir) / "test.ini"

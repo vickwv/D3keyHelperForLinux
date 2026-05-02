@@ -58,14 +58,159 @@ def resolve_ui_language() -> str:
     value = os.environ.get(UI_LANGUAGE_ENV, "").strip().lower()
     if value.startswith("en"):
         return "en"
+    if value in {"tw", "hk", "zh-tw", "zh_tw", "zh-hk", "zh_hk", "zh-hant", "zh_hant", "traditional"}:
+        return "zh_TW"
     return "zh"
 
 
 UI_LANGUAGE = resolve_ui_language()
 
+EN_TEXT = {
+    "鼠标右键": "Right mouse",
+    "鼠标中键": "Middle mouse",
+    "滚轮向上": "Wheel up",
+    "滚轮向下": "Wheel down",
+    "侧键1": "Side button 1",
+    "侧键2": "Side button 2",
+    "键盘按键": "Keyboard key",
+    "鼠标左键": "Left mouse",
+    "无": "None",
+    "禁用": "Disabled",
+    "按住不放": "Hold",
+    "连点": "Repeat tap",
+    "保持Buff": "Keep buff",
+    "按键触发": "Key trigger",
+    "懒人模式": "Toggle mode",
+    "仅按住时": "Hold to run",
+    "仅按一次": "One-shot",
+    "强制站立": "Force stand still",
+    "强制走位（按住）": "Force move (hold)",
+    "强制走位（连点）": "Force move (tap)",
+    "定时连点": "Timed tap",
+    "保持药水CD": "Keep potion cooldown",
+    "快速分解": "Fast salvage",
+    "一键分解": "One-click salvage",
+    "智能分解": "Smart salvage",
+    "智能分解（留神圣/无形/太古）": "Smart salvage (keep sacred/ethereal/primal)",
+    "智能分解（只留太古）": "Smart salvage (keep primal only)",
+    "重铸一次": "Reforge once",
+    "重铸到远古/太古": "Reforge until ancient/primal",
+    "重铸到太古": "Reforge until primal",
+    "双击": "Double click",
+    "单击": "Single click",
+    "按住": "Hold",
+    "暂停宏": "Pause macro",
+    "暂停宏并连点左键": "Pause and tap left mouse",
+    "非常快": "Very fast",
+    "快速": "Fast",
+    "中等": "Medium",
+    "慢速": "Slow",
+    "自定义": "Custom",
+    "配置": "Profile",
+    "配置名": "Profile name",
+    "宏启动方式": "Macro start mode",
+    "切换类型": "Switch method",
+    "切换按键": "Switch key",
+    "切换后自动启动宏": "Auto-start macro after switch",
+    "走位辅助": "Movement helper",
+    "走位间隔": "Movement interval",
+    "药水辅助": "Potion helper",
+    "药水间隔": "Potion interval",
+    "单线程按键队列": "Single-thread skill queue",
+    "间隔": "Interval",
+    "启用快速暂停": "Enable quick pause",
+    "暂停触发": "Pause trigger",
+    "暂停按键": "Pause button",
+    "暂停动作": "Pause action",
+    "暂停时长": "Pause duration",
+    "当前激活配置": "Active profile",
+    "战斗宏启动方式": "Macro start method",
+    "战斗宏启动热键": "Macro start hotkey",
+    "助手启动方式": "Helper start method",
+    "助手启动热键": "Helper hotkey",
+    "发送模式": "Send mode",
+    "游戏分辨率": "Game resolution",
+    "游戏 Gamma": "Game Gamma",
+    "Buff 续按阈值": "Buff refresh threshold",
+    "宏启动瞬间执行一次": "Run once when macro starts",
+    "只作用于 Diablo III 前台窗口": "Only affect foreground Diablo III window",
+    "智能暂停": "Smart pause",
+    "切换配置提示音": "Profile switch sound",
+    "自定义强制站立": "Custom stand-still key",
+    "自定义强制移动": "Custom force-move key",
+    "自定义药水按键": "Custom potion key",
+    "按键": "Key",
+    "赌博助手": "Gamble helper",
+    "点击次数": "Click count",
+    "拾取助手": "Loot helper",
+    "分解助手": "Salvage helper",
+    "分解策略": "Salvage strategy",
+    "重铸助手": "Reforge helper",
+    "重铸策略": "Reforge strategy",
+    "升级助手": "Upgrade helper",
+    "转化助手": "Convert helper",
+    "丢装助手": "Drop/store helper",
+    "动画速度预设": "Animation speed preset",
+    "辅助鼠标速度": "Helper mouse speed",
+    "辅助动画延迟": "Helper animation delay",
+    "安全格": "Safe slots",
+    "最大重铸次数": "Max reforges",
+    "安全格状态：已设置": "Safe slots: set",
+    "安全格状态：未设置（沿用原版默认值 61,62,63）": "Safe slots: unset (using legacy default 61,62,63)",
+    "安全格状态：未设置": "Safe slots: unset",
+    "安全格状态：格式错误": "Safe slots: invalid format",
+    "已保存配置。": "Config saved.",
+    "已启动运行器。": "Runner started.",
+    "已停止运行器。": "Runner stopped.",
+    "已自动保存配置。": "Config auto-saved.",
+    "检测到配置变更，已自动重启运行器。": "Config changed; runner restarted.",
+    "基础": "Basics",
+    "走位与药水": "Movement & Potion",
+    "按键队列": "Skill Queue",
+    "快速暂停": "Quick Pause",
+    "技能表": "Skill table",
+}
 
-def tr(chinese: str, english: str) -> str:
-    return english if UI_LANGUAGE == "en" else chinese
+ZH_TW_MAP = str.maketrans({
+    "载": "載", "设": "設", "置": "置", "档": "檔", "项": "項", "键": "鍵", "击": "擊",
+    "启": "啟", "动": "動", "运": "運", "行": "行", "器": "器", "状": "狀", "态": "態",
+    "间": "間", "数": "數", "错": "錯", "误": "誤", "认": "認", "为": "為", "开": "開",
+    "关": "關", "闭": "閉", "选": "選", "择": "擇", "发": "發", "送": "送", "标": "標",
+    "签": "籤", "页": "頁", "图": "圖", "显": "顯", "示": "示", "栏": "欄", "导": "導",
+    "览": "覽", "码": "碼", "热": "熱", "缩": "縮", "复": "複", "制": "製", "药": "藥",
+    "剂": "劑", "补": "補", "间": "間", "优": "優", "级": "級", "迟": "遲", "队": "隊",
+    "列": "列", "触": "觸", "单": "單", "线": "線", "随": "隨", "机": "機", "强": "強",
+    "滚": "滾", "轮": "輪", "侧": "側", "暂": "暫", "停": "停", "战": "戰", "斗": "鬥",
+    "宏": "宏", "懒": "懶", "仅": "僅", "时": "時", "连": "連", "点": "點", "换": "換",
+    "间": "間", "帮": "幫", "助": "助", "赌": "賭", "博": "博", "拾": "拾", "取": "取",
+    "分": "分", "解": "解", "铸": "鑄", "远": "遠", "古": "古", "太": "太", "圣": "聖",
+    "形": "形", "升": "升", "级": "級", "转": "轉", "化": "化", "丢": "丟", "装": "裝",
+    "储": "儲", "仓": "倉", "输": "輸", "入": "入", "输": "輸", "出": "出", "读": "讀",
+    "写": "寫", "应": "應", "该": "該", "并": "並", "线": "線", "实": "實", "际": "際",
+    "阈": "閾", "值": "值", "请": "請", "填": "填", "处": "處", "过": "過", "滤": "濾",
+})
+
+
+def zh_to_tw(text: str) -> str:
+    return text.translate(ZH_TW_MAP)
+
+
+def localize_text(text: str) -> str:
+    if UI_LANGUAGE == "en":
+        if text.startswith("配置") and text[2:].isdigit():
+            return f"Profile {text[2:]}"
+        return EN_TEXT.get(text, text)
+    if UI_LANGUAGE == "zh_TW":
+        return zh_to_tw(text)
+    return text
+
+
+def tr(chinese: str, english: str, traditional: str | None = None) -> str:
+    if UI_LANGUAGE == "en":
+        return english
+    if UI_LANGUAGE == "zh_TW":
+        return traditional if traditional is not None else zh_to_tw(chinese)
+    return chinese
 
 
 def app_icon_path() -> Path | None:
@@ -471,7 +616,7 @@ LEGACY_SAFEZONE_SENTINEL = "61,62,63"
 
 
 def make_reforge_method_tooltip(max_reforge: int) -> str:
-    return (
+    return localize_text(
         "重铸一次：重铸鼠标指针处的装备一次\n"
         f"重铸到远古/太古：不停重铸鼠标指针处的装备，直到变为远古或者太古装备，最多重铸{max_reforge}次\n"
         f"重铸到太古：不停重铸鼠标指针处的装备，直到变成太古装备，最多重铸{max_reforge}次\n"
@@ -532,8 +677,8 @@ def build_profile_selector(profile_names: list[str], active_profile: int) -> QCo
     tune_combo_box(combo)
     count = max(len(profile_names), active_profile, 1)
     for index in range(1, count + 1):
-        name = profile_names[index - 1] if index <= len(profile_names) else f"配置{index}"
-        combo.addItem(f"{index} - {name}", index)
+        name = profile_names[index - 1] if index <= len(profile_names) else tr(f"配置{index}", f"Profile {index}")
+        combo.addItem(f"{index} - {localize_text(name)}", index)
     set_combo_value(combo, active_profile)
     return combo
 
@@ -557,7 +702,8 @@ def build_settings_grid(fields) -> QWidget:
     for row, field in enumerate(fields):
         label, widget = field[0], field[1]
         tooltip = field[2] if len(field) > 2 else ""
-        label_widget = QLabel(label)
+        tooltip = localize_text(tooltip)
+        label_widget = QLabel(localize_text(label))
         label_widget.setFixedWidth(FORM_LABEL_WIDTH)
         label_widget.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         if tooltip:
@@ -579,11 +725,13 @@ def add_form_rows(layout: QFormLayout, fields) -> None:
         label, widget = field[0], field[1]
         tooltip = field[2] if len(field) > 2 else ""
         if label is None:
+            tooltip = localize_text(tooltip)
             if tooltip:
                 widget.setToolTip(tooltip)
             layout.addRow(widget)
             continue
-        label_widget = QLabel(label)
+        tooltip = localize_text(tooltip)
+        label_widget = QLabel(localize_text(label))
         label_widget.setFixedWidth(FORM_LABEL_WIDTH)
         label_widget.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         if tooltip:
@@ -598,11 +746,11 @@ def build_section(title: str, hint: str | None = None) -> tuple[QWidget, QVBoxLa
     layout = QVBoxLayout(section)
     layout.setContentsMargins(0, 0, 0, 0)
     layout.setSpacing(6)
-    title_label = QLabel(title)
+    title_label = QLabel(localize_text(title))
     title_label.setObjectName("sectionTitle")
     layout.addWidget(title_label)
     if hint:
-        hint_label = QLabel(hint)
+        hint_label = QLabel(localize_text(hint))
         hint_label.setObjectName("sectionHint")
         hint_label.setWordWrap(True)
         layout.addWidget(hint_label)
@@ -618,7 +766,7 @@ def build_sub_header(text: str) -> QWidget:
     layout = QVBoxLayout(wrapper)
     layout.setContentsMargins(0, 10, 0, 2)
     layout.setSpacing(4)
-    label = QLabel(text)
+    label = QLabel(localize_text(text))
     label.setObjectName("sectionTitle")
     sep = QFrame()
     sep.setObjectName("sectionSeparator")
@@ -665,12 +813,13 @@ def build_checkbox_field(
     trailing_label: str | None = None,
     trailing_widget: QWidget | None = None,
 ) -> QWidget:
-    checkbox.setText(text)
+    tooltip = localize_text(tooltip)
+    checkbox.setText(localize_text(text))
     if tooltip:
         checkbox.setToolTip(tooltip)
     widgets: list[QWidget] = [checkbox]
     if trailing_label:
-        label = QLabel(trailing_label)
+        label = QLabel(localize_text(trailing_label))
         if tooltip:
             label.setToolTip(tooltip)
         widgets.append(label)
@@ -690,7 +839,8 @@ def build_toggle_grid(rows) -> QWidget:
         tooltip = row[2] if len(row) > 2 else ""
         trailing_label = row[3] if len(row) > 3 else None
         trailing_widget = row[4] if len(row) > 4 else None
-        checkbox.setText(text)
+        tooltip = localize_text(tooltip)
+        checkbox.setText(localize_text(text))
         checkbox.setMinimumHeight(FORM_CONTROL_HEIGHT)
         if tooltip:
             checkbox.setToolTip(tooltip)
@@ -700,7 +850,7 @@ def build_toggle_grid(rows) -> QWidget:
             checkbox.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
             layout.addWidget(checkbox, row_index, 0)
             if trailing_label:
-                label = QLabel(trailing_label)
+                label = QLabel(localize_text(trailing_label))
                 label.setObjectName("inlineParamLabel")
                 label.setFixedWidth(INLINE_LABEL_WIDTH)
                 label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
@@ -734,7 +884,8 @@ def build_option_grid(rows) -> QWidget:
     for row_index, row in enumerate(rows):
         label_text, widget = row[0], row[1]
         tooltip = row[2] if len(row) > 2 else ""
-        label = QLabel(label_text)
+        tooltip = localize_text(tooltip)
+        label = QLabel(localize_text(label_text))
         label.setFixedWidth(TOGGLE_TEXT_WIDTH)
         label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         if tooltip:
@@ -760,7 +911,8 @@ def build_helper_grid(rows) -> QWidget:
         tooltip = row[2] if len(row) > 2 else ""
         param_label = row[3] if len(row) > 3 else None
         param_widget = row[4] if len(row) > 4 else None
-        label = QLabel(label_text)
+        tooltip = localize_text(tooltip)
+        label = QLabel(localize_text(label_text))
         label.setFixedWidth(TOGGLE_TEXT_WIDTH)
         label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         if tooltip:
@@ -773,7 +925,7 @@ def build_helper_grid(rows) -> QWidget:
         else:
             layout.addItem(QSpacerItem(24, FORM_CONTROL_HEIGHT), row_index, 1)
         if param_label:
-            trailing_label = QLabel(param_label)
+            trailing_label = QLabel(localize_text(param_label))
             trailing_label.setObjectName("inlineParamLabel")
             trailing_label.setFixedWidth(INLINE_LABEL_WIDTH)
             trailing_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
@@ -808,7 +960,8 @@ def build_helper_list(rows) -> QWidget:
         tooltip = row[2] if len(row) > 2 else ""
         param_label = row[3] if len(row) > 3 else None
         param_widget = row[4] if len(row) > 4 else None
-        checkbox.setText(text)
+        tooltip = localize_text(tooltip)
+        checkbox.setText(localize_text(text))
         checkbox.setMinimumHeight(FORM_CONTROL_HEIGHT)
         checkbox.setFixedWidth(TOGGLE_TEXT_WIDTH)
         checkbox.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
@@ -816,7 +969,7 @@ def build_helper_list(rows) -> QWidget:
             checkbox.setToolTip(tooltip)
         layout.addWidget(checkbox, row_index, 0)
         if param_label:
-            label = QLabel(param_label)
+            label = QLabel(localize_text(param_label))
             label.setObjectName("inlineParamLabel")
             label.setFixedWidth(INLINE_LABEL_WIDTH)
             label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
@@ -848,7 +1001,8 @@ def build_helper_section_grid(rows) -> QWidget:
         if kind == "option":
             label_text, widget = row[1], row[2]
             tooltip = row[3] if len(row) > 3 else ""
-            label = QLabel(label_text)
+            tooltip = localize_text(tooltip)
+            label = QLabel(localize_text(label_text))
             label.setFixedWidth(TOGGLE_TEXT_WIDTH)
             label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
             if tooltip:
@@ -864,7 +1018,8 @@ def build_helper_section_grid(rows) -> QWidget:
         tooltip = row[3] if len(row) > 3 else ""
         param_label = row[4] if len(row) > 4 else None
         param_widget = row[5] if len(row) > 5 else None
-        checkbox.setText(text)
+        tooltip = localize_text(tooltip)
+        checkbox.setText(localize_text(text))
         checkbox.setMinimumHeight(FORM_CONTROL_HEIGHT)
         checkbox.setFixedWidth(TOGGLE_TEXT_WIDTH)
         checkbox.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
@@ -872,7 +1027,7 @@ def build_helper_section_grid(rows) -> QWidget:
             checkbox.setToolTip(tooltip)
         layout.addWidget(checkbox, row_index, 0)
         if param_label:
-            label = QLabel(param_label)
+            label = QLabel(localize_text(param_label))
             label.setObjectName("inlineParamLabel")
             label.setFixedWidth(INLINE_LABEL_WIDTH)
             label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
@@ -904,7 +1059,8 @@ def build_parameter_section_grid(rows) -> QWidget:
         if kind == "option":
             label_text, widget = row[1], row[2]
             tooltip = row[3] if len(row) > 3 else ""
-            label = QLabel(label_text)
+            tooltip = localize_text(tooltip)
+            label = QLabel(localize_text(label_text))
             label.setFixedWidth(TOGGLE_TEXT_WIDTH)
             label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
             if tooltip:
@@ -920,7 +1076,8 @@ def build_parameter_section_grid(rows) -> QWidget:
         tooltip = row[3] if len(row) > 3 else ""
         param_label = row[4] if len(row) > 4 else None
         param_widget = row[5] if len(row) > 5 else None
-        checkbox.setText(text)
+        tooltip = localize_text(tooltip)
+        checkbox.setText(localize_text(text))
         checkbox.setMinimumHeight(FORM_CONTROL_HEIGHT)
         checkbox.setFixedWidth(TOGGLE_TEXT_WIDTH)
         checkbox.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
@@ -928,7 +1085,7 @@ def build_parameter_section_grid(rows) -> QWidget:
             checkbox.setToolTip(tooltip)
         layout.addWidget(checkbox, row_index, 0)
         if param_label:
-            label = QLabel(param_label)
+            label = QLabel(localize_text(param_label))
             label.setObjectName("inlineParamLabel")
             label.setFixedWidth(INLINE_LABEL_WIDTH)
             label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
@@ -955,9 +1112,9 @@ def build_page_header(title: str, subtitle: str) -> QWidget:
     layout = QVBoxLayout(header)
     layout.setContentsMargins(0, 0, 0, 0)
     layout.setSpacing(4)
-    title_label = QLabel(title)
+    title_label = QLabel(localize_text(title))
     title_label.setObjectName("pageTitle")
-    subtitle_label = QLabel(subtitle)
+    subtitle_label = QLabel(localize_text(subtitle))
     subtitle_label.setObjectName("pageSubtitle")
     separator = QFrame()
     separator.setObjectName("sectionSeparator")
@@ -1280,7 +1437,7 @@ class ProfileTab(QWidget):
         combo = QComboBox()
         tune_combo_box(combo)
         for data, text in items:
-            combo.addItem(text, data)
+            combo.addItem(localize_text(text), data)
         set_combo_value(combo, value)
         return combo
 
@@ -1601,8 +1758,8 @@ class MainWindow(QMainWindow):
         combo.clear()
         count = max(len(profile_names), 1)
         for index in range(1, count + 1):
-            name = profile_names[index - 1] if index <= len(profile_names) else f"配置{index}"
-            combo.addItem(f"{index} - {name}", index)
+            name = profile_names[index - 1] if index <= len(profile_names) else tr(f"配置{index}", f"Profile {index}")
+            combo.addItem(f"{index} - {localize_text(name)}", index)
         if general_combo is not None:
             set_combo_value(combo, combo_value(general_combo))
         combo.blockSignals(False)
@@ -1799,7 +1956,7 @@ class MainWindow(QMainWindow):
         combo = QComboBox()
         tune_combo_box(combo)
         for data, text in items:
-            combo.addItem(text, data)
+            combo.addItem(localize_text(text), data)
         set_combo_value(combo, value)
         return combo
 
@@ -1907,25 +2064,26 @@ class MainWindow(QMainWindow):
         text = self.general_widgets["safezone"].text().strip()
         state, values = classify_safezone_text(text)
         if state == "set":
-            status.setText("安全格状态：已设置")
+            status.setText(localize_text("安全格状态：已设置"))
             status.setStyleSheet("color: #2e7d32;")
-            status.setToolTip(f"当前安全格：{','.join(str(value) for value in sorted(values))}")
+            slots = ",".join(str(value) for value in sorted(values))
+            status.setToolTip(tr(f"当前安全格：{slots}", f"Current safe slots: {slots}"))
         elif state == "legacy-default":
-            status.setText("安全格状态：未设置（沿用原版默认值 61,62,63）")
+            status.setText(localize_text("安全格状态：未设置（沿用原版默认值 61,62,63）"))
             status.setStyleSheet("color: #616161;")
-            status.setToolTip("原版 AHK 默认把 safezone 写成 61,62,63，用来提示格式；这三个格子并不存在。")
+            status.setToolTip(tr("原版 AHK 默认把 safezone 写成 61,62,63，用来提示格式；这三个格子并不存在。", "The original AHK version used 61,62,63 as a format placeholder; those slots do not exist."))
         elif state == "unset":
-            status.setText("安全格状态：未设置")
+            status.setText(localize_text("安全格状态：未设置"))
             status.setStyleSheet("color: #616161;")
-            status.setToolTip("当前没有启用任何 1-60 的安全格。")
+            status.setToolTip(tr("当前没有启用任何 1-60 的安全格。", "No 1-60 safe slots are enabled."))
         else:
-            status.setText("安全格状态：格式错误")
+            status.setText(localize_text("安全格状态：格式错误"))
             status.setStyleSheet("color: #c62828;")
-            status.setToolTip("请填写 1-60 之间的格子编号，使用英文逗号分隔，例如：1,2,3")
+            status.setToolTip(tr("请填写 1-60 之间的格子编号，使用英文逗号分隔，例如：1,2,3", "Use slot numbers from 1 to 60, separated by commas, for example: 1,2,3"))
         status.show()
 
     def _append_log(self, text: str) -> None:
-        message = text.rstrip()
+        message = localize_text(text.rstrip())
         if not message:
             return
         self.log.appendPlainText(message)
