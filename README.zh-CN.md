@@ -99,10 +99,6 @@ GUI 是当前版本的主要入口，用来替代手动编辑 ini。
 
 ![Main Window](./mainwindow.png)
 
-### 配置说明图
-
-![Settings](./settings.png)
-
 ### Safezone 编号示意
 
 ![Safezone](./safezone.png)

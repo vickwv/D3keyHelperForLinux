@@ -99,10 +99,6 @@ These helpers target town workflows, inventory cleanup, and batch material opera
 
 ![Main Window](./mainwindow.png)
 
-### Settings illustration
-
-![Settings](./settings.png)
-
 ### Safezone slot map
 
 ![Safezone](./safezone.png)
