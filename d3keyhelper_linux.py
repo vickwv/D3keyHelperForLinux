@@ -3,9 +3,9 @@ from __future__ import annotations
 
 import argparse
 import configparser
-import io
 import math
 import os
+import queue
 import random
 import re
 import shutil
@@ -14,10 +14,12 @@ import sys
 import tempfile
 import threading
 import time
-from collections import defaultdict, deque
+from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+
+from config_schema import GENERAL_DEFAULTS, default_profile_dict as _schema_default_profile_dict
+from enums import MovingMethod, PotionMethod, QuickPauseAction, QuickPauseMode, ReforgeMethod, SalvageMethod, SkillAction, StartMode
 
 try:
     from pynput import keyboard, mouse
@@ -167,7 +169,7 @@ class SendSpec:
 
 @dataclass
 class SkillConfig:
-    hotkey: Optional[SendSpec]
+    hotkey: SendSpec | None
     action: int
     interval_ms: int
     delay_ms: int
@@ -175,14 +177,14 @@ class SkillConfig:
     priority: int
     repeat: int
     repeat_interval_ms: int
-    trigger: Optional[HotkeySpec]
+    trigger: HotkeySpec | None
 
 
 @dataclass
 class QuickPauseConfig:
     enabled: bool
     mode: int
-    trigger: Optional[HotkeySpec]
+    trigger: HotkeySpec | None
     action: int
     delay_ms: int
 
@@ -191,7 +193,7 @@ class QuickPauseConfig:
 class ProfileConfig:
     name: str
     skills: list[SkillConfig]
-    profile_hotkey: Optional[HotkeySpec]
+    profile_hotkey: HotkeySpec | None
     autostart_macro: bool
     start_mode: int
     moving_method: int
@@ -205,7 +207,7 @@ class ProfileConfig:
 
 @dataclass
 class HelperConfig:
-    hotkey: Optional[HotkeySpec]
+    hotkey: HotkeySpec | None
     gamble_enabled: bool
     gamble_times: int
     loot_enabled: bool
@@ -226,7 +228,7 @@ class HelperConfig:
 @dataclass
 class GeneralConfig:
     activated_profile: int
-    start_hotkey: Optional[HotkeySpec]
+    start_hotkey: HotkeySpec | None
     run_on_start: bool
     d3only: bool
     smart_pause: bool
@@ -279,7 +281,7 @@ def looks_like_proton_diablo_window(window: WindowInfo) -> bool:
     return False
 
 
-def format_window_debug(window: Optional[WindowInfo]) -> str:
+def format_window_debug(window: WindowInfo | None) -> str:
     if window is None:
         return "无活动窗口"
     parts = [f"title={window.title!r}", f"class={window.wm_class!r}"]
@@ -408,7 +410,7 @@ class InputSender:
 
 
 class ActiveWindowMatcher:
-    def __init__(self, title_regex: Optional[str], class_regex: Optional[str]) -> None:
+    def __init__(self, title_regex: str | None, class_regex: str | None) -> None:
         if xdisplay is None or X is None:
             raise ConfigError("缺少 python-xlib，无法在 Linux 上检测当前活动窗口。")
         self._display = xdisplay.Display()
@@ -436,7 +438,7 @@ class ActiveWindowMatcher:
             return False
         return bool(title_matches or class_matches or proton_matches)
 
-    def get_active_window(self) -> Optional[WindowInfo]:
+    def get_active_window(self) -> WindowInfo | None:
         try:
             prop = self._root.get_full_property(self._atom_active, X.AnyPropertyType)
             if not prop or not getattr(prop, "value", None):
@@ -471,11 +473,11 @@ class ActiveWindowMatcher:
 
 
 class KWinWindowMatcher:
-    def __init__(self, title_regex: Optional[str], class_regex: Optional[str]) -> None:
+    def __init__(self, title_regex: str | None, class_regex: str | None) -> None:
         self._title_pattern = re.compile(title_regex, re.IGNORECASE) if title_regex else None
         self._class_pattern = re.compile(class_regex, re.IGNORECASE) if class_regex else None
 
-    def get_active_window(self) -> Optional[WindowInfo]:
+    def get_active_window(self) -> WindowInfo | None:
         try:
             completed = subprocess.run(
                 [
@@ -571,7 +573,7 @@ def pixels_region_to_rgb(pixels, gamma: float, agg_func: str = ""):
     return [r, g, b]
 
 
-def parse_resolution(text: str) -> Optional[tuple[int, int]]:
+def parse_resolution(text: str) -> tuple[int, int] | None:
     match = re.fullmatch(r"\s*(\d+)\s*x\s*(\d+)\s*", text or "", re.IGNORECASE)
     if not match:
         return None
@@ -614,13 +616,13 @@ class X11GameCapture:
         self.general = general
         self._grabber = mss.mss()
 
-    def get_active_window(self) -> Optional[WindowInfo]:
+    def get_active_window(self) -> WindowInfo | None:
         window = self.matcher.get_active_window()
         if window is None or window.width <= 0 or window.height <= 0:
             return None
         return window
 
-    def capture(self) -> Optional[GameImage]:
+    def capture(self) -> GameImage | None:
         window = self.get_active_window()
         if window is None:
             return None
@@ -649,13 +651,13 @@ class SpectacleGameCapture:
         self.matcher = matcher
         self.general = general
 
-    def get_active_window(self) -> Optional[WindowInfo]:
+    def get_active_window(self) -> WindowInfo | None:
         window = self.matcher.get_active_window()
         if window is None or window.width <= 0 or window.height <= 0:
             return None
         return window
 
-    def capture(self) -> Optional[GameImage]:
+    def capture(self) -> GameImage | None:
         if Image is None:
             return None
         window = self.get_active_window()
@@ -988,15 +990,15 @@ class MacroApp:
         self._held_keys: list[SendSpec] = []
         self._pressed_bases: set[str] = set()
         self._pressed_modifiers: set[str] = set()
-        self._focus_thread: Optional[threading.Thread] = None
+        self._focus_thread: threading.Thread | None = None
         if matcher is not None and mss is not None and np is not None:
             self._capture = SpectacleGameCapture(matcher, general) if capture_backend == "kde-wayland" else X11GameCapture(matcher, general)
         else:
             self._capture = None
-        self._skill_queue: deque[tuple[SendSpec, int]] = deque()
+        self._skill_queue: queue.Queue[tuple[SendSpec, int]] = queue.Queue()
         self._helper_running = False
         self._helper_break = False
-        self._helper_thread: Optional[threading.Thread] = None
+        self._helper_thread: threading.Thread | None = None
         self._quick_pause_last_pressed_at: dict[str, float] = {}
         self._watched_press_bases: set[str] = set()
         self._watched_release_bases: set[str] = set()
@@ -1022,7 +1024,7 @@ class MacroApp:
         if self._focus_thread and self._focus_thread.is_alive():
             self._focus_thread.join(timeout=1.0)
 
-    def _add_hotkey_watch(self, press_bases: set[str], release_bases: set[str], spec: Optional[HotkeySpec]) -> None:
+    def _add_hotkey_watch(self, press_bases: set[str], release_bases: set[str], spec: HotkeySpec | None) -> None:
         if spec is None:
             return
         press_bases.add(spec.base)
@@ -1039,12 +1041,12 @@ class MacroApp:
             press_bases.update({"tab", "enter", "t", "m"})
         for profile in self.profiles:
             self._add_hotkey_watch(press_bases, release_bases, profile.profile_hotkey)
-            if profile.start_mode == 2:
+            if profile.start_mode == StartMode.HOLD_WHILE:
                 self._add_hotkey_watch(press_bases, release_bases, self.general.start_hotkey)
             if profile.quick_pause.enabled:
                 self._add_hotkey_watch(press_bases, release_bases, profile.quick_pause.trigger)
             for skill in profile.skills:
-                if skill.action == 5:
+                if skill.action == SkillAction.KEY_TRIGGER:
                     self._add_hotkey_watch(press_bases, release_bases, skill.trigger)
         self._watched_press_bases = press_bases
         self._watched_release_bases = release_bases
@@ -1120,7 +1122,7 @@ class MacroApp:
             if self._matches_hotkey(quick_pause.trigger, base):
                 now = time.monotonic()
                 should_fire = False
-                if quick_pause.mode == 1:
+                if quick_pause.mode == QuickPauseMode.DOUBLE_CLICK:
                     previous = self._quick_pause_last_pressed_at.get(base, 0.0)
                     should_fire = now - previous <= 0.5
                 else:
@@ -1135,20 +1137,20 @@ class MacroApp:
                 return
             skills = list(self.current_profile.skills)
         for skill in skills:
-            if skill.action == 5 and self._matches_hotkey(skill.trigger, base):
+            if skill.action == SkillAction.KEY_TRIGGER and self._matches_hotkey(skill.trigger, base):
                 self._execute_skill(skill)
 
     def _dispatch_release(self, base: str) -> None:
         start_hotkey = self.general.start_hotkey
         profile = self.current_profile
-        if profile.start_mode == 2 and start_hotkey and start_hotkey.base == base:
+        if profile.start_mode == StartMode.HOLD_WHILE and start_hotkey and start_hotkey.base == base:
             self.stop_macro(reason=None)
-        if self._running and profile.quick_pause.enabled and profile.quick_pause.mode == 3:
+        if self._running and profile.quick_pause.enabled and profile.quick_pause.mode == QuickPauseMode.HOLD:
             trigger = profile.quick_pause.trigger
             if trigger and trigger.base == base:
                 self.run_macro()
 
-    def _matches_hotkey(self, spec: Optional[HotkeySpec], base: str) -> bool:
+    def _matches_hotkey(self, spec: HotkeySpec | None, base: str) -> bool:
         if spec is None or spec.base != base:
             return False
         with self._lock:
@@ -1157,20 +1159,20 @@ class MacroApp:
 
     def _handle_start_hotkey_press(self) -> None:
         profile = self.current_profile
-        if profile.start_mode == 1:
+        if profile.start_mode == StartMode.TOGGLE:
             if self._running:
                 self.stop_macro(reason=None)
             else:
                 self.run_macro()
             return
-        if profile.start_mode == 2:
+        if profile.start_mode == StartMode.HOLD_WHILE:
             if self.general.start_hotkey and self.general.start_hotkey.base in {"wheel_up", "wheel_down"}:
                 print("当前配置使用滚轮作为启动键，但 Linux 首版不支持“仅按下时”滚轮保持模式。", flush=True)
                 return
             if not self._running:
                 self.run_macro()
             return
-        if profile.start_mode == 3:
+        if profile.start_mode == StartMode.ONCE:
             self.send_once_actions()
 
     def run_macro(self) -> None:
@@ -1192,7 +1194,8 @@ class MacroApp:
             self._stop_event = threading.Event()
             self._workers = []
             self._held_keys = []
-            self._skill_queue.clear()
+            while not self._skill_queue.empty():
+                self._skill_queue.get_nowait()
             self._running = True
             self._paused = False
             profile = self.current_profile
@@ -1200,20 +1203,20 @@ class MacroApp:
         for skill in profile.skills:
             if skill.hotkey is None:
                 continue
-            if skill.action == 2:
+            if skill.action == SkillAction.HOLD:
                 self._hold_key(skill.hotkey)
-            elif skill.action == 3:
+            elif skill.action == SkillAction.SPAM:
                 self._spawn_periodic_worker(self._make_skill_worker(skill))
-            elif skill.action == 4:
+            elif skill.action == SkillAction.KEEP_BUFF:
                 self._spawn_periodic_worker(self._make_skill_worker(skill))
-            elif skill.action == 5 and skill.trigger is None:
+            elif skill.action == SkillAction.KEY_TRIGGER and skill.trigger is None:
                 print(f"[{profile.name}] 检测到按键触发策略，但触发键无效，已跳过。", flush=True)
 
-        if profile.moving_method == 2:
+        if profile.moving_method == MovingMethod.FORCE_STAND:
             self._hold_key(standing_key)
-        elif profile.moving_method == 3:
+        elif profile.moving_method == MovingMethod.FORCE_MOVE_HOLD:
             self._hold_key(moving_key)
-        elif profile.moving_method == 4:
+        elif profile.moving_method == MovingMethod.FORCE_MOVE_SPAM:
             self._spawn_periodic_worker(
                 self._make_send_worker(
                     label="强制移动",
@@ -1226,7 +1229,7 @@ class MacroApp:
                 )
             )
 
-        if profile.potion_method == 2:
+        if profile.potion_method == PotionMethod.TIMED:
             self._spawn_periodic_worker(
                 self._make_send_worker(
                     label="自动喝药",
@@ -1238,15 +1241,16 @@ class MacroApp:
                     repeat_interval_ms=0,
                 )
             )
-        elif profile.potion_method == 3:
+        elif profile.potion_method == PotionMethod.KEEP_CD:
             self._spawn_periodic_worker(self._make_potion_cooldown_worker(potion_key))
 
         if profile.use_skill_queue:
             self._spawn_periodic_worker(self._make_skill_queue_worker(profile.use_skill_queue_interval_ms))
 
+        print(f"EVENT:macro_started:{profile.name}", flush=True)
         print(f"已启动 Linux 战斗宏：{profile.name}", flush=True)
 
-    def stop_macro(self, reason: Optional[str]) -> None:
+    def stop_macro(self, reason: str | None) -> None:
         with self._lock:
             if not self._running:
                 return
@@ -1257,7 +1261,8 @@ class MacroApp:
             held_keys = list(self._held_keys)
             self._workers = []
             self._held_keys = []
-            self._skill_queue.clear()
+            while not self._skill_queue.empty():
+                self._skill_queue.get_nowait()
         stop_event.set()
         for worker in workers:
             if worker.is_alive():
@@ -1268,8 +1273,10 @@ class MacroApp:
             except Exception:
                 pass
         if reason:
+            print(f"EVENT:macro_stopped:{reason}", flush=True)
             print(f"已停止战斗宏：{reason}", flush=True)
         else:
+            print("EVENT:macro_stopped", flush=True)
             print("已停止战斗宏", flush=True)
 
     def toggle_pause(self) -> None:
@@ -1282,16 +1289,18 @@ class MacroApp:
         if paused:
             for send_spec in reversed(held_keys):
                 self.sender.release(send_spec)
+            print("EVENT:macro_paused", flush=True)
             print("战斗宏已暂停", flush=True)
         else:
             for send_spec in held_keys:
                 self.sender.press(send_spec)
+            print("EVENT:macro_resumed", flush=True)
             print("战斗宏已恢复", flush=True)
 
     def send_once_actions(self) -> None:
         profile = self.current_profile
         for skill in profile.skills:
-            if skill.action == 2 and skill.hotkey is not None:
+            if skill.action == SkillAction.HOLD and skill.hotkey is not None:
                 self.sender.tap(skill.hotkey)
         print(f"已执行一次性按键：{profile.name}", flush=True)
 
@@ -1304,11 +1313,12 @@ class MacroApp:
         self.stop_macro(reason=None)
         self.current_profile_index = index
         profile = self.current_profile
+        print(f"EVENT:profile_switched:{profile.name}", flush=True)
         print(f"已切换配置：{profile.name}", flush=True)
         if self.general.sound_on_profile_switch:
             play_notification_sound()
         self._print_profile_notes(profile)
-        if was_running and not was_paused and profile.autostart_macro and profile.start_mode == 1:
+        if was_running and not was_paused and profile.autostart_macro and profile.start_mode == StartMode.TOGGLE:
             self.run_macro()
 
     def _hold_key(self, send_spec: SendSpec) -> None:
@@ -1348,16 +1358,16 @@ class MacroApp:
             if not self._running or self._paused:
                 return
             use_queue = self.current_profile.use_skill_queue
-        if skill.action in {3, 5}:
+        if skill.action in {SkillAction.SPAM, SkillAction.KEY_TRIGGER}:
             for repeat_index in range(max(skill.repeat, 1)):
                 if use_queue:
-                    self._skill_queue.append((skill.hotkey, 3))
+                    self._skill_queue.put((skill.hotkey, 3))
                 else:
                     self.sender.tap(skill.hotkey)
                 if repeat_index + 1 < skill.repeat and skill.repeat_interval_ms > 0:
                     time.sleep(skill.repeat_interval_ms / 1000.0)
             return
-        if skill.action != 4:
+        if skill.action != SkillAction.KEEP_BUFF:
             return
         active_window = self._active_window()
         if active_window is None:
@@ -1371,7 +1381,7 @@ class MacroApp:
         for other in current_profile.skills:
             if other is skill:
                 continue
-            if other.action == 4 and other.priority > skill.priority and other.hotkey is not None:
+            if other.action == SkillAction.KEEP_BUFF and other.priority > skill.priority and other.hotkey is not None:
                 other_active = self._is_buff_active_live(width, height, current_profile.skills.index(other) + 1)
                 if other_active is None:
                     return
@@ -1384,7 +1394,7 @@ class MacroApp:
         if current_active:
             return
         if use_queue:
-            self._skill_queue.append((skill.hotkey, 4))
+            self._skill_queue.put((skill.hotkey, 4))
         elif skill.hotkey.base == "mouse:left":
             self._send_with_force_standing(skill.hotkey)
         else:
@@ -1404,7 +1414,7 @@ class MacroApp:
         _window, pixels = captured
         return pixels_region_to_rgb(pixels, self.general.game_gamma, agg_func)
 
-    def _is_buff_active_live(self, width: int, height: int, button_id: int) -> Optional[bool]:
+    def _is_buff_active_live(self, width: int, height: int, button_id: int) -> bool | None:
         point = get_skill_button_buff_pos(width, height, button_id, self.general.buff_percent)
         rgb = self._capture_region_rgb(point[0], point[1], 1, 1, "max")
         if rgb is None:
@@ -1414,7 +1424,7 @@ class MacroApp:
     def _make_send_worker(
         self,
         label: str,
-        send_spec: Optional[SendSpec],
+        send_spec: SendSpec | None,
         interval_ms: int,
         delay_ms: int,
         randomize_delay: bool,
@@ -1501,7 +1511,7 @@ class MacroApp:
             stop_event = self._stop_event
             delay_s = max(interval_ms, 50) / 1000.0
             while not stop_event.is_set():
-                if self._skill_queue:
+                if not self._skill_queue.empty():
                     self._process_skill_queue_once(max(interval_ms, 50))
                 if stop_event.wait(delay_s):
                     break
@@ -1509,9 +1519,12 @@ class MacroApp:
         return worker
 
     def _process_skill_queue_once(self, interval_ms: int) -> None:
-        if not self._skill_queue:
+        if self._skill_queue.empty():
             return
-        send_spec, reason = self._skill_queue.popleft()
+        try:
+            send_spec, reason = self._skill_queue.get_nowait()
+        except queue.Empty:
+            return
         held_keys = list(self._held_keys)
         if reason == 3:
             for held in reversed(held_keys):
@@ -1539,7 +1552,7 @@ class MacroApp:
         finally:
             self.sender.release(standing_key)
 
-    def _capture_game_image(self) -> Optional[tuple[GameImage, int, int]]:
+    def _capture_game_image(self) -> tuple[GameImage, int, int] | None:
         if self._capture is None:
             return None
         image = self._capture.capture()
@@ -1552,7 +1565,7 @@ class MacroApp:
             width, height = image.width, image.height
         return image, width, height
 
-    def _active_window(self) -> Optional[WindowInfo]:
+    def _active_window(self) -> WindowInfo | None:
         if self._capture is None:
             return None
         return self._capture.get_active_window()
@@ -1561,15 +1574,15 @@ class MacroApp:
         if not self._running:
             return
         self.stop_macro(reason=None)
-        if quick_pause.mode == 3:
-            if quick_pause.action == 2:
+        if quick_pause.mode == QuickPauseMode.HOLD:
+            if quick_pause.action == QuickPauseAction.PAUSE_AND_SPAM_LEFT:
                 threading.Thread(
                     target=self._quick_pause_click_loop,
                     args=(quick_pause.trigger.base if quick_pause.trigger else "",),
                     daemon=True,
                 ).start()
             return
-        if quick_pause.action == 2:
+        if quick_pause.action == QuickPauseAction.PAUSE_AND_SPAM_LEFT:
             self._quick_pause_click_until(time.monotonic() + quick_pause.delay_ms / 1000.0)
         threading.Thread(target=self._resume_macro_after_delay, args=(quick_pause.delay_ms,), daemon=True).start()
 
@@ -1633,7 +1646,7 @@ class MacroApp:
             if self.general.helper.salvage_enabled:
                 salvage_state = is_salvage_page_open(image, width, height)
                 if salvage_state[0] == 2:
-                    if self.general.helper.salvage_method == 1 and mouse_position == 1:
+                    if self.general.helper.salvage_method == SalvageMethod.QUICK and mouse_position == 1:
                         print("助手已启动：识别到分解页，执行快速分解。", flush=True)
                         self._quick_salvage_helper(width, height)
                         return
@@ -1819,7 +1832,7 @@ class MacroApp:
                 self._move_mouse(window.x + point[0], window.y + point[1])
                 self._click_left()
                 self._helper_sleep(self.general.helper.animation_delay_ms // 4)
-            if self.general.helper.reforge_method <= 1:
+            if self.general.helper.reforge_method <= ReforgeMethod.ONCE:
                 break
             self._move_mouse(mouse_x, mouse_y)
             self._click_right()
@@ -1879,7 +1892,7 @@ class MacroApp:
             slot = get_inventory_space_xy(width, height, slot_id, "bag")
             self._move_mouse(window.x + slot[0], window.y + slot[1])
             quality = 0
-            if self.general.helper.salvage_method > 2:
+            if self.general.helper.salvage_method > SalvageMethod.ONE_CLICK:
                 color = self._sample_stable_rgb(round(slot[2] - 1 - 10 * height / 1440.0), slot[1], 3, 1, self.general.helper.animation_delay_ms)
                 quality = self._classify_item_quality(color, allow_ethereal=True)
             if slot_id <= 50 and bag_zone[min(slot_id + 10, 60)] in {-1, 10}:
@@ -1969,9 +1982,9 @@ class MacroApp:
 
     def _print_profile_notes(self, profile: ProfileConfig) -> None:
         notes: list[str] = []
-        if self._capture is None and any(skill.action == 4 for skill in profile.skills):
+        if self._capture is None and any(skill.action == SkillAction.KEEP_BUFF for skill in profile.skills):
             notes.append("保持 Buff 需要图像捕获依赖")
-        if self._capture is None and profile.potion_method == 3:
+        if self._capture is None and profile.potion_method == PotionMethod.KEEP_CD:
             notes.append("保持药水 CD 需要图像捕获依赖")
         if notes:
             print(f"[{profile.name}] 当前配置提示：{', '.join(notes)}", flush=True)
@@ -1994,7 +2007,7 @@ def normalize_token(raw: str) -> str:
     return raw.strip().replace(" ", "").lower()
 
 
-def parse_hotkey_expression(expr: str) -> Optional[HotkeySpec]:
+def parse_hotkey_expression(expr: str) -> HotkeySpec | None:
     expr = expr.strip()
     if not expr:
         return None
@@ -2018,7 +2031,7 @@ def parse_hotkey_expression(expr: str) -> Optional[HotkeySpec]:
     return HotkeySpec(base=base, modifiers=frozenset(modifiers))
 
 
-def normalize_hotkey_base(raw: str) -> Optional[str]:
+def normalize_hotkey_base(raw: str) -> str | None:
     token = normalize_token(raw)
     if not token:
         return None
@@ -2063,7 +2076,7 @@ def normalize_hotkey_base(raw: str) -> Optional[str]:
     return None
 
 
-def parse_send_spec(expr: str) -> Optional[SendSpec]:
+def parse_send_spec(expr: str) -> SendSpec | None:
     base = normalize_hotkey_base(expr)
     if base is None:
         return None
@@ -2110,7 +2123,7 @@ def parse_safezone(value: str) -> set[int]:
     return out
 
 
-def method_to_hotkey(method: int, keyboard_expr: str, mapping: dict[int, str]) -> Optional[HotkeySpec]:
+def method_to_hotkey(method: int, keyboard_expr: str, mapping: dict[int, str]) -> HotkeySpec | None:
     if method in mapping:
         return HotkeySpec(mapping[method])
     if method == 7:
@@ -2123,7 +2136,7 @@ def load_config(config_path: Path) -> tuple[GeneralConfig, list[ProfileConfig]]:
     parser.optionxform = str.lower
 
     encodings = ["utf-16", "utf-8-sig", "utf-8"]
-    last_error: Optional[Exception] = None
+    last_error: Exception | None = None
     for encoding in encodings:
         try:
             with config_path.open("r", encoding=encoding) as handle:
@@ -2249,34 +2262,7 @@ def default_skill_hotkey(index: int) -> str:
 
 def default_profile_dict() -> dict[str, str]:
     """Return the default key/value pairs for a new profile section."""
-    values: dict[str, str] = {
-        "profilehkmethod": "1",
-        "profilehkkey": "",
-        "movingmethod": "1",
-        "movinginterval": "100",
-        "potionmethod": "1",
-        "potioninterval": "500",
-        "lazymode": "1",
-        "enablequickpause": "0",
-        "quickpausemethod1": "1",
-        "quickpausemethod2": "1",
-        "quickpausemethod3": "1",
-        "quickpausedelay": "1500",
-        "useskillqueue": "0",
-        "useskillqueueinterval": "200",
-        "autostartmarco": "0",
-    }
-    for index in range(1, 7):
-        values[f"skill_{index}"] = default_skill_hotkey(index)
-        values[f"action_{index}"] = "1"
-        values[f"interval_{index}"] = "300"
-        values[f"delay_{index}"] = "10"
-        values[f"random_{index}"] = "1"
-        values[f"priority_{index}"] = "1"
-        values[f"repeat_{index}"] = "1"
-        values[f"repeatinterval_{index}"] = "30"
-        values[f"triggerbutton_{index}"] = "LButton"
-    return values
+    return _schema_default_profile_dict()
 
 
 def default_config_dir() -> Path:
@@ -2294,45 +2280,9 @@ def create_default_config(config_path: Path) -> None:
     config_path.parent.mkdir(parents=True, exist_ok=True)
     parser = configparser.ConfigParser(interpolation=None)
     parser.optionxform = str.lower
-    parser["General"] = {
-        "version": DEFAULT_VERSION,
-        "activatedprofile": "1",
-        "oldsandhelpermethod": "7",
-        "oldsandhelperhk": "F5",
-        "enablegamblehelper": "1",
-        "gamblehelpertimes": "15",
-        "enableloothelper": "0",
-        "loothelpertimes": "30",
-        "enablesalvagehelper": "0",
-        "salvagehelpermethod": "1",
-        "enablereforgehelper": "0",
-        "reforgehelpermethod": "1",
-        "enableupgradehelper": "0",
-        "enableconverthelper": "0",
-        "enableabandonhelper": "0",
-        "startmethod": "7",
-        "starthotkey": "F2",
-        "sendmode": "Event",
-        "runonstart": "1",
-        "d3only": "1",
-        "enablesmartpause": "1",
-        "enablesoundplay": "1",
-        "gamegamma": "1.000000",
-        "buffpercent": "0.050000",
-        "gameresolution": "Auto",
-        "helperspeed": "3",
-        "helpermousespeed": "2",
-        "helperanimationdelay": "150",
-        "safezone": "61,62,63",
-        "maxreforge": "10",
-        "compactmode": "0",
-        "custommoving": "0",
-        "custommovinghk": "e",
-        "customstanding": "0",
-        "customstandinghk": "LShift",
-        "custompotion": "0",
-        "custompotionhk": "q",
-    }
+    general = dict(GENERAL_DEFAULTS)
+    general["version"] = DEFAULT_VERSION
+    parser["General"] = general
     for name in DEFAULT_PROFILE_NAMES:
         parser[name] = default_profile_dict()
 
@@ -2341,7 +2291,7 @@ def create_default_config(config_path: Path) -> None:
         parser.write(handle)
 
 
-def resolve_profile_index(profiles: list[ProfileConfig], selection: Optional[str], activated_profile: int) -> int:
+def resolve_profile_index(profiles: list[ProfileConfig], selection: str | None, activated_profile: int) -> int:
     if not selection:
         return max(min(activated_profile - 1, len(profiles) - 1), 0)
     if selection.isdigit():
@@ -2368,7 +2318,7 @@ def ensure_runtime_dependencies() -> None:
         raise ConfigError("未安装 Pillow，请先执行：pip install -r requirements.txt")
 
 
-def normalize_keyboard_event(key_event) -> Optional[str]:
+def normalize_keyboard_event(key_event) -> str | None:
     if keyboard is None:
         return None
     if isinstance(key_event, keyboard.KeyCode):
@@ -2383,7 +2333,7 @@ def normalize_keyboard_event(key_event) -> Optional[str]:
     return None
 
 
-def normalize_mouse_button(button_event) -> Optional[str]:
+def normalize_mouse_button(button_event) -> str | None:
     if mouse is None:
         return None
     button_name = getattr(button_event, "name", None)
@@ -2541,7 +2491,7 @@ def main() -> int:
     return 0
 
 
-def format_hotkey(spec: Optional[HotkeySpec]) -> str:
+def format_hotkey(spec: HotkeySpec | None) -> str:
     if spec is None:
         return "未配置"
     parts = []
@@ -2576,7 +2526,7 @@ def describe_enabled_helpers(helper: HelperConfig) -> list[str]:
     return enabled
 
 
-def session_uses_wayland_keyboard_hotkeys(spec: Optional[HotkeySpec]) -> bool:
+def session_uses_wayland_keyboard_hotkeys(spec: HotkeySpec | None) -> bool:
     if spec is None:
         return False
     if os.environ.get("XDG_SESSION_TYPE", "").lower() != "wayland":

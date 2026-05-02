@@ -4,7 +4,6 @@ from __future__ import annotations
 import configparser
 import locale
 import os
-import subprocess
 import sys
 import uuid
 from pathlib import Path
@@ -21,7 +20,6 @@ from PySide6.QtWidgets import (
     QFrame,
     QFormLayout,
     QGridLayout,
-    QGroupBox,
     QHBoxLayout,
     QHeaderView,
     QLabel,
@@ -32,8 +30,6 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QMessageBox,
     QPushButton,
-    QPlainTextEdit,
-    QScrollArea,
     QSizePolicy,
     QSpacerItem,
     QSplitter,
@@ -48,7 +44,7 @@ from PySide6.QtWidgets import (
 import io as _io
 _stdout_backup = sys.stdout
 sys.stdout = _io.StringIO()
-from qfluentwidgets import (
+from qfluentwidgets import (  # noqa: E402
     setTheme,
     Theme,
     setThemeColor,
@@ -59,7 +55,6 @@ from qfluentwidgets import (
     CheckBox,
     PushButton as FluentPushButton,
     PrimaryPushButton,
-    ToolButton,
     PlainTextEdit,
     ListWidget,
     SmoothScrollArea,
@@ -243,18 +238,18 @@ EN_TEXT = {
 ZH_TW_MAP = str.maketrans({
     "载": "載", "设": "設", "置": "置", "档": "檔", "项": "項", "键": "鍵", "击": "擊",
     "启": "啟", "动": "動", "运": "運", "行": "行", "器": "器", "状": "狀", "态": "態",
-    "间": "間", "数": "數", "错": "錯", "误": "誤", "认": "認", "为": "為", "开": "開",
+    "数": "數", "错": "錯", "误": "誤", "认": "認", "为": "為", "开": "開",
     "关": "關", "闭": "閉", "选": "選", "择": "擇", "发": "發", "送": "送", "标": "標",
     "签": "籤", "页": "頁", "图": "圖", "显": "顯", "示": "示", "栏": "欄", "导": "導",
     "览": "覽", "码": "碼", "热": "熱", "缩": "縮", "复": "複", "制": "製", "药": "藥",
-    "剂": "劑", "补": "補", "间": "間", "优": "優", "级": "級", "迟": "遲", "队": "隊",
-    "列": "列", "触": "觸", "单": "單", "线": "線", "随": "隨", "机": "機", "强": "強",
+    "剂": "劑", "补": "補", "优": "優", "迟": "遲", "队": "隊",
+    "列": "列", "触": "觸", "单": "單", "随": "隨", "机": "機", "强": "強",
     "滚": "滾", "轮": "輪", "侧": "側", "暂": "暫", "停": "停", "战": "戰", "斗": "鬥",
     "宏": "宏", "懒": "懶", "仅": "僅", "时": "時", "连": "連", "点": "點", "换": "換",
     "间": "間", "帮": "幫", "助": "助", "赌": "賭", "博": "博", "拾": "拾", "取": "取",
     "分": "分", "解": "解", "铸": "鑄", "远": "遠", "古": "古", "太": "太", "圣": "聖",
     "形": "形", "升": "升", "级": "級", "转": "轉", "化": "化", "丢": "丟", "装": "裝",
-    "储": "儲", "仓": "倉", "输": "輸", "入": "入", "输": "輸", "出": "出", "读": "讀",
+    "储": "儲", "仓": "倉", "入": "入", "输": "輸", "出": "出", "读": "讀",
     "写": "寫", "应": "應", "该": "該", "并": "並", "线": "線", "实": "實", "际": "際",
     "阈": "閾", "值": "值", "请": "請", "填": "填", "处": "處", "过": "過", "滤": "濾",
 })
@@ -1577,7 +1572,7 @@ class MainWindow(QMainWindow):
         if not self.config_path.exists():
             create_default_config(self.config_path)
         set_ui_language(configured_ui_language(self.config_path) or resolve_ui_language())
-        self.process: Optional[QProcess] = None
+        self.process: QProcess | None = None
         self.general_widgets: dict[str, object] = {}
         self.profile_tabs: list[ProfileTab] = []
         self.profile_nav_items: list[QListWidgetItem] = []
@@ -2435,7 +2430,7 @@ class MainWindow(QMainWindow):
         text = bytes(self.process.readAllStandardOutput()).decode("utf-8", errors="replace")
         if text:
             if "\a" in text or (
-                "已切换配置：" in text and self.general_widgets["enablesoundplay"].isChecked()
+                "EVENT:profile_switched:" in text and self.general_widgets["enablesoundplay"].isChecked()
             ):
                 QApplication.beep()
                 text = text.replace("\a", "")
