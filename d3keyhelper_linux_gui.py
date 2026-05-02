@@ -6,6 +6,7 @@ import locale
 import os
 import subprocess
 import sys
+import uuid
 from pathlib import Path
 
 from PySide6.QtCore import QEvent, QObject, QProcess, QTimer, Qt
@@ -1921,21 +1922,18 @@ class MainWindow(QMainWindow):
         set_combo_value(self.toolbar_profile_combo, combo_value(general_combo))
         self.toolbar_profile_combo.blockSignals(False)
 
-    MAX_PROFILES = 20
-
     def _refresh_profile_buttons(self) -> None:
         count = len(self.profile_tabs)
         row = self.navigation.currentRow()
-        self.add_profile_btn.setEnabled(count < self.MAX_PROFILES)
+        self.add_profile_btn.setEnabled(True)
         self.remove_profile_btn.setEnabled(count > 1 and row > 0)
 
-    def _next_profile_name(self, existing: list[str]) -> str:
-        existing_lower = {n.lower() for n in existing}
-        for n in range(1, self.MAX_PROFILES + 1):
-            for candidate in (tr(f"配置{n}", f"Profile {n}"), f"配置{n}", f"Profile {n}"):
-                if candidate.lower() not in existing_lower:
-                    return candidate
-        return tr(f"配置{len(existing) + 1}", f"Profile {len(existing) + 1}")
+    def _new_profile_id(self, existing: list[str]) -> str:
+        existing_lower = {s.lower() for s in existing}
+        while True:
+            new_id = "p-" + uuid.uuid4().hex[:6]
+            if new_id not in existing_lower:
+                return new_id
 
     def _write_parser(self, parser: configparser.ConfigParser) -> None:
         with self.config_path.open("w", encoding="utf-16") as fh:
@@ -1946,9 +1944,7 @@ class MainWindow(QMainWindow):
         self.save_config(log_message="")
         parser = load_parser(self.config_path)
         profile_names = [s for s in parser.sections() if s.lower() != "general"]
-        if len(profile_names) >= self.MAX_PROFILES:
-            return
-        new_name = self._next_profile_name(profile_names)
+        new_name = self._new_profile_id(profile_names)
         parser[new_name] = default_profile_dict()
         self._write_parser(parser)
         new_row = 1 + len(profile_names)  # 1-based after General
@@ -1961,7 +1957,8 @@ class MainWindow(QMainWindow):
         if row <= 0 or row > len(self.profile_tabs):
             return
         tab = self.profile_tabs[row - 1]
-        name = tab.section_name
+        # Use the saved display name (same as what save_config would write as section key)
+        name = tab.widgets["name"].text().strip() or tab.section_name
         reply = QMessageBox.question(
             self,
             tr("删除配置", "Remove profile"),
@@ -1974,14 +1971,17 @@ class MainWindow(QMainWindow):
         self.save_config(log_message="")
         parser = load_parser(self.config_path)
         profile_names = [s for s in parser.sections() if s.lower() != "general"]
+        if name not in profile_names:
+            return
         removed_index = profile_names.index(name) + 1  # 1-based
         parser.remove_section(name)
         new_count = len(profile_names) - 1
-        old_active = int(parser["general"].get("activatedprofile", "1"))
+        general_key = next(s for s in parser.sections() if s.lower() == "general")
+        old_active = int(parser[general_key].get("activatedprofile", "1"))
         if old_active > removed_index:
-            parser["general"]["activatedprofile"] = str(old_active - 1)
+            parser[general_key]["activatedprofile"] = str(old_active - 1)
         elif old_active == removed_index:
-            parser["general"]["activatedprofile"] = str(min(removed_index, new_count))
+            parser[general_key]["activatedprofile"] = str(min(removed_index, new_count))
         self._write_parser(parser)
         target_row = max(1, min(row, new_count))
         self.reload_config()
