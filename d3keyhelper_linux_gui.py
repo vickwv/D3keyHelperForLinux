@@ -8,6 +8,10 @@ import sys
 import uuid
 from pathlib import Path
 
+from config_schema import gd, pd, skill_hotkey_default
+from enums import MovingMethod, PotionMethod, QuickPauseMode, SkillAction, StartMethod, StartMode
+from runner_events import parse_runner_event
+
 from PySide6.QtCore import QEvent, QObject, QProcess, QTimer, Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
@@ -1229,21 +1233,21 @@ class ProfileTab(QWidget):
         root.addWidget(self.page_header)
 
         self.widgets["name"] = _make_line_edit(section_name)
-        self.widgets["profilehkmethod"] = self._combo(COMMON_METHOD_ITEMS, int(section.get("profilehkmethod", "1")))
-        self.widgets["profilehkkey"] = _make_line_edit(section.get("profilehkkey", ""))
-        self.widgets["autostartmarco"] = self._check(section.get("autostartmarco", "0") == "1")
-        self.widgets["lazymode"] = self._combo(START_MODE_ITEMS, int(section.get("lazymode", "1")))
-        self.widgets["movingmethod"] = self._combo(MOVING_METHOD_ITEMS, int(section.get("movingmethod", "1")))
-        self.widgets["movinginterval"] = self._spin(20, 3000, int(section.get("movinginterval", "100")))
-        self.widgets["potionmethod"] = self._combo(POTION_METHOD_ITEMS, int(section.get("potionmethod", "1")))
-        self.widgets["potioninterval"] = self._spin(200, 30000, int(section.get("potioninterval", "500")))
-        self.widgets["useskillqueue"] = self._check(section.get("useskillqueue", "0") == "1")
-        self.widgets["useskillqueueinterval"] = self._spin(50, 1000, int(section.get("useskillqueueinterval", "200")))
-        self.widgets["enablequickpause"] = self._check(section.get("enablequickpause", "0") == "1")
-        self.widgets["quickpausemethod1"] = self._combo(QUICK_PAUSE_MODE_ITEMS, int(section.get("quickpausemethod1", "1")))
-        self.widgets["quickpausemethod2"] = self._combo(QUICK_PAUSE_TRIGGER_ITEMS, int(section.get("quickpausemethod2", "1")))
-        self.widgets["quickpausemethod3"] = self._combo(QUICK_PAUSE_ACTION_ITEMS, int(section.get("quickpausemethod3", "1")))
-        self.widgets["quickpausedelay"] = self._spin(50, 5000, int(section.get("quickpausedelay", "1500")))
+        self.widgets["profilehkmethod"] = self._combo(COMMON_METHOD_ITEMS, int(section.get("profilehkmethod", pd("profilehkmethod"))))
+        self.widgets["profilehkkey"] = _make_line_edit(section.get("profilehkkey", pd("profilehkkey")))
+        self.widgets["autostartmarco"] = self._check(section.get("autostartmarco", pd("autostartmarco")) == "1")
+        self.widgets["lazymode"] = self._combo(START_MODE_ITEMS, int(section.get("lazymode", pd("lazymode"))))
+        self.widgets["movingmethod"] = self._combo(MOVING_METHOD_ITEMS, int(section.get("movingmethod", pd("movingmethod"))))
+        self.widgets["movinginterval"] = self._spin(20, 3000, int(section.get("movinginterval", pd("movinginterval"))))
+        self.widgets["potionmethod"] = self._combo(POTION_METHOD_ITEMS, int(section.get("potionmethod", pd("potionmethod"))))
+        self.widgets["potioninterval"] = self._spin(200, 30000, int(section.get("potioninterval", pd("potioninterval"))))
+        self.widgets["useskillqueue"] = self._check(section.get("useskillqueue", pd("useskillqueue")) == "1")
+        self.widgets["useskillqueueinterval"] = self._spin(50, 1000, int(section.get("useskillqueueinterval", pd("useskillqueueinterval"))))
+        self.widgets["enablequickpause"] = self._check(section.get("enablequickpause", pd("enablequickpause")) == "1")
+        self.widgets["quickpausemethod1"] = self._combo(QUICK_PAUSE_MODE_ITEMS, int(section.get("quickpausemethod1", pd("quickpausemethod1"))))
+        self.widgets["quickpausemethod2"] = self._combo(QUICK_PAUSE_TRIGGER_ITEMS, int(section.get("quickpausemethod2", pd("quickpausemethod2"))))
+        self.widgets["quickpausemethod3"] = self._combo(QUICK_PAUSE_ACTION_ITEMS, int(section.get("quickpausemethod3", pd("quickpausemethod3"))))
+        self.widgets["quickpausedelay"] = self._spin(50, 5000, int(section.get("quickpausedelay", pd("quickpausedelay"))))
 
         settings_columns = QHBoxLayout()
         settings_columns.setContentsMargins(0, 0, 0, 0)
@@ -1359,7 +1363,7 @@ class ProfileTab(QWidget):
         skill_widgets = []
         for index in range(1, 7):
             row = {}
-            row["hotkey"] = _make_line_edit(section.get(f"skill_{index}", DEFAULT_SKILLS[index]))
+            row["hotkey"] = _make_line_edit(section.get(f"skill_{index}", skill_hotkey_default(index)))
             row["action"] = self._combo(SKILL_ACTION_ITEMS, int(section.get(f"action_{index}", "1")))
             row["interval"] = self._spin(20, 60000, int(section.get(f"interval_{index}", "300")))
             row["delay"] = self._spin(-30000, 30000, int(section.get(f"delay_{index}", "10")))
@@ -1481,19 +1485,19 @@ class ProfileTab(QWidget):
 
     def _sync_profile_hotkey_state(self, *_args) -> None:
         method = combo_value(self.widgets["profilehkmethod"])
-        keyboard_only = method == 7
+        keyboard_only = method == StartMethod.KEYBOARD
         enabled = method != 1
         self.widgets["profilehkkey"].setEnabled(keyboard_only)
         self.widgets["autostartmarco"].setEnabled(enabled)
 
     def _sync_start_mode_state(self, *_args) -> None:
         start_mode = combo_value(self.widgets["lazymode"])
-        if start_mode in {2, 3}:
+        if start_mode in {StartMode.HOLD_WHILE, StartMode.ONCE}:
             widget = self.widgets["enablequickpause"]
             old = widget.blockSignals(True)
             widget.setChecked(False)
             widget.blockSignals(old)
-        if start_mode == 3:
+        if start_mode == StartMode.ONCE:
             for widget, value in [
                 (self.widgets["useskillqueue"], False),
             ]:
@@ -1501,20 +1505,20 @@ class ProfileTab(QWidget):
                 widget.setChecked(value)
                 widget.blockSignals(old)
             for widget, value in [
-                (self.widgets["movingmethod"], 1),
-                (self.widgets["potionmethod"], 1),
+                (self.widgets["movingmethod"], MovingMethod.NONE),
+                (self.widgets["potionmethod"], PotionMethod.NONE),
             ]:
                 old = widget.blockSignals(True)
                 set_combo_value(widget, value)
                 widget.blockSignals(old)
-        self.widgets["useskillqueue"].setEnabled(start_mode != 3)
-        self.widgets["movingmethod"].setEnabled(start_mode != 3)
-        self.widgets["potionmethod"].setEnabled(start_mode != 3)
-        self.widgets["enablequickpause"].setEnabled(start_mode == 1)
+        self.widgets["useskillqueue"].setEnabled(start_mode != StartMode.ONCE)
+        self.widgets["movingmethod"].setEnabled(start_mode != StartMode.ONCE)
+        self.widgets["potionmethod"].setEnabled(start_mode != StartMode.ONCE)
+        self.widgets["enablequickpause"].setEnabled(start_mode == StartMode.TOGGLE)
 
     def _sync_moving_potion_state(self, *_args) -> None:
-        self.widgets["movinginterval"].setEnabled(combo_value(self.widgets["movingmethod"]) == 4 and self.widgets["movingmethod"].isEnabled())
-        self.widgets["potioninterval"].setEnabled(combo_value(self.widgets["potionmethod"]) > 1 and self.widgets["potionmethod"].isEnabled())
+        self.widgets["movinginterval"].setEnabled(combo_value(self.widgets["movingmethod"]) == MovingMethod.FORCE_MOVE_SPAM and self.widgets["movingmethod"].isEnabled())
+        self.widgets["potioninterval"].setEnabled(combo_value(self.widgets["potionmethod"]) > PotionMethod.NONE and self.widgets["potionmethod"].isEnabled())
 
     def _sync_skill_queue_state(self, *_args) -> None:
         enabled = self.widgets["useskillqueue"].isChecked() and self.widgets["useskillqueue"].isEnabled()
@@ -1525,22 +1529,22 @@ class ProfileTab(QWidget):
         enabled = self.widgets["enablequickpause"].isChecked() and self.widgets["enablequickpause"].isEnabled()
         for key in ["quickpausemethod1", "quickpausemethod2", "quickpausemethod3"]:
             self.widgets[key].setEnabled(enabled)
-        self.widgets["quickpausedelay"].setEnabled(enabled and combo_value(self.widgets["quickpausemethod1"]) != 3)
+        self.widgets["quickpausedelay"].setEnabled(enabled and combo_value(self.widgets["quickpausemethod1"]) != QuickPauseMode.HOLD)
 
     def _sync_skill_row_state(self, index: int, row: dict[str, QWidget]) -> None:
         action = combo_value(row["action"])
         if index == 6 and self._start_method_conflict:
             row["action"].setEnabled(False)
-            action = 1
+            action = SkillAction.DISABLED
         else:
             row["action"].setEnabled(True)
-        row["interval"].setEnabled(action in {3, 4})
-        row["delay"].setEnabled(action in {3, 5})
-        row["random"].setEnabled(action in {3, 5})
-        row["priority"].setEnabled(action == 4)
-        row["repeat"].setEnabled(action in {3, 5})
-        row["repeatinterval"].setEnabled(action in {3, 5})
-        row["triggerbutton"].setEnabled(action == 5)
+        row["interval"].setEnabled(action in {SkillAction.SPAM, SkillAction.KEEP_BUFF})
+        row["delay"].setEnabled(action in {SkillAction.SPAM, SkillAction.KEY_TRIGGER})
+        row["random"].setEnabled(action in {SkillAction.SPAM, SkillAction.KEY_TRIGGER})
+        row["priority"].setEnabled(action == SkillAction.KEEP_BUFF)
+        row["repeat"].setEnabled(action in {SkillAction.SPAM, SkillAction.KEY_TRIGGER})
+        row["repeatinterval"].setEnabled(action in {SkillAction.SPAM, SkillAction.KEY_TRIGGER})
+        row["triggerbutton"].setEnabled(action == SkillAction.KEY_TRIGGER)
 
     def _sync_skill_queue_warning(self, *_args) -> None:
         if not self.widgets["useskillqueue"].isChecked() or not self.widgets["useskillqueue"].isEnabled():
@@ -1553,7 +1557,7 @@ class ProfileTab(QWidget):
         queue_out = 1000.0 / interval
         queue_in = 0.0
         for row in self.widgets["skills"]:
-            if combo_value(row["action"]) == 3:
+            if combo_value(row["action"]) == SkillAction.SPAM:
                 queue_in += 1000.0 / max(row["interval"].value(), 20)
         if queue_in > queue_out:
             self.skill_queue_warning.setToolTip(
@@ -1930,9 +1934,9 @@ class MainWindow(QMainWindow):
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(10)
         helper_speed_preset = helper_speed_preset_from_values(
-            int(section.get("helpermousespeed", "2")),
-            int(section.get("helperanimationdelay", "150")),
-            int(section.get("helperspeed", "3")),
+            int(section.get("helpermousespeed", gd("helpermousespeed"))),
+            int(section.get("helperanimationdelay", gd("helperanimationdelay"))),
+            int(section.get("helperspeed", gd("helperspeed"))),
         )
         root.addWidget(
             build_page_header(
@@ -1945,44 +1949,44 @@ class MainWindow(QMainWindow):
         columns.setSpacing(32)
         root.addLayout(columns)
 
-        self.general_widgets["activatedprofile"] = build_profile_selector(profile_names, int(section.get("activatedprofile", "1")))
-        self.general_widgets["startmethod"] = self._combo(START_METHOD_ITEMS, int(section.get("startmethod", "7")))
-        self.general_widgets["starthotkey"] = _make_line_edit(section.get("starthotkey", "F2"))
-        self.general_widgets["oldsandhelpermethod"] = self._combo(COMMON_METHOD_ITEMS, int(section.get("oldsandhelpermethod", "7")))
-        self.general_widgets["oldsandhelperhk"] = _make_line_edit(section.get("oldsandhelperhk", "F5"))
-        self.general_widgets["sendmode"] = self._combo(SEND_MODE_ITEMS, section.get("sendmode", "Event"))
-        self.general_widgets["runonstart"] = self._check(section.get("runonstart", "1") == "1")
-        self.general_widgets["d3only"] = self._check(section.get("d3only", "1") == "1")
-        self.general_widgets["enablesmartpause"] = self._check(section.get("enablesmartpause", "1") == "1")
-        self.general_widgets["enablesoundplay"] = self._check(section.get("enablesoundplay", "1") == "1")
-        self.general_widgets["gameresolution"] = _make_line_edit(section.get("gameresolution", "Auto"))
-        self.general_widgets["gamegamma"] = self._float_spin(0.5, 1.5, float(section.get("gamegamma", "1.0")), 6)
-        self.general_widgets["buffpercent"] = self._float_spin(0.0, 1.0, float(section.get("buffpercent", "0.05")), 6)
+        self.general_widgets["activatedprofile"] = build_profile_selector(profile_names, int(section.get("activatedprofile", gd("activatedprofile"))))
+        self.general_widgets["startmethod"] = self._combo(START_METHOD_ITEMS, int(section.get("startmethod", gd("startmethod"))))
+        self.general_widgets["starthotkey"] = _make_line_edit(section.get("starthotkey", gd("starthotkey")))
+        self.general_widgets["oldsandhelpermethod"] = self._combo(COMMON_METHOD_ITEMS, int(section.get("oldsandhelpermethod", gd("oldsandhelpermethod"))))
+        self.general_widgets["oldsandhelperhk"] = _make_line_edit(section.get("oldsandhelperhk", gd("oldsandhelperhk")))
+        self.general_widgets["sendmode"] = self._combo(SEND_MODE_ITEMS, section.get("sendmode", gd("sendmode")))
+        self.general_widgets["runonstart"] = self._check(section.get("runonstart", gd("runonstart")) == "1")
+        self.general_widgets["d3only"] = self._check(section.get("d3only", gd("d3only")) == "1")
+        self.general_widgets["enablesmartpause"] = self._check(section.get("enablesmartpause", gd("enablesmartpause")) == "1")
+        self.general_widgets["enablesoundplay"] = self._check(section.get("enablesoundplay", gd("enablesoundplay")) == "1")
+        self.general_widgets["gameresolution"] = _make_line_edit(section.get("gameresolution", gd("gameresolution")))
+        self.general_widgets["gamegamma"] = self._float_spin(0.5, 1.5, float(section.get("gamegamma", gd("gamegamma"))), 6)
+        self.general_widgets["buffpercent"] = self._float_spin(0.0, 1.0, float(section.get("buffpercent", gd("buffpercent"))), 6)
         for key, value in [
-            ("customstanding", section.get("customstanding", "0") == "1"),
-            ("custommoving", section.get("custommoving", "0") == "1"),
-            ("custompotion", section.get("custompotion", "0") == "1"),
-            ("enablegamblehelper", section.get("enablegamblehelper", "1") == "1"),
-            ("enableloothelper", section.get("enableloothelper", "0") == "1"),
-            ("enablesalvagehelper", section.get("enablesalvagehelper", "0") == "1"),
-            ("enablereforgehelper", section.get("enablereforgehelper", "0") == "1"),
-            ("enableupgradehelper", section.get("enableupgradehelper", "0") == "1"),
-            ("enableconverthelper", section.get("enableconverthelper", "0") == "1"),
-            ("enableabandonhelper", section.get("enableabandonhelper", "0") == "1"),
+            ("customstanding", section.get("customstanding", gd("customstanding")) == "1"),
+            ("custommoving", section.get("custommoving", gd("custommoving")) == "1"),
+            ("custompotion", section.get("custompotion", gd("custompotion")) == "1"),
+            ("enablegamblehelper", section.get("enablegamblehelper", gd("enablegamblehelper")) == "1"),
+            ("enableloothelper", section.get("enableloothelper", gd("enableloothelper")) == "1"),
+            ("enablesalvagehelper", section.get("enablesalvagehelper", gd("enablesalvagehelper")) == "1"),
+            ("enablereforgehelper", section.get("enablereforgehelper", gd("enablereforgehelper")) == "1"),
+            ("enableupgradehelper", section.get("enableupgradehelper", gd("enableupgradehelper")) == "1"),
+            ("enableconverthelper", section.get("enableconverthelper", gd("enableconverthelper")) == "1"),
+            ("enableabandonhelper", section.get("enableabandonhelper", gd("enableabandonhelper")) == "1"),
         ]:
             self.general_widgets[key] = self._check(value)
-        self.general_widgets["customstandinghk"] = _make_line_edit(section.get("customstandinghk", "LShift"))
-        self.general_widgets["custommovinghk"] = _make_line_edit(section.get("custommovinghk", "e"))
-        self.general_widgets["custompotionhk"] = _make_line_edit(section.get("custompotionhk", "q"))
-        self.general_widgets["gamblehelpertimes"] = self._spin(1, 60, int(section.get("gamblehelpertimes", "15")))
-        self.general_widgets["loothelpertimes"] = self._spin(1, 99, int(section.get("loothelpertimes", "30")))
-        self.general_widgets["salvagehelpermethod"] = self._combo(SALVAGE_METHOD_ITEMS, int(section.get("salvagehelpermethod", "1")))
-        self.general_widgets["reforgehelpermethod"] = self._combo(REFORGE_METHOD_ITEMS, int(section.get("reforgehelpermethod", "1")))
+        self.general_widgets["customstandinghk"] = _make_line_edit(section.get("customstandinghk", gd("customstandinghk")))
+        self.general_widgets["custommovinghk"] = _make_line_edit(section.get("custommovinghk", gd("custommovinghk")))
+        self.general_widgets["custompotionhk"] = _make_line_edit(section.get("custompotionhk", gd("custompotionhk")))
+        self.general_widgets["gamblehelpertimes"] = self._spin(1, 60, int(section.get("gamblehelpertimes", gd("gamblehelpertimes"))))
+        self.general_widgets["loothelpertimes"] = self._spin(1, 99, int(section.get("loothelpertimes", gd("loothelpertimes"))))
+        self.general_widgets["salvagehelpermethod"] = self._combo(SALVAGE_METHOD_ITEMS, int(section.get("salvagehelpermethod", gd("salvagehelpermethod"))))
+        self.general_widgets["reforgehelpermethod"] = self._combo(REFORGE_METHOD_ITEMS, int(section.get("reforgehelpermethod", gd("reforgehelpermethod"))))
         self.general_widgets["helperspeed"] = self._combo(HELPER_SPEED_PRESET_ITEMS, helper_speed_preset)
-        self.general_widgets["helpermousespeed"] = self._spin(0, 10, int(section.get("helpermousespeed", "2")))
-        self.general_widgets["helperanimationdelay"] = self._spin(1, 1000, int(section.get("helperanimationdelay", "150")))
-        self.general_widgets["safezone"] = _make_line_edit(section.get("safezone", "61,62,63"))
-        self.general_widgets["maxreforge"] = self._spin(1, 999, int(section.get("maxreforge", "10")))
+        self.general_widgets["helpermousespeed"] = self._spin(0, 10, int(section.get("helpermousespeed", gd("helpermousespeed"))))
+        self.general_widgets["helperanimationdelay"] = self._spin(1, 1000, int(section.get("helperanimationdelay", gd("helperanimationdelay"))))
+        self.general_widgets["safezone"] = _make_line_edit(section.get("safezone", gd("safezone")))
+        self.general_widgets["maxreforge"] = self._spin(1, 999, int(section.get("maxreforge", gd("maxreforge"))))
         self.general_widgets["safezonestatus"] = QLabel()
         self.general_widgets["enablegamblehelper"].setToolTip(GAMBLE_TOOLTIP)
         self.general_widgets["gamblehelpertimes"].setToolTip(GAMBLE_TOOLTIP)
@@ -2428,13 +2432,23 @@ class MainWindow(QMainWindow):
         if self.process is None:
             return
         text = bytes(self.process.readAllStandardOutput()).decode("utf-8", errors="replace")
-        if text:
-            if "\a" in text or (
-                "EVENT:profile_switched:" in text and self.general_widgets["enablesoundplay"].isChecked()
-            ):
-                QApplication.beep()
-                text = text.replace("\a", "")
-            self._append_log(text)
+        if not text:
+            return
+        display_lines: list[str] = []
+        beep = "\a" in text
+        text = text.replace("\a", "")
+        for line in text.splitlines(keepends=True):
+            event = parse_runner_event(line)
+            if event is not None:
+                if event.kind == "profile_switched" and self.general_widgets["enablesoundplay"].isChecked():
+                    beep = True
+                # Don't show raw EVENT: lines in the user log
+                continue
+            display_lines.append(line)
+        if beep:
+            QApplication.beep()
+        if display_lines:
+            self._append_log("".join(display_lines))
 
     def _runner_finished(self, exit_code: int, exit_status: QProcess.ExitStatus) -> None:
         if exit_status == QProcess.ExitStatus.NormalExit:

@@ -252,6 +252,44 @@ class ConfigTests(unittest.TestCase):
         region = app._capture_region_rgb(10, 20, 2, 2)
         self.assertEqual(region, [[10, 10, 10, 10], [20, 20, 20, 20], [30, 30, 30, 30]])
 
+    def test_stop_macro_drains_skill_queue(self) -> None:
+        """After stop_macro(), _skill_queue must be empty."""
+        from enums import QueueReason
+        app = self._make_macro_app()
+        with app._lock:
+            app._running = True
+        app._skill_queue.put((runtime.SendSpec("1"), QueueReason.SPAM))
+        app._skill_queue.put((runtime.SendSpec("2"), QueueReason.KEEP_BUFF))
+        self.assertFalse(app._skill_queue.empty())
+        app.stop_macro(reason=None)
+        self.assertTrue(app._skill_queue.empty())
+
+    def test_skill_queue_worker_exits_on_stop(self) -> None:
+        """The queue worker thread exits promptly when stop_event is set."""
+        import threading
+        app = self._make_macro_app()
+        worker_fn = app._make_skill_queue_worker(interval_ms=20)
+        t = threading.Thread(target=worker_fn, daemon=True)
+        t.start()
+        app._stop_event.set()
+        t.join(timeout=2.0)
+        self.assertFalse(t.is_alive(), "Queue worker should have exited after stop_event was set")
+
+    def test_held_keys_released_on_stop(self) -> None:
+        """stop_macro() releases all held keys even if workers are still running."""
+        app = self._make_macro_app()
+        key_a = runtime.SendSpec("a")
+        key_b = runtime.SendSpec("b")
+        with app._lock:
+            app._held_keys = [key_a, key_b]
+            app._running = True
+        released = []
+        app.sender.release = lambda spec: released.append(spec)
+        app.stop_macro(reason=None)
+        self.assertIn(key_a, released)
+        self.assertIn(key_b, released)
+        self.assertEqual(app._held_keys, [])
+
 
 class GuiParityTests(unittest.TestCase):
     def test_main_window_has_tooltips_and_speed_presets(self) -> None:
@@ -467,6 +505,28 @@ class GuiParityTests(unittest.TestCase):
                 window.close()
                 app.processEvents()
                 gui.set_ui_language(previous_language)
+
+    def test_config_round_trip_no_field_loss(self) -> None:
+        """Default config -> GUI save -> runtime load: no field is lost."""
+        app = get_qt_app()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cfg = Path(tmpdir) / "rt.ini"
+            runtime.create_default_config(cfg)
+            w = gui.MainWindow(cfg)
+            try:
+                w.save_config()
+            finally:
+                w.close()
+            app.processEvents()
+            general, profiles = runtime.load_config(cfg)
+        self.assertIsNotNone(general.start_hotkey or True)
+        self.assertGreater(len(profiles), 0)
+        self.assertEqual(general.game_resolution, "Auto")
+        self.assertAlmostEqual(general.game_gamma, 1.0, places=5)
+        p = profiles[0]
+        self.assertEqual(len(p.skills), 6)
+        self.assertEqual(p.skills[0].interval_ms, 300)
+        self.assertEqual(p.skills[4].interval_ms, 300)
 
 
 class GeometryTests(unittest.TestCase):

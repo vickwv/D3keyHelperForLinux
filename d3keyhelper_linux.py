@@ -18,8 +18,15 @@ from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 
-from config_schema import GENERAL_DEFAULTS, default_profile_dict as _schema_default_profile_dict
-from enums import MovingMethod, PotionMethod, QuickPauseAction, QuickPauseMode, ReforgeMethod, SalvageMethod, SkillAction, StartMode
+from config_schema import (
+    build_general_section,
+    gd,
+    pd,
+    sd,
+    skill_hotkey_default,
+    default_profile_dict as _schema_default_profile_dict,
+)
+from enums import MovingMethod, PotionMethod, QuickPauseAction, QuickPauseMode, QueueReason, ReforgeMethod, SalvageMethod, SkillAction, StartMode
 
 try:
     from pynput import keyboard, mouse
@@ -1361,7 +1368,7 @@ class MacroApp:
         if skill.action in {SkillAction.SPAM, SkillAction.KEY_TRIGGER}:
             for repeat_index in range(max(skill.repeat, 1)):
                 if use_queue:
-                    self._skill_queue.put((skill.hotkey, 3))
+                    self._skill_queue.put((skill.hotkey, QueueReason.SPAM))
                 else:
                     self.sender.tap(skill.hotkey)
                 if repeat_index + 1 < skill.repeat and skill.repeat_interval_ms > 0:
@@ -1394,7 +1401,7 @@ class MacroApp:
         if current_active:
             return
         if use_queue:
-            self._skill_queue.put((skill.hotkey, 4))
+            self._skill_queue.put((skill.hotkey, QueueReason.KEEP_BUFF))
         elif skill.hotkey.base == "mouse:left":
             self._send_with_force_standing(skill.hotkey)
         else:
@@ -1526,17 +1533,17 @@ class MacroApp:
         except queue.Empty:
             return
         held_keys = list(self._held_keys)
-        if reason == 3:
+        if reason == QueueReason.SPAM:
             for held in reversed(held_keys):
                 self.sender.release(held)
             time.sleep(interval_ms / 4000.0)
 
-        if send_spec.base == "mouse:left" or reason == 3:
-            self._send_with_force_standing(send_spec, hold_ms=interval_ms // 4 if reason == 3 else 0)
+        if send_spec.base == "mouse:left" or reason == QueueReason.SPAM:
+            self._send_with_force_standing(send_spec, hold_ms=interval_ms // 4 if reason == QueueReason.SPAM else 0)
         else:
             self.sender.tap(send_spec)
 
-        if reason == 3:
+        if reason == QueueReason.SPAM:
             time.sleep(interval_ms / 4000.0)
             for held in held_keys:
                 self.sender.press(held)
@@ -2158,46 +2165,46 @@ def load_config(config_path: Path) -> tuple[GeneralConfig, list[ProfileConfig]]:
         raise ConfigError("配置文件中没有任何技能配置区块。")
 
     general = GeneralConfig(
-        activated_profile=max(parse_int(general_section.get("activatedprofile", "1"), 1), 1),
+        activated_profile=max(parse_int(general_section.get("activatedprofile", gd("activatedprofile")), 1), 1),
         start_hotkey=method_to_hotkey(
-            parse_int(general_section.get("startmethod", "7"), 7),
-            general_section.get("starthotkey", "F2"),
+            parse_int(general_section.get("startmethod", gd("startmethod")), 7),
+            general_section.get("starthotkey", gd("starthotkey")),
             START_METHOD_MOUSE,
         ),
-        run_on_start=parse_boolean(general_section.get("runonstart", "1"), True),
-        d3only=parse_boolean(general_section.get("d3only", "1"), True),
-        smart_pause=parse_boolean(general_section.get("enablesmartpause", "1"), True),
-        sound_on_profile_switch=parse_boolean(general_section.get("enablesoundplay", "1"), True),
-        custom_standing_enabled=parse_boolean(general_section.get("customstanding", "0"), False),
-        custom_standing_key=parse_send_spec(general_section.get("customstandinghk", "LShift")) or SendSpec("shift"),
-        custom_moving_enabled=parse_boolean(general_section.get("custommoving", "0"), False),
-        custom_moving_key=parse_send_spec(general_section.get("custommovinghk", "e")) or SendSpec("e"),
-        custom_potion_enabled=parse_boolean(general_section.get("custompotion", "0"), False),
-        custom_potion_key=parse_send_spec(general_section.get("custompotionhk", "q")) or SendSpec("q"),
-        game_gamma=parse_float(general_section.get("gamegamma", "1.000000"), 1.0),
-        buff_percent=parse_float(general_section.get("buffpercent", "0.050000"), 0.05),
-        game_resolution=general_section.get("gameresolution", "Auto"),
+        run_on_start=parse_boolean(general_section.get("runonstart", gd("runonstart")), True),
+        d3only=parse_boolean(general_section.get("d3only", gd("d3only")), True),
+        smart_pause=parse_boolean(general_section.get("enablesmartpause", gd("enablesmartpause")), True),
+        sound_on_profile_switch=parse_boolean(general_section.get("enablesoundplay", gd("enablesoundplay")), True),
+        custom_standing_enabled=parse_boolean(general_section.get("customstanding", gd("customstanding")), False),
+        custom_standing_key=parse_send_spec(general_section.get("customstandinghk", gd("customstandinghk"))) or SendSpec("shift"),
+        custom_moving_enabled=parse_boolean(general_section.get("custommoving", gd("custommoving")), False),
+        custom_moving_key=parse_send_spec(general_section.get("custommovinghk", gd("custommovinghk"))) or SendSpec("e"),
+        custom_potion_enabled=parse_boolean(general_section.get("custompotion", gd("custompotion")), False),
+        custom_potion_key=parse_send_spec(general_section.get("custompotionhk", gd("custompotionhk"))) or SendSpec("q"),
+        game_gamma=parse_float(general_section.get("gamegamma", gd("gamegamma")), 1.0),
+        buff_percent=parse_float(general_section.get("buffpercent", gd("buffpercent")), 0.05),
+        game_resolution=general_section.get("gameresolution", gd("gameresolution")),
         helper=HelperConfig(
             hotkey=method_to_hotkey(
-                parse_int(general_section.get("oldsandhelpermethod", "7"), 7),
-                general_section.get("oldsandhelperhk", "F5"),
+                parse_int(general_section.get("oldsandhelpermethod", gd("oldsandhelpermethod")), 7),
+                general_section.get("oldsandhelperhk", gd("oldsandhelperhk")),
                 COMMON_METHOD_MOUSE,
             ),
-            gamble_enabled=parse_boolean(general_section.get("enablegamblehelper", "1"), True),
-            gamble_times=max(parse_int(general_section.get("gamblehelpertimes", "15"), 15), 1),
-            loot_enabled=parse_boolean(general_section.get("enableloothelper", "0"), False),
-            loot_times=max(parse_int(general_section.get("loothelpertimes", "30"), 30), 1),
-            salvage_enabled=parse_boolean(general_section.get("enablesalvagehelper", "0"), False),
-            salvage_method=parse_int(general_section.get("salvagehelpermethod", "1"), 1),
-            reforge_enabled=parse_boolean(general_section.get("enablereforgehelper", "0"), False),
-            reforge_method=parse_int(general_section.get("reforgehelpermethod", "1"), 1),
-            upgrade_enabled=parse_boolean(general_section.get("enableupgradehelper", "0"), False),
-            convert_enabled=parse_boolean(general_section.get("enableconverthelper", "0"), False),
-            abandon_enabled=parse_boolean(general_section.get("enableabandonhelper", "0"), False),
-            mouse_speed=max(parse_int(general_section.get("helpermousespeed", "2"), 2), 0),
-            animation_delay_ms=max(parse_int(general_section.get("helperanimationdelay", "150"), 150), 1),
-            max_reforge=max(parse_int(general_section.get("maxreforge", "10"), 10), 1),
-            safezone=parse_safezone(general_section.get("safezone", "61,62,63")),
+            gamble_enabled=parse_boolean(general_section.get("enablegamblehelper", gd("enablegamblehelper")), True),
+            gamble_times=max(parse_int(general_section.get("gamblehelpertimes", gd("gamblehelpertimes")), 15), 1),
+            loot_enabled=parse_boolean(general_section.get("enableloothelper", gd("enableloothelper")), False),
+            loot_times=max(parse_int(general_section.get("loothelpertimes", gd("loothelpertimes")), 30), 1),
+            salvage_enabled=parse_boolean(general_section.get("enablesalvagehelper", gd("enablesalvagehelper")), False),
+            salvage_method=parse_int(general_section.get("salvagehelpermethod", gd("salvagehelpermethod")), 1),
+            reforge_enabled=parse_boolean(general_section.get("enablereforgehelper", gd("enablereforgehelper")), False),
+            reforge_method=parse_int(general_section.get("reforgehelpermethod", gd("reforgehelpermethod")), 1),
+            upgrade_enabled=parse_boolean(general_section.get("enableupgradehelper", gd("enableupgradehelper")), False),
+            convert_enabled=parse_boolean(general_section.get("enableconverthelper", gd("enableconverthelper")), False),
+            abandon_enabled=parse_boolean(general_section.get("enableabandonhelper", gd("enableabandonhelper")), False),
+            mouse_speed=max(parse_int(general_section.get("helpermousespeed", gd("helpermousespeed")), 2), 0),
+            animation_delay_ms=max(parse_int(general_section.get("helperanimationdelay", gd("helperanimationdelay")), 150), 1),
+            max_reforge=max(parse_int(general_section.get("maxreforge", gd("maxreforge")), 10), 1),
+            safezone=parse_safezone(general_section.get("safezone", gd("safezone"))),
         ),
     )
 
@@ -2206,18 +2213,18 @@ def load_config(config_path: Path) -> tuple[GeneralConfig, list[ProfileConfig]]:
         section = parser[section_name]
         skills: list[SkillConfig] = []
         for index in range(1, 7):
-            action = parse_int(section.get(f"action_{index}", "1"), 1)
+            action = parse_int(section.get(f"action_{index}", sd("action")), 1)
             skills.append(
                 SkillConfig(
-                    hotkey=parse_send_spec(section.get(f"skill_{index}", default_skill_hotkey(index))),
+                    hotkey=parse_send_spec(section.get(f"skill_{index}", skill_hotkey_default(index))),
                     action=action,
-                    interval_ms=max(parse_int(section.get(f"interval_{index}", "300"), 300), 20),
-                    delay_ms=parse_int(section.get(f"delay_{index}", "10"), 10),
-                    randomize_delay=parse_boolean(section.get(f"random_{index}", "1"), True),
-                    priority=max(parse_int(section.get(f"priority_{index}", "1"), 1), 1),
-                    repeat=max(parse_int(section.get(f"repeat_{index}", "1"), 1), 1),
-                    repeat_interval_ms=max(parse_int(section.get(f"repeatinterval_{index}", "30"), 30), 0),
-                    trigger=parse_hotkey_expression(section.get(f"triggerbutton_{index}", "LButton")),
+                    interval_ms=max(parse_int(section.get(f"interval_{index}", sd("interval")), 300), 20),
+                    delay_ms=parse_int(section.get(f"delay_{index}", sd("delay")), 10),
+                    randomize_delay=parse_boolean(section.get(f"random_{index}", sd("random")), True),
+                    priority=max(parse_int(section.get(f"priority_{index}", sd("priority")), 1), 1),
+                    repeat=max(parse_int(section.get(f"repeat_{index}", sd("repeat")), 1), 1),
+                    repeat_interval_ms=max(parse_int(section.get(f"repeatinterval_{index}", sd("repeatinterval")), 30), 0),
+                    trigger=parse_hotkey_expression(section.get(f"triggerbutton_{index}", sd("triggerbutton"))),
                 )
             )
 
@@ -2226,28 +2233,28 @@ def load_config(config_path: Path) -> tuple[GeneralConfig, list[ProfileConfig]]:
                 name=section_name,
                 skills=skills,
                 profile_hotkey=method_to_hotkey(
-                    parse_int(section.get("profilehkmethod", "1"), 1),
-                    section.get("profilehkkey", ""),
+                    parse_int(section.get("profilehkmethod", pd("profilehkmethod")), 1),
+                    section.get("profilehkkey", pd("profilehkkey")),
                     COMMON_METHOD_MOUSE,
                 ),
-                autostart_macro=parse_boolean(section.get("autostartmarco", "0"), False),
-                start_mode=parse_int(section.get("lazymode", "1"), 1),
-                moving_method=parse_int(section.get("movingmethod", "1"), 1),
-                moving_interval_ms=max(parse_int(section.get("movinginterval", "100"), 100), 20),
-                potion_method=parse_int(section.get("potionmethod", "1"), 1),
-                potion_interval_ms=max(parse_int(section.get("potioninterval", "500"), 500), 200),
-                use_skill_queue=parse_boolean(section.get("useskillqueue", "0"), False),
-                use_skill_queue_interval_ms=max(parse_int(section.get("useskillqueueinterval", "200"), 200), 50),
+                autostart_macro=parse_boolean(section.get("autostartmarco", pd("autostartmarco")), False),
+                start_mode=parse_int(section.get("lazymode", pd("lazymode")), 1),
+                moving_method=parse_int(section.get("movingmethod", pd("movingmethod")), 1),
+                moving_interval_ms=max(parse_int(section.get("movinginterval", pd("movinginterval")), 100), 20),
+                potion_method=parse_int(section.get("potionmethod", pd("potionmethod")), 1),
+                potion_interval_ms=max(parse_int(section.get("potioninterval", pd("potioninterval")), 500), 200),
+                use_skill_queue=parse_boolean(section.get("useskillqueue", pd("useskillqueue")), False),
+                use_skill_queue_interval_ms=max(parse_int(section.get("useskillqueueinterval", pd("useskillqueueinterval")), 200), 50),
                 quick_pause=QuickPauseConfig(
-                    enabled=parse_boolean(section.get("enablequickpause", "0"), False),
-                    mode=parse_int(section.get("quickpausemethod1", "1"), 1),
+                    enabled=parse_boolean(section.get("enablequickpause", pd("enablequickpause")), False),
+                    mode=parse_int(section.get("quickpausemethod1", pd("quickpausemethod1")), 1),
                     trigger=method_to_hotkey(
-                        parse_int(section.get("quickpausemethod2", "1"), 1),
+                        parse_int(section.get("quickpausemethod2", pd("quickpausemethod2")), 1),
                         "",
                         QUICK_PAUSE_MOUSE,
                     ),
-                    action=parse_int(section.get("quickpausemethod3", "1"), 1),
-                    delay_ms=max(parse_int(section.get("quickpausedelay", "1500"), 1500), 50),
+                    action=parse_int(section.get("quickpausemethod3", pd("quickpausemethod3")), 1),
+                    delay_ms=max(parse_int(section.get("quickpausedelay", pd("quickpausedelay")), 1500), 50),
                 ),
             )
         )
@@ -2256,8 +2263,7 @@ def load_config(config_path: Path) -> tuple[GeneralConfig, list[ProfileConfig]]:
 
 
 def default_skill_hotkey(index: int) -> str:
-    defaults = {1: "1", 2: "2", 3: "3", 4: "4", 5: "LButton", 6: "RButton"}
-    return defaults[index]
+    return skill_hotkey_default(index)
 
 
 def default_profile_dict() -> dict[str, str]:
@@ -2280,9 +2286,7 @@ def create_default_config(config_path: Path) -> None:
     config_path.parent.mkdir(parents=True, exist_ok=True)
     parser = configparser.ConfigParser(interpolation=None)
     parser.optionxform = str.lower
-    general = dict(GENERAL_DEFAULTS)
-    general["version"] = DEFAULT_VERSION
-    parser["General"] = general
+    parser["General"] = build_general_section(DEFAULT_VERSION)
     for name in DEFAULT_PROFILE_NAMES:
         parser[name] = default_profile_dict()
 

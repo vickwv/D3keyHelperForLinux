@@ -88,3 +88,9 @@ class SendMode(IntEnum):
     """Maps to 'Event'/'Input' string values, but also used as index 1/2."""
     EVENT = 1
     INPUT = 2
+
+
+class QueueReason(IntEnum):
+    """Reason code stored alongside a hotkey in the skill queue."""
+    SPAM = 3        # corresponds to SkillAction.SPAM queue entry
+    KEEP_BUFF = 4   # corresponds to SkillAction.KEEP_BUFF queue entry
