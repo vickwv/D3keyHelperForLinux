@@ -45,6 +45,30 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+import io as _io
+_stdout_backup = sys.stdout
+sys.stdout = _io.StringIO()
+from qfluentwidgets import (
+    setTheme,
+    Theme,
+    setThemeColor,
+    ComboBox as FluentComboBox,
+    LineEdit,
+    SpinBox,
+    DoubleSpinBox,
+    CheckBox,
+    PushButton as FluentPushButton,
+    PrimaryPushButton,
+    ToolButton,
+    PlainTextEdit,
+    ListWidget,
+    SmoothScrollArea,
+    FluentIcon as FIF,
+    TableWidget,
+)
+sys.stdout = _stdout_backup
+del _stdout_backup, _io
+
 try:
     from .d3keyhelper_linux import DEFAULT_VERSION, create_default_config, default_config_path, default_profile_dict, main as runtime_main
 except ImportError:
@@ -273,56 +297,36 @@ def app_icon_path() -> Path | None:
 
 APP_STYLE_SHEET = """
 QMainWindow {
-    background: #f6f7f9;
+    background: #f0f2f5;
 }
 QScrollArea {
     border: none;
     background: transparent;
 }
 QListWidget#navigationList {
-    background: #fbfcfd;
-    border: 1px solid #e1e5eb;
-    border-radius: 4px 4px 0 0;
+    background: #f9fafb;
+    border: none;
+    border-radius: 8px;
     padding: 4px;
     outline: none;
 }
 QListWidget#navigationList::item {
-    padding: 6px 8px;
-    margin: 2px 0;
-    border-radius: 3px;
-    color: #233142;
+    padding: 8px 12px;
+    margin: 1px 0;
+    border-radius: 6px;
+    color: #333333;
+    font-size: 13px;
 }
 QListWidget#navigationList::item:hover {
-    background: #f1f4f8;
+    background: rgba(0, 0, 0, 0.05);
 }
 QListWidget#navigationList::item:selected {
-    background: #e7f0ff;
-    color: #1d4f91;
+    background: #e8f0fe;
+    color: #1a73e8;
     font-weight: 600;
 }
 QWidget#navSidebar {
     background: transparent;
-}
-QPushButton#navActionButton {
-    background: #f4f6f9;
-    border: 1px solid #e1e5eb;
-    border-top: none;
-    border-radius: 0;
-    color: #48566a;
-    font-size: 12px;
-    padding: 4px 8px;
-    min-height: 24px;
-    text-align: left;
-}
-QPushButton#navActionButton:last-child {
-    border-radius: 0 0 4px 4px;
-}
-QPushButton#navActionButton:hover:enabled {
-    background: #eaeef4;
-    color: #1d4f91;
-}
-QPushButton#navActionButton:disabled {
-    color: #a0aab4;
 }
 QStackedWidget {
     background: #ffffff;
@@ -343,105 +347,6 @@ QGroupBox::title {
     left: 0;
     padding: 0 2px;
     color: #404b5a;
-}
-QPushButton {
-    background: #ffffff;
-    color: #204a87;
-    border: 1px solid #cdd3db;
-    border-radius: 4px;
-    padding: 0 10px;
-    min-height: 26px;
-    font-weight: 600;
-}
-QPushButton:hover {
-    background: #f4f6f8;
-    border-color: #b8c1cc;
-}
-QPushButton:pressed {
-    background: #e8ebef;
-}
-QPushButton#primaryButton {
-    background: #2f72c4;
-    color: #ffffff;
-    border-color: #2f72c4;
-}
-QPushButton#primaryButton:hover {
-    background: #295fa0;
-    border-color: #295fa0;
-}
-QPushButton#primaryButton:pressed {
-    background: #234d81;
-    border-color: #234d81;
-}
-QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox {
-    border: 1px solid #cdd3db;
-    border-radius: 6px;
-    padding: 2px 6px;
-    background: #ffffff;
-    selection-background-color: #3584e4;
-    min-height: 26px;
-}
-QComboBox {
-    padding-right: 28px;
-}
-QComboBox:hover {
-    border-color: #aeb8c5;
-    background: #fbfcfe;
-}
-QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus {
-    border: 1px solid #2f72c4;
-}
-QComboBox:disabled {
-    color: #8a94a3;
-    background: #f1f3f6;
-}
-QComboBox::drop-down {
-    border: none;
-    subcontrol-origin: padding;
-    subcontrol-position: top right;
-    width: 22px;
-    background: transparent;
-}
-QComboBox::drop-down:hover {
-    background: #eef2f7;
-    border-top-right-radius: 5px;
-    border-bottom-right-radius: 5px;
-}
-QComboBox QAbstractItemView {
-    background: #fbfcfd;
-    color: #233142;
-    border: none;
-    border-radius: 0;
-    padding: 3px 2px;
-    outline: none;
-    selection-background-color: #e7f0ff;
-    selection-color: #1d4f91;
-}
-QComboBox QAbstractItemView::item {
-    min-height: 24px;
-    padding: 4px 9px;
-    border-radius: 4px;
-}
-QComboBox QAbstractItemView::item:hover {
-    background: #f1f4f8;
-}
-QComboBox QAbstractItemView::item:selected {
-    background: #e7f0ff;
-    color: #1d4f91;
-}
-QPlainTextEdit {
-    background: #fbfcfd;
-    color: #233142;
-    border: 1px solid #d9dde3;
-    border-radius: 4px;
-    padding: 6px;
-}
-QCheckBox {
-    spacing: 4px;
-}
-QCheckBox::indicator {
-    width: 16px;
-    height: 16px;
 }
 QLabel#pathLabel {
     background: #ffffff;
@@ -557,25 +462,6 @@ QHeaderView::section {
 }
 QHeaderView::section:last {
     border-right: none;
-}
-QTableWidget QLineEdit, QTableWidget QComboBox, QTableWidget QSpinBox {
-    border: none;
-    border-radius: 3px;
-    padding: 1px 4px;
-    min-height: 22px;
-    background: transparent;
-}
-QTableWidget QComboBox {
-    padding-right: 22px;
-}
-QTableWidget QComboBox::drop-down {
-    width: 20px;
-    background: transparent;
-    border-left: none;
-}
-QTableWidget QLineEdit:focus, QTableWidget QComboBox:focus, QTableWidget QSpinBox:focus {
-    background: #ffffff;
-    border: 1px solid #2f72c4;
 }
 """
 
@@ -721,14 +607,28 @@ def set_combo_value(combo: QComboBox, value) -> None:
     combo.setCurrentIndex(index if index >= 0 else 0)
 
 
-def tune_combo_box(combo: QComboBox) -> QComboBox:
-    popup = QListView()
-    popup.setFrameShape(QFrame.Shape.NoFrame)
-    popup.setUniformItemSizes(True)
-    popup.setSpacing(1)
-    popup.setViewportMargins(0, 0, 0, 0)
-    popup.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-    combo.setView(popup)
+def _make_line_edit(text: str = "") -> LineEdit:
+    w = LineEdit()
+    w.setText(text)
+    return w
+
+
+def _add_combo_item(combo, text: str, data) -> None:
+    if isinstance(combo, FluentComboBox):
+        combo.addItem(text, userData=data)
+    else:
+        combo.addItem(text, data)
+
+
+def tune_combo_box(combo):
+    if isinstance(combo, QComboBox):
+        popup = QListView()
+        popup.setFrameShape(QFrame.Shape.NoFrame)
+        popup.setUniformItemSizes(True)
+        popup.setSpacing(1)
+        popup.setViewportMargins(0, 0, 0, 0)
+        popup.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        combo.setView(popup)
     combo.setMaxVisibleItems(12)
     return combo
 
@@ -764,13 +664,13 @@ def helper_speed_preset_from_values(mouse_speed: int, animation_delay: int, conf
     return configured_preset if configured_preset in {1, 2, 3, 4, 5} else 5
 
 
-def build_profile_selector(profile_names: list[str], active_profile: int) -> QComboBox:
-    combo = QComboBox()
+def build_profile_selector(profile_names: list[str], active_profile: int) -> FluentComboBox:
+    combo = FluentComboBox()
     tune_combo_box(combo)
     count = max(len(profile_names), active_profile, 1)
     for index in range(1, count + 1):
         name = profile_names[index - 1] if index <= len(profile_names) else tr(f"配置{index}", f"Profile {index}")
-        combo.addItem(f"{index} - {localize_text(name)}", index)
+        combo.addItem(f"{index} - {localize_text(name)}", userData=index)
     set_combo_value(combo, active_profile)
     return combo
 
@@ -1228,7 +1128,7 @@ def tune_form_widget(widget: QWidget) -> None:
             widget.setFixedWidth(24)
             widget.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         return
-    if isinstance(widget, (QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox)):
+    if isinstance(widget, (QLineEdit, QComboBox, FluentComboBox, QSpinBox, QDoubleSpinBox)):
         widget.setMinimumHeight(FORM_CONTROL_HEIGHT)
         widget.setMinimumWidth(FORM_FIELD_MIN_WIDTH)
         widget.setMaximumWidth(FORM_FIELD_MAX_WIDTH)
@@ -1240,7 +1140,7 @@ def tune_skill_widget(widget: QWidget, role: str) -> None:
         widget.setFixedWidth(28)
         widget.setMinimumHeight(FORM_CONTROL_HEIGHT)
         return
-    if not isinstance(widget, (QLineEdit, QComboBox, QSpinBox)):
+    if not isinstance(widget, (QLineEdit, QComboBox, FluentComboBox, QSpinBox)):
         return
     widget.setMinimumHeight(FORM_CONTROL_HEIGHT)
     if role == "action":
@@ -1329,9 +1229,9 @@ class ProfileTab(QWidget):
         self.page_header.setFixedHeight(46)
         root.addWidget(self.page_header)
 
-        self.widgets["name"] = QLineEdit(section_name)
+        self.widgets["name"] = _make_line_edit(section_name)
         self.widgets["profilehkmethod"] = self._combo(COMMON_METHOD_ITEMS, int(section.get("profilehkmethod", "1")))
-        self.widgets["profilehkkey"] = QLineEdit(section.get("profilehkkey", ""))
+        self.widgets["profilehkkey"] = _make_line_edit(section.get("profilehkkey", ""))
         self.widgets["autostartmarco"] = self._check(section.get("autostartmarco", "0") == "1")
         self.widgets["lazymode"] = self._combo(START_MODE_ITEMS, int(section.get("lazymode", "1")))
         self.widgets["movingmethod"] = self._combo(MOVING_METHOD_ITEMS, int(section.get("movingmethod", "1")))
@@ -1417,7 +1317,9 @@ class ProfileTab(QWidget):
         settings_right.addStretch(1)
 
         skill_section, skill_layout = build_section(tr("技能表", "Skill table"))
-        self.skill_table = QTableWidget(6, 10)
+        self.skill_table = TableWidget()
+        self.skill_table.setRowCount(6)
+        self.skill_table.setColumnCount(10)
         self.skill_table.viewport().setStyleSheet("background: transparent;")
         self.skill_table.setHorizontalHeaderLabels(
             [
@@ -1458,7 +1360,7 @@ class ProfileTab(QWidget):
         skill_widgets = []
         for index in range(1, 7):
             row = {}
-            row["hotkey"] = QLineEdit(section.get(f"skill_{index}", DEFAULT_SKILLS[index]))
+            row["hotkey"] = _make_line_edit(section.get(f"skill_{index}", DEFAULT_SKILLS[index]))
             row["action"] = self._combo(SKILL_ACTION_ITEMS, int(section.get(f"action_{index}", "1")))
             row["interval"] = self._spin(20, 60000, int(section.get(f"interval_{index}", "300")))
             row["delay"] = self._spin(-30000, 30000, int(section.get(f"delay_{index}", "10")))
@@ -1466,7 +1368,7 @@ class ProfileTab(QWidget):
             row["priority"] = self._spin(1, 10, int(section.get(f"priority_{index}", "1")))
             row["repeat"] = self._spin(1, 99, int(section.get(f"repeat_{index}", "1")))
             row["repeatinterval"] = self._spin(0, 1000, int(section.get(f"repeatinterval_{index}", "30")))
-            row["triggerbutton"] = QLineEdit(section.get(f"triggerbutton_{index}", "LButton"))
+            row["triggerbutton"] = _make_line_edit(section.get(f"triggerbutton_{index}", "LButton"))
             row["action"].setToolTip(SKILL_ACTION_TOOLTIP)
             row["delay"].setToolTip(DELAY_TOOLTIP)
             row["random"].setToolTip(RANDOM_TOOLTIP)
@@ -1525,23 +1427,23 @@ class ProfileTab(QWidget):
         self._connect_dynamic_controls()
         self.refresh_dynamic_state()
 
-    def _combo(self, items, value: int) -> QComboBox:
-        combo = QComboBox()
+    def _combo(self, items, value: int) -> FluentComboBox:
+        combo = FluentComboBox()
         tune_combo_box(combo)
         for data, text in items:
-            combo.addItem(localize_text(text), data)
+            _add_combo_item(combo, localize_text(text), data)
         set_combo_value(combo, value)
         return combo
 
-    def _spin(self, minimum: int, maximum: int, value: int) -> QSpinBox:
-        widget = QSpinBox()
+    def _spin(self, minimum: int, maximum: int, value: int) -> SpinBox:
+        widget = SpinBox()
         widget.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
         widget.setRange(minimum, maximum)
         widget.setValue(value)
         return widget
 
-    def _check(self, checked: bool) -> QCheckBox:
-        widget = QCheckBox()
+    def _check(self, checked: bool) -> CheckBox:
+        widget = CheckBox()
         widget.setChecked(checked)
         return widget
 
@@ -1693,9 +1595,9 @@ class MainWindow(QMainWindow):
         self.reload_config()
 
     def _init_shell_widgets(self) -> None:
-        self.navigation = QListWidget()
+        self.navigation = ListWidget()
         self.page_stack = QStackedWidget()
-        self.log = QPlainTextEdit()
+        self.log = PlainTextEdit()
         self.log.setReadOnly(True)
         self.log.setMaximumBlockCount(500)
 
@@ -1717,14 +1619,13 @@ class MainWindow(QMainWindow):
         self.path_label.setMinimumWidth(TOOLBAR_PATH_MIN_WIDTH)
         self.path_label.setMaximumWidth(TOOLBAR_PATH_MAX_WIDTH)
         self.path_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        reload_button = QPushButton(tr("重新载入", "Reload"))
+        reload_button = FluentPushButton(FIF.SYNC, tr("重新载入", "Reload"))
         reload_button.clicked.connect(self.reload_config)
-        save_button = QPushButton(tr("保存配置", "Save"))
+        save_button = FluentPushButton(FIF.SAVE, tr("保存配置", "Save"))
         save_button.clicked.connect(self.save_config)
-        start_button = QPushButton(tr("启动", "Start"))
-        start_button.setObjectName("primaryButton")
+        start_button = PrimaryPushButton(FIF.PLAY, tr("启动", "Start"))
         start_button.clicked.connect(self.start_runner)
-        stop_button = QPushButton(tr("停止", "Stop"))
+        stop_button = FluentPushButton(FIF.POWER_BUTTON, tr("停止", "Stop"))
         stop_button.clicked.connect(lambda _checked=False: self.stop_runner())
         lang_frame = QFrame()
         lang_frame.setObjectName("langSwitcher")
@@ -1748,7 +1649,7 @@ class MainWindow(QMainWindow):
         toolbar.addStretch(1)
         profile_label = QLabel(tr("激活配置:", "Profile:"))
         profile_label.setObjectName("toolbarLabel")
-        self.toolbar_profile_combo = QComboBox()
+        self.toolbar_profile_combo = FluentComboBox()
         tune_combo_box(self.toolbar_profile_combo)
         self.toolbar_profile_combo.setFixedWidth(140)
         self.toolbar_profile_combo.setToolTip(tr("当前激活配置", "Active profile"))
@@ -1767,12 +1668,10 @@ class MainWindow(QMainWindow):
         self.navigation.currentRowChanged.connect(self._select_page)
         self.navigation.currentRowChanged.connect(lambda _: self._refresh_profile_buttons())
         self.navigation.itemSelectionChanged.connect(self._refresh_profile_buttons)
-        self.add_profile_btn = QPushButton(tr("＋ 添加配置", "+ Add profile"))
-        self.add_profile_btn.setObjectName("navActionButton")
+        self.add_profile_btn = FluentPushButton(FIF.ADD, tr("添加配置", "Add profile"))
         self.add_profile_btn.setToolTip(tr("添加新配置（最多20个）", "Add profile (max 20)"))
         self.add_profile_btn.clicked.connect(self._add_profile)
-        self.remove_profile_btn = QPushButton(tr("－ 删除配置", "− Remove profile"))
-        self.remove_profile_btn.setObjectName("navActionButton")
+        self.remove_profile_btn = FluentPushButton(FIF.REMOVE, tr("删除配置", "Remove profile"))
         self.remove_profile_btn.setToolTip(tr("删除选中配置（可多选）", "Remove selected profiles (multi-select supported)"))
         self.remove_profile_btn.clicked.connect(self._remove_profile)
         sidebar = QWidget()
@@ -1828,7 +1727,7 @@ class MainWindow(QMainWindow):
         self.status_log_value.setObjectName("statusStripValue")
         self.status_log_value.setMinimumWidth(0)
         self.status_log_value.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-        self.log_toggle_button = QPushButton(tr("展开日志", "Show Log"))
+        self.log_toggle_button = FluentPushButton(tr("展开日志", "Show Log"))
         self.log_toggle_button.setCheckable(True)
         self.log_toggle_button.setFixedHeight(24)
         self.log_toggle_button.setMinimumWidth(76)
@@ -1896,7 +1795,7 @@ class MainWindow(QMainWindow):
         count = max(len(profile_names), 1)
         for index in range(1, count + 1):
             name = profile_names[index - 1] if index <= len(profile_names) else tr(f"配置{index}", f"Profile {index}")
-            combo.addItem(f"{index} - {localize_text(name)}", index)
+            combo.addItem(f"{index} - {localize_text(name)}", userData=index)
         if general_combo is not None:
             set_combo_value(combo, combo_value(general_combo))
         combo.blockSignals(False)
@@ -2043,15 +1942,15 @@ class MainWindow(QMainWindow):
 
         self.general_widgets["activatedprofile"] = build_profile_selector(profile_names, int(section.get("activatedprofile", "1")))
         self.general_widgets["startmethod"] = self._combo(START_METHOD_ITEMS, int(section.get("startmethod", "7")))
-        self.general_widgets["starthotkey"] = QLineEdit(section.get("starthotkey", "F2"))
+        self.general_widgets["starthotkey"] = _make_line_edit(section.get("starthotkey", "F2"))
         self.general_widgets["oldsandhelpermethod"] = self._combo(COMMON_METHOD_ITEMS, int(section.get("oldsandhelpermethod", "7")))
-        self.general_widgets["oldsandhelperhk"] = QLineEdit(section.get("oldsandhelperhk", "F5"))
+        self.general_widgets["oldsandhelperhk"] = _make_line_edit(section.get("oldsandhelperhk", "F5"))
         self.general_widgets["sendmode"] = self._combo(SEND_MODE_ITEMS, section.get("sendmode", "Event"))
         self.general_widgets["runonstart"] = self._check(section.get("runonstart", "1") == "1")
         self.general_widgets["d3only"] = self._check(section.get("d3only", "1") == "1")
         self.general_widgets["enablesmartpause"] = self._check(section.get("enablesmartpause", "1") == "1")
         self.general_widgets["enablesoundplay"] = self._check(section.get("enablesoundplay", "1") == "1")
-        self.general_widgets["gameresolution"] = QLineEdit(section.get("gameresolution", "Auto"))
+        self.general_widgets["gameresolution"] = _make_line_edit(section.get("gameresolution", "Auto"))
         self.general_widgets["gamegamma"] = self._float_spin(0.5, 1.5, float(section.get("gamegamma", "1.0")), 6)
         self.general_widgets["buffpercent"] = self._float_spin(0.0, 1.0, float(section.get("buffpercent", "0.05")), 6)
         for key, value in [
@@ -2067,9 +1966,9 @@ class MainWindow(QMainWindow):
             ("enableabandonhelper", section.get("enableabandonhelper", "0") == "1"),
         ]:
             self.general_widgets[key] = self._check(value)
-        self.general_widgets["customstandinghk"] = QLineEdit(section.get("customstandinghk", "LShift"))
-        self.general_widgets["custommovinghk"] = QLineEdit(section.get("custommovinghk", "e"))
-        self.general_widgets["custompotionhk"] = QLineEdit(section.get("custompotionhk", "q"))
+        self.general_widgets["customstandinghk"] = _make_line_edit(section.get("customstandinghk", "LShift"))
+        self.general_widgets["custommovinghk"] = _make_line_edit(section.get("custommovinghk", "e"))
+        self.general_widgets["custompotionhk"] = _make_line_edit(section.get("custompotionhk", "q"))
         self.general_widgets["gamblehelpertimes"] = self._spin(1, 60, int(section.get("gamblehelpertimes", "15")))
         self.general_widgets["loothelpertimes"] = self._spin(1, 99, int(section.get("loothelpertimes", "30")))
         self.general_widgets["salvagehelpermethod"] = self._combo(SALVAGE_METHOD_ITEMS, int(section.get("salvagehelpermethod", "1")))
@@ -2077,7 +1976,7 @@ class MainWindow(QMainWindow):
         self.general_widgets["helperspeed"] = self._combo(HELPER_SPEED_PRESET_ITEMS, helper_speed_preset)
         self.general_widgets["helpermousespeed"] = self._spin(0, 10, int(section.get("helpermousespeed", "2")))
         self.general_widgets["helperanimationdelay"] = self._spin(1, 1000, int(section.get("helperanimationdelay", "150")))
-        self.general_widgets["safezone"] = QLineEdit(section.get("safezone", "61,62,63"))
+        self.general_widgets["safezone"] = _make_line_edit(section.get("safezone", "61,62,63"))
         self.general_widgets["maxreforge"] = self._spin(1, 999, int(section.get("maxreforge", "10")))
         self.general_widgets["safezonestatus"] = QLabel()
         self.general_widgets["enablegamblehelper"].setToolTip(GAMBLE_TOOLTIP)
@@ -2175,31 +2074,31 @@ class MainWindow(QMainWindow):
         self._update_runtime_status_widgets()
         return self._wrap_scroll_tab(container)
 
-    def _wrap_scroll_tab(self, widget: QWidget) -> QScrollArea:
-        tab = QScrollArea()
+    def _wrap_scroll_tab(self, widget: QWidget) -> SmoothScrollArea:
+        tab = SmoothScrollArea()
         tab.setWidgetResizable(True)
         tab.setFrameShape(QFrame.Shape.NoFrame)
         tab.setWidget(widget)
         tab.viewport().setAutoFillBackground(False)
         return tab
 
-    def _combo(self, items, value: int) -> QComboBox:
-        combo = QComboBox()
+    def _combo(self, items, value: int) -> FluentComboBox:
+        combo = FluentComboBox()
         tune_combo_box(combo)
         for data, text in items:
-            combo.addItem(localize_text(text), data)
+            _add_combo_item(combo, localize_text(text), data)
         set_combo_value(combo, value)
         return combo
 
-    def _spin(self, minimum: int, maximum: int, value: int) -> QSpinBox:
-        widget = QSpinBox()
+    def _spin(self, minimum: int, maximum: int, value: int) -> SpinBox:
+        widget = SpinBox()
         widget.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
         widget.setRange(minimum, maximum)
         widget.setValue(value)
         return widget
 
-    def _float_spin(self, minimum: float, maximum: float, value: float, decimals: int) -> QDoubleSpinBox:
-        widget = QDoubleSpinBox()
+    def _float_spin(self, minimum: float, maximum: float, value: float, decimals: int) -> DoubleSpinBox:
+        widget = DoubleSpinBox()
         widget.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
         widget.setRange(minimum, maximum)
         widget.setDecimals(decimals)
@@ -2207,8 +2106,8 @@ class MainWindow(QMainWindow):
         widget.setValue(value)
         return widget
 
-    def _check(self, checked: bool) -> QCheckBox:
-        widget = QCheckBox()
+    def _check(self, checked: bool) -> CheckBox:
+        widget = CheckBox()
         widget.setChecked(checked)
         return widget
 
@@ -2544,7 +2443,7 @@ class MainWindow(QMainWindow):
     def _connect_widget_change(self, widget: QWidget) -> None:
         if isinstance(widget, QLineEdit):
             widget.editingFinished.connect(self._schedule_live_config_change)
-        elif isinstance(widget, QComboBox):
+        elif isinstance(widget, (QComboBox, FluentComboBox)):
             widget.currentIndexChanged.connect(self._schedule_live_config_change)
         elif isinstance(widget, QCheckBox):
             widget.toggled.connect(self._schedule_live_config_change)
@@ -2590,7 +2489,8 @@ def main() -> int:
             sys.argv = original_argv
     config_path = Path(sys.argv[1]).expanduser().resolve() if len(sys.argv) > 1 else default_config_path().resolve()
     app = QApplication(sys.argv)
-    app.setStyle("Fusion")
+    setTheme(Theme.LIGHT)
+    setThemeColor('#2f72c4')
     icon_path = app_icon_path()
     if icon_path is not None:
         app.setWindowIcon(QIcon(str(icon_path)))
