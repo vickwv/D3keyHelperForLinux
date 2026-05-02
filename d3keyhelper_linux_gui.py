@@ -254,26 +254,35 @@ QScrollArea > QWidget {
 }
 QTableWidget {
     background: #ffffff;
-    alternate-background-color: #ffffff;
-    border: 1px solid #e1e5eb;
+    alternate-background-color: #f6f8fb;
+    border: 1px solid #dde2ea;
     border-radius: 4px;
-    gridline-color: #f0f2f5;
+    gridline-color: #eaedf2;
     selection-background-color: #dbeafe;
     selection-color: #1f2933;
 }
 QHeaderView::section {
-    background: #f6f7f9;
+    background: #edf0f5;
     color: #344054;
     border: none;
-    border-bottom: 1px solid #e6e9ee;
-    padding: 3px 6px;
+    border-right: 1px solid #dde2ea;
+    border-bottom: 2px solid #d0d5de;
+    padding: 4px 6px;
     font-weight: 600;
 }
+QHeaderView::section:last {
+    border-right: none;
+}
 QTableWidget QLineEdit, QTableWidget QComboBox, QTableWidget QSpinBox {
-    border-color: #d7dce2;
-    border-radius: 4px;
-    padding: 1px 5px;
-    min-height: 24px;
+    border: none;
+    border-radius: 3px;
+    padding: 1px 4px;
+    min-height: 22px;
+    background: transparent;
+}
+QTableWidget QLineEdit:focus, QTableWidget QComboBox:focus, QTableWidget QSpinBox:focus {
+    background: #ffffff;
+    border: 1px solid #2f72c4;
 }
 """
 
@@ -337,8 +346,8 @@ SKILL_TEXT_WIDTH = 76
 SKILL_TRIGGER_WIDTH = 64
 SKILL_ACTION_WIDTH = 126
 SKILL_NUMBER_WIDTH = 68
-SKILL_TABLE_ROW_HEIGHT = 30
-SKILL_TABLE_HEADER_HEIGHT = 28
+SKILL_TABLE_ROW_HEIGHT = 32
+SKILL_TABLE_HEADER_HEIGHT = 30
 
 AUTOSTART_TOOLTIP = "开启后，以懒人模式启动的战斗宏可以在运行中无缝切换"
 START_MODE_TOOLTIP = (
@@ -1064,7 +1073,7 @@ class ProfileTab(QWidget):
 
         skill_section, skill_layout = build_section(tr("技能表", "Skill table"))
         self.skill_table = QTableWidget(6, 10)
-        self.skill_table.viewport().setStyleSheet("background: #ffffff;")
+        self.skill_table.viewport().setStyleSheet("background: transparent;")
         self.skill_table.setHorizontalHeaderLabels(
             [
                 tr("槽位", "Slot"),
@@ -1082,8 +1091,8 @@ class ProfileTab(QWidget):
         self.skill_table.verticalHeader().setVisible(False)
         self.skill_table.setSelectionMode(QTableWidget.SelectionMode.NoSelection)
         self.skill_table.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        self.skill_table.setShowGrid(False)
-        self.skill_table.setAlternatingRowColors(False)
+        self.skill_table.setShowGrid(True)
+        self.skill_table.setAlternatingRowColors(True)
         self.skill_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.skill_table.horizontalHeader().setStretchLastSection(True)
         self.skill_table.horizontalHeader().setDefaultSectionSize(SKILL_NUMBER_WIDTH)
@@ -1123,12 +1132,20 @@ class ProfileTab(QWidget):
             if index in {5, 6}:
                 row["hotkey"].setReadOnly(True)
             slot_item = QTableWidgetItem(tr(f"技能{index}", f"Skill {index}"))
+            slot_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             self.skill_table.setItem(index - 1, 0, slot_item)
             self.skill_table.setCellWidget(index - 1, 1, row["hotkey"])
             self.skill_table.setCellWidget(index - 1, 2, row["action"])
             self.skill_table.setCellWidget(index - 1, 3, row["interval"])
             self.skill_table.setCellWidget(index - 1, 4, row["delay"])
-            self.skill_table.setCellWidget(index - 1, 5, build_inline_field(row["random"]))
+            random_wrapper = QWidget()
+            random_layout = QHBoxLayout(random_wrapper)
+            random_layout.setContentsMargins(0, 0, 0, 0)
+            random_layout.setSpacing(0)
+            random_layout.addStretch()
+            random_layout.addWidget(row["random"])
+            random_layout.addStretch()
+            self.skill_table.setCellWidget(index - 1, 5, random_wrapper)
             self.skill_table.setCellWidget(index - 1, 6, row["priority"])
             self.skill_table.setCellWidget(index - 1, 7, row["repeat"])
             self.skill_table.setCellWidget(index - 1, 8, row["repeatinterval"])
