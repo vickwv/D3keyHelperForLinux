@@ -1679,14 +1679,14 @@ class MainWindow(QMainWindow):
         stop_button.clicked.connect(lambda _checked=False: self.stop_runner())
         self.language_combo = QComboBox()
         tune_combo_box(self.language_combo)
-        self.language_combo.setFixedWidth(64)
+        self.language_combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
+        self.language_combo.setMinimumWidth(60)
         self.language_combo.setToolTip(tr("界面语言", "Interface language"))
         for data, text in LANGUAGE_TOOLBAR_ITEMS:
             self.language_combo.addItem(text, data)
         set_combo_value(self.language_combo, UI_LANGUAGE)
         self.language_combo.currentIndexChanged.connect(self._apply_language_selection)
         toolbar.addWidget(self.language_combo)
-        toolbar.addWidget(self.path_label)
         toolbar.addStretch(1)
         profile_label = QLabel(tr("激活配置:", "Profile:"))
         profile_label.setObjectName("toolbarLabel")
@@ -2186,15 +2186,9 @@ class MainWindow(QMainWindow):
         self.log_panel.setVisible(expanded)
 
     def _update_path_label(self) -> None:
-        available = self.path_label.width()
-        if available <= 0:
-            available = TOOLBAR_PATH_MAX_WIDTH - 24
-        text = self.path_label.fontMetrics().elidedText(
-            self._path_text,
-            Qt.TextElideMode.ElideMiddle,
-            max(available - 12, 120),
-        )
-        self.path_label.setText(text)
+        # path_label is no longer shown in the toolbar; update window title instead
+        filename = Path(self._path_text).name if self._path_text else ""
+        self.setWindowTitle(f"D3keyHelper — {filename}" if filename else "D3keyHelper")
         self.path_label.setToolTip(self._path_text)
 
     def _update_runtime_status_widgets(self) -> None:
