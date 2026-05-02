@@ -56,12 +56,12 @@ QMainWindow {
 QWidget {
     font-family: "Noto Sans CJK SC", "Source Han Sans SC", "Microsoft YaHei", "WenQuanYi Micro Hei", "DejaVu Sans", sans-serif;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 400;
     color: #1f2933;
 }
 QLabel {
     color: #1f2933;
-    font-weight: 500;
+    font-weight: 400;
 }
 QPushButton,
 QComboBox,
@@ -71,7 +71,7 @@ QDoubleSpinBox,
 QCheckBox,
 QTableWidget {
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 400;
     color: #1f2933;
 }
 QWidget:disabled,
@@ -83,7 +83,7 @@ QSpinBox:disabled,
 QDoubleSpinBox:disabled,
 QCheckBox:disabled {
     color: #7f8996;
-    font-weight: 500;
+    font-weight: 400;
 }
 QScrollArea {
     border: none;
@@ -97,7 +97,7 @@ QListWidget#navigationList {
     outline: none;
     font-family: "Noto Sans CJK SC", "Source Han Sans SC", "Microsoft YaHei", "WenQuanYi Micro Hei", "DejaVu Sans", sans-serif;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 400;
     color: #243040;
 }
 QListWidget#navigationList::item {
@@ -107,7 +107,7 @@ QListWidget#navigationList::item {
     border-radius: 6px;
     color: #202b3a;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 400;
 }
 QListWidget#navigationList::item:hover {
     background: #edf2f7;
@@ -116,11 +116,11 @@ QListWidget#navigationList::item:hover {
 QListWidget#navigationList::item:selected {
     background: #dfeafe;
     color: #174ea6;
-    font-weight: 500;
+    font-weight: 400;
 }
 QListWidget#navigationList::item:disabled {
     color: #7f8996;
-    font-weight: 500;
+    font-weight: 400;
 }
 QWidget#navSidebar {
     background: transparent;
@@ -131,14 +131,14 @@ QFrame#navActions {
 QPushButton#navActionButton {
     color: #243040;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 400;
     min-height: 30px;
     padding-left: 8px;
     padding-right: 8px;
 }
 QPushButton#navActionButton:disabled {
     color: #7f8996;
-    font-weight: 500;
+    font-weight: 400;
 }
 QStackedWidget {
     background: #ffffff;
@@ -152,7 +152,7 @@ QGroupBox {
     margin-top: 8px;
     padding-top: 4px;
     background: transparent;
-    font-weight: 500;
+    font-weight: 400;
 }
 QGroupBox::title {
     subcontrol-origin: margin;
@@ -166,7 +166,7 @@ QLabel#pathLabel {
     border: 1px solid #d9dde3;
     border-radius: 4px;
     padding: 4px 8px;
-    font-weight: 500;
+    font-weight: 400;
 }
 QFrame#statusStrip {
     background: #ffffff;
@@ -176,12 +176,12 @@ QFrame#statusStrip {
     border-bottom: none;
 }
 QLabel#statusStripLabel {
-    font-weight: 500;
+    font-weight: 400;
     color: #344256;
 }
 QLabel#statusStripValue {
     color: #1f2933;
-    font-weight: 500;
+    font-weight: 400;
 }
 QFrame#statusDot {
     border-radius: 5px;
@@ -203,7 +203,7 @@ QFrame#toolbarFrame {
 QLabel#toolbarLabel {
     color: #344256;
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 400;
 }
 QFrame#langSwitcher {
     border: 1px solid #d0d5dc;
@@ -215,7 +215,7 @@ QPushButton#langButton {
     background: transparent;
     color: #344256;
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 400;
     padding: 0 6px;
     min-width: 28px;
     min-height: 22px;
@@ -230,25 +230,25 @@ QPushButton#langButton:hover:!checked {
 }
 QLabel#sectionHint {
     color: #536173;
-    font-weight: 500;
+    font-weight: 400;
 }
 QLabel#pageTitle {
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 400;
     color: #182230;
     padding-top: 2px;
 }
 QLabel#pageSubtitle {
     color: #536173;
-    font-weight: 500;
+    font-weight: 400;
 }
 QLabel#sectionTitle {
-    font-weight: 500;
+    font-weight: 400;
     color: #182230;
 }
 QLabel#inlineParamLabel {
     color: #344256;
-    font-weight: 500;
+    font-weight: 400;
 }
 QFrame#sectionSeparator {
     background: #e6e9ee;
@@ -270,7 +270,7 @@ QTableWidget {
     selection-background-color: #cfe0fc;
     selection-color: #1a3a6b;
     color: #1f2933;
-    font-weight: 500;
+    font-weight: 400;
 }
 QHeaderView::section {
     background: #dce8f7;
@@ -279,7 +279,7 @@ QHeaderView::section {
     border-right: 1px solid #c8d6f0;
     border-bottom: 2px solid #2f72c4;
     padding: 4px 6px;
-    font-weight: 500;
+    font-weight: 400;
 }
 QHeaderView::section:last {
     border-right: none;

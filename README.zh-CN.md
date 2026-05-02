@@ -259,7 +259,7 @@ chmod +x build/appimage/D3keyHelper-Linux-x86_64.AppImage
 1. 运行测试
 2. 构建 AppImage
 3. 上传 AppImage 作为 workflow artifact
-4. 当推送 `v1.0.5` 这类 tag 时，把 AppImage 附加到 GitHub Release
+4. 当推送 `v1.0.6` 这类 tag 时，把 AppImage 附加到 GitHub Release
 
 发布说明保存在 [.github/release-notes](./.github/release-notes) 目录。
 

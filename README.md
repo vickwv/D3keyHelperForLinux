@@ -259,7 +259,7 @@ This repository includes a GitHub Actions workflow that:
 1. runs the test suite
 2. builds the AppImage automatically
 3. uploads the AppImage as a workflow artifact
-4. attaches the AppImage to GitHub Releases when a tag like `v1.0.5` is pushed
+4. attaches the AppImage to GitHub Releases when a tag like `v1.0.6` is pushed
 
 Release notes are stored under [.github/release-notes](./.github/release-notes).
 

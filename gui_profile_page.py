@@ -312,7 +312,7 @@ class ProfileTab(QWidget):
                 "Warning: the single-threaded skill queue may be slower than the spam inputs.",
             )
         )
-        self.skill_queue_warning.setStyleSheet("color: #b42318; font-weight: 500;")
+        self.skill_queue_warning.setStyleSheet("color: #b42318; font-weight: 400;")
         self.skill_queue_warning.hide()
         skill_layout.addWidget(self.skill_table)
         skill_layout.addWidget(self.skill_queue_warning)
