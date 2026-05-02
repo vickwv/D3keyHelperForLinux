@@ -328,7 +328,7 @@ FORM_FIELD_MAX_WIDTH = 180
 FORM_CONTROL_HEIGHT = 26
 TOGGLE_TEXT_WIDTH = 150
 INLINE_LABEL_WIDTH = 76
-GENERAL_TOP_SECTION_HEIGHT = 304
+
 TOOLBAR_PATH_MIN_WIDTH = 220
 TOOLBAR_PATH_MAX_WIDTH = 320
 TOOLBAR_PROFILE_WIDTH = 190
@@ -535,6 +535,21 @@ def build_section(title: str, hint: str | None = None) -> tuple[QWidget, QVBoxLa
     return section, layout
 
 
+def build_sub_header(text: str) -> QWidget:
+    """Inline sub-section separator inside a build_section block."""
+    wrapper = QWidget()
+    layout = QVBoxLayout(wrapper)
+    layout.setContentsMargins(0, 10, 0, 2)
+    layout.setSpacing(4)
+    label = QLabel(text)
+    label.setObjectName("sectionTitle")
+    sep = QFrame()
+    sep.setObjectName("sectionSeparator")
+    layout.addWidget(label)
+    layout.addWidget(sep)
+    return wrapper
+
+
 def build_two_column_form(fields) -> QWidget:
     wrapper = QWidget()
     layout = QHBoxLayout(wrapper)
@@ -600,26 +615,32 @@ def build_toggle_grid(rows) -> QWidget:
         trailing_widget = row[4] if len(row) > 4 else None
         checkbox.setText(text)
         checkbox.setMinimumHeight(FORM_CONTROL_HEIGHT)
-        checkbox.setFixedWidth(TOGGLE_TEXT_WIDTH)
-        checkbox.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         if tooltip:
             checkbox.setToolTip(tooltip)
-        layout.addWidget(checkbox, row_index, 0)
-        if trailing_label:
-            label = QLabel(trailing_label)
-            label.setObjectName("inlineParamLabel")
-            label.setFixedWidth(INLINE_LABEL_WIDTH)
-            label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-            if tooltip:
-                label.setToolTip(tooltip)
-            layout.addWidget(label, row_index, 1)
+        if trailing_label or trailing_widget is not None:
+            # Row has trailing param: fix checkbox width so param columns align across rows
+            checkbox.setFixedWidth(TOGGLE_TEXT_WIDTH)
+            checkbox.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+            layout.addWidget(checkbox, row_index, 0)
+            if trailing_label:
+                label = QLabel(trailing_label)
+                label.setObjectName("inlineParamLabel")
+                label.setFixedWidth(INLINE_LABEL_WIDTH)
+                label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+                if tooltip:
+                    label.setToolTip(tooltip)
+                layout.addWidget(label, row_index, 1)
+            else:
+                layout.addItem(QSpacerItem(INLINE_LABEL_WIDTH, FORM_CONTROL_HEIGHT), row_index, 1)
+            if trailing_widget is not None:
+                tune_form_widget(trailing_widget)
+                layout.addWidget(trailing_widget, row_index, 2)
+            else:
+                layout.addItem(QSpacerItem(FORM_FIELD_MIN_WIDTH, FORM_CONTROL_HEIGHT), row_index, 2)
         else:
-            layout.addItem(QSpacerItem(INLINE_LABEL_WIDTH, FORM_CONTROL_HEIGHT), row_index, 1)
-        if trailing_widget is not None:
-            tune_form_widget(trailing_widget)
-            layout.addWidget(trailing_widget, row_index, 2)
-        else:
-            layout.addItem(QSpacerItem(FORM_FIELD_MIN_WIDTH, FORM_CONTROL_HEIGHT), row_index, 2)
+            # Simple toggle: let text flow freely — span across all columns
+            checkbox.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Fixed)
+            layout.addWidget(checkbox, row_index, 0, 1, 4)
     layout.setColumnStretch(0, 0)
     layout.setColumnStretch(1, 0)
     layout.setColumnStretch(2, 0)
@@ -1468,15 +1489,9 @@ class MainWindow(QMainWindow):
                 tr("编辑全局热键、助手行为、输入方式与高级参数", "Edit global hotkeys, helper behavior, input mode, and advanced options."),
             )
         )
-        columns = QGridLayout()
+        columns = QHBoxLayout()
         columns.setContentsMargins(0, 0, 0, 0)
-        columns.setHorizontalSpacing(32)
-        columns.setVerticalSpacing(24)
-        columns.setColumnStretch(0, 1)
-        columns.setColumnStretch(1, 1)
-        columns.setRowStretch(0, 0)
-        columns.setRowStretch(1, 0)
-        columns.setRowStretch(2, 1)
+        columns.setSpacing(32)
         root.addLayout(columns)
 
         self.general_widgets["activatedprofile"] = build_profile_selector(profile_names, int(section.get("activatedprofile", "1")))
@@ -1492,29 +1507,6 @@ class MainWindow(QMainWindow):
         self.general_widgets["gameresolution"] = QLineEdit(section.get("gameresolution", "Auto"))
         self.general_widgets["gamegamma"] = self._float_spin(0.5, 1.5, float(section.get("gamegamma", "1.0")), 6)
         self.general_widgets["buffpercent"] = self._float_spin(0.0, 1.0, float(section.get("buffpercent", "0.05")), 6)
-        basic_section, basic_layout = build_section(tr("基础", "Basics"))
-        basic_layout.addWidget(
-            build_option_grid(
-                [
-                    ("当前激活配置", self.general_widgets["activatedprofile"]),
-                    ("战斗宏启动方式", self.general_widgets["startmethod"]),
-                    ("战斗宏启动热键", self.general_widgets["starthotkey"]),
-                ]
-            )
-        )
-        basic_layout.addWidget(
-            build_toggle_grid(
-                [
-                    (self.general_widgets["runonstart"], "宏启动瞬间执行一次", RUN_ON_START_TOOLTIP),
-                    (self.general_widgets["d3only"], "只作用于 Diablo III 前台窗口", ""),
-                    (self.general_widgets["enablesmartpause"], "智能暂停", SMART_PAUSE_TOOLTIP),
-                    (self.general_widgets["enablesoundplay"], "切换配置提示音", SOUND_ON_SWITCH_TOOLTIP),
-                ]
-            )
-        )
-        basic_section.setFixedHeight(GENERAL_TOP_SECTION_HEIGHT)
-        columns.addWidget(basic_section, 0, 0, alignment=Qt.AlignmentFlag.AlignTop)
-
         for key, value in [
             ("customstanding", section.get("customstanding", "0") == "1"),
             ("custommoving", section.get("custommoving", "0") == "1"),
@@ -1555,47 +1547,74 @@ class MainWindow(QMainWindow):
         self.general_widgets["helperspeed"].currentIndexChanged.connect(self._apply_helper_speed_preset)
         self.general_widgets["helpermousespeed"].valueChanged.connect(self._sync_helper_speed_preset)
         self.general_widgets["helperanimationdelay"].valueChanged.connect(self._sync_helper_speed_preset)
-        input_section, input_layout = build_section(tr("输入", "Input"))
-        input_layout.addWidget(
-            build_parameter_section_grid(
+        basic_section, basic_layout = build_section(tr("基础", "Basics"))
+        basic_layout.addWidget(
+            build_option_grid(
                 [
-                    ("option", "发送模式", self.general_widgets["sendmode"], SEND_MODE_TOOLTIP),
-                    ("toggle", self.general_widgets["customstanding"], "自定义强制站立", CUSTOM_STANDING_TOOLTIP, "按键", self.general_widgets["customstandinghk"]),
-                    ("toggle", self.general_widgets["custommoving"], "自定义强制移动", CUSTOM_MOVING_TOOLTIP, "按键", self.general_widgets["custommovinghk"]),
-                    ("toggle", self.general_widgets["custompotion"], "自定义药水按键", CUSTOM_POTION_TOOLTIP, "按键", self.general_widgets["custompotionhk"]),
+                    ("当前激活配置", self.general_widgets["activatedprofile"]),
+                    ("战斗宏启动方式", self.general_widgets["startmethod"]),
+                    ("战斗宏启动热键", self.general_widgets["starthotkey"]),
                 ]
             )
         )
-        columns.addWidget(input_section, 1, 0, alignment=Qt.AlignmentFlag.AlignTop)
-
-        helper_section, helper_layout = build_section(tr("助手", "Helpers"))
-        helper_layout.addWidget(
-            build_helper_section_grid(
+        basic_layout.addWidget(
+            build_toggle_grid(
                 [
-                    ("option", "助手启动方式", self.general_widgets["oldsandhelpermethod"], HELPER_HOTKEY_TOOLTIP),
-                    ("option", "助手启动热键", self.general_widgets["oldsandhelperhk"], HELPER_HOTKEY_TOOLTIP),
-                    ("toggle", self.general_widgets["enablegamblehelper"], "赌博助手", GAMBLE_TOOLTIP, "点击次数", self.general_widgets["gamblehelpertimes"]),
-                    ("toggle", self.general_widgets["enableloothelper"], "拾取助手", LOOT_TOOLTIP, "点击次数", self.general_widgets["loothelpertimes"]),
-                    ("toggle", self.general_widgets["enablesalvagehelper"], "分解助手", SALVAGE_ENABLE_TOOLTIP, "分解策略", self.general_widgets["salvagehelpermethod"]),
+                    (self.general_widgets["runonstart"], "宏启动瞬间执行一次", RUN_ON_START_TOOLTIP),
+                    (self.general_widgets["d3only"], "只作用于 Diablo III 前台窗口", ""),
+                    (self.general_widgets["enablesmartpause"], "智能暂停", SMART_PAUSE_TOOLTIP),
+                    (self.general_widgets["enablesoundplay"], "切换配置提示音", SOUND_ON_SWITCH_TOOLTIP),
+                ]
+            )
+        )
+        basic_layout.addWidget(build_sub_header(tr("输入", "Input")))
+        basic_layout.addWidget(
+            build_option_grid(
+                [("发送模式", self.general_widgets["sendmode"], SEND_MODE_TOOLTIP)]
+            )
+        )
+        basic_layout.addWidget(
+            build_toggle_grid(
+                [
+                    (self.general_widgets["customstanding"], "自定义强制站立", CUSTOM_STANDING_TOOLTIP, "按键", self.general_widgets["customstandinghk"]),
+                    (self.general_widgets["custommoving"], "自定义强制移动", CUSTOM_MOVING_TOOLTIP, "按键", self.general_widgets["custommovinghk"]),
+                    (self.general_widgets["custompotion"], "自定义药水按键", CUSTOM_POTION_TOOLTIP, "按键", self.general_widgets["custompotionhk"]),
+                ]
+            )
+        )
+        basic_layout.addStretch(1)
+        columns.addWidget(basic_section, 1)
+
+        input_section, input_layout = build_section(tr("助手", "Helpers"))
+        input_layout.addWidget(
+            build_option_grid(
+                [
+                    ("助手启动方式", self.general_widgets["oldsandhelpermethod"], HELPER_HOTKEY_TOOLTIP),
+                    ("助手启动热键", self.general_widgets["oldsandhelperhk"], HELPER_HOTKEY_TOOLTIP),
+                ]
+            )
+        )
+        input_layout.addWidget(
+            build_helper_list(
+                [
+                    (self.general_widgets["enablegamblehelper"], "赌博助手", GAMBLE_TOOLTIP, "点击次数", self.general_widgets["gamblehelpertimes"]),
+                    (self.general_widgets["enableloothelper"], "拾取助手", LOOT_TOOLTIP, "点击次数", self.general_widgets["loothelpertimes"]),
+                    (self.general_widgets["enablesalvagehelper"], "分解助手", SALVAGE_ENABLE_TOOLTIP, "分解策略", self.general_widgets["salvagehelpermethod"]),
                     (
-                        "toggle",
                         self.general_widgets["enablereforgehelper"],
                         "重铸助手",
                         make_reforge_method_tooltip(self.general_widgets["maxreforge"].value()),
                         "重铸策略",
                         self.general_widgets["reforgehelpermethod"],
                     ),
-                    ("toggle", self.general_widgets["enableupgradehelper"], "升级助手", UPGRADE_TOOLTIP),
-                    ("toggle", self.general_widgets["enableconverthelper"], "转化助手", CONVERT_TOOLTIP),
-                    ("toggle", self.general_widgets["enableabandonhelper"], "丢装助手", ABANDON_TOOLTIP),
+                    (self.general_widgets["enableupgradehelper"], "升级助手", UPGRADE_TOOLTIP),
+                    (self.general_widgets["enableconverthelper"], "转化助手", CONVERT_TOOLTIP),
+                    (self.general_widgets["enableabandonhelper"], "丢装助手", ABANDON_TOOLTIP),
                 ]
             )
         )
-        helper_section.setFixedHeight(GENERAL_TOP_SECTION_HEIGHT)
-        columns.addWidget(helper_section, 0, 1, alignment=Qt.AlignmentFlag.AlignTop)
-
-        advanced_section, advanced_layout = build_section(tr("高级", "Advanced"))
-        advanced_layout.addWidget(
+        input_layout.addWidget(build_sub_header(tr("高级", "Advanced")))
+        input_layout.addWidget(
             build_option_grid(
                 [
                     ("游戏分辨率", self.general_widgets["gameresolution"], GAME_RESOLUTION_TOOLTIP),
@@ -1609,13 +1628,14 @@ class MainWindow(QMainWindow):
                 ]
             )
         )
-        advanced_layout.addWidget(self.general_widgets["safezonestatus"])
+        input_layout.addWidget(self.general_widgets["safezonestatus"])
+        input_layout.addStretch(1)
+        columns.addWidget(input_section, 1)
         self.general_widgets["maxreforge"].valueChanged.connect(self._sync_reforge_tooltip)
         self._sync_reforge_tooltip()
         self._sync_helper_speed_preset()
         self._connect_general_dynamic_controls()
         self._refresh_general_state()
-        columns.addWidget(advanced_section, 1, 1, alignment=Qt.AlignmentFlag.AlignTop)
         root.addStretch(1)
         self._update_runtime_status_widgets()
         return self._wrap_scroll_tab(container)
