@@ -48,7 +48,7 @@ class ConfigTests(unittest.TestCase):
             general, profiles = runtime.load_config(config_path)
             parser = gui.load_parser(config_path)
             self.assertEqual(general.activated_profile, 1)
-            self.assertEqual(len(profiles), 4)
+            self.assertEqual(len(profiles), 1)
             self.assertEqual(profiles[0].name, "配置1")
             self.assertEqual(profiles[0].skills[0].hotkey.base, "1")
             self.assertEqual(general.helper.max_reforge, 10)
@@ -180,6 +180,12 @@ class ConfigTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp_dir:
             config_path = Path(tmp_dir) / "d3oldsand.ini"
             runtime.create_default_config(config_path)
+            # Add a second profile so we can actually switch
+            parser = gui.load_parser(config_path)
+            parser["配置2"] = runtime.default_profile_dict()
+            with config_path.open("w", encoding="utf-16") as fh:
+                fh.write("; Linux native config for D3keyHelper\r\n")
+                parser.write(fh)
             general, profiles = runtime.load_config(config_path)
             sender = mock.Mock()
             sender._filter = mock.Mock()

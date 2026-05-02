@@ -45,12 +45,12 @@ from PySide6.QtWidgets import (
 )
 
 try:
-    from .d3keyhelper_linux import DEFAULT_VERSION, create_default_config, default_config_path, main as runtime_main
+    from .d3keyhelper_linux import DEFAULT_VERSION, create_default_config, default_config_path, default_profile_dict, main as runtime_main
 except ImportError:
     try:
-        from linux_port.d3keyhelper_linux import DEFAULT_VERSION, create_default_config, default_config_path, main as runtime_main
+        from linux_port.d3keyhelper_linux import DEFAULT_VERSION, create_default_config, default_config_path, default_profile_dict, main as runtime_main
     except ImportError:
-        from d3keyhelper_linux import DEFAULT_VERSION, create_default_config, default_config_path, main as runtime_main
+        from d3keyhelper_linux import DEFAULT_VERSION, create_default_config, default_config_path, default_profile_dict, main as runtime_main
 
 
 UI_LANGUAGE_ENV = "D3HELPER_LANG"
@@ -281,7 +281,7 @@ QScrollArea {
 QListWidget#navigationList {
     background: #fbfcfd;
     border: 1px solid #e1e5eb;
-    border-radius: 4px;
+    border-radius: 4px 4px 0 0;
     padding: 4px;
     outline: none;
 }
@@ -298,6 +298,30 @@ QListWidget#navigationList::item:selected {
     background: #e7f0ff;
     color: #1d4f91;
     font-weight: 600;
+}
+QWidget#navSidebar {
+    background: transparent;
+}
+QPushButton#navActionButton {
+    background: #f4f6f9;
+    border: 1px solid #e1e5eb;
+    border-top: none;
+    border-radius: 0;
+    color: #48566a;
+    font-size: 12px;
+    padding: 4px 8px;
+    min-height: 24px;
+    text-align: left;
+}
+QPushButton#navActionButton:last-child {
+    border-radius: 0 0 4px 4px;
+}
+QPushButton#navActionButton:hover:enabled {
+    background: #eaeef4;
+    color: #1d4f91;
+}
+QPushButton#navActionButton:disabled {
+    color: #a0aab4;
 }
 QStackedWidget {
     background: #ffffff;
@@ -1738,8 +1762,25 @@ class MainWindow(QMainWindow):
         self.navigation.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.navigation.setVerticalScrollMode(QListWidget.ScrollMode.ScrollPerPixel)
         self.navigation.setSpacing(2)
-        self.navigation.setFixedWidth(NAV_WIDTH)
         self.navigation.currentRowChanged.connect(self._select_page)
+        self.navigation.currentRowChanged.connect(lambda _: self._refresh_profile_buttons())
+        self.add_profile_btn = QPushButton(tr("＋ 添加配置", "+ Add profile"))
+        self.add_profile_btn.setObjectName("navActionButton")
+        self.add_profile_btn.setToolTip(tr("添加新配置（最多20个）", "Add profile (max 20)"))
+        self.add_profile_btn.clicked.connect(self._add_profile)
+        self.remove_profile_btn = QPushButton(tr("－ 删除配置", "− Remove profile"))
+        self.remove_profile_btn.setObjectName("navActionButton")
+        self.remove_profile_btn.setToolTip(tr("删除当前配置", "Remove current profile"))
+        self.remove_profile_btn.clicked.connect(self._remove_profile)
+        sidebar = QWidget()
+        sidebar.setObjectName("navSidebar")
+        sidebar.setFixedWidth(NAV_WIDTH)
+        sidebar_layout = QVBoxLayout(sidebar)
+        sidebar_layout.setContentsMargins(0, 0, 0, 0)
+        sidebar_layout.setSpacing(0)
+        sidebar_layout.addWidget(self.navigation)
+        sidebar_layout.addWidget(self.add_profile_btn)
+        sidebar_layout.addWidget(self.remove_profile_btn)
         content_widget = QFrame()
         content_widget.setObjectName("contentPanel")
         content_layout = QVBoxLayout(content_widget)
@@ -1758,7 +1799,7 @@ class MainWindow(QMainWindow):
         content_layout.addWidget(self.page_stack, 1)
         content_layout.addWidget(self.log_panel)
         splitter = QSplitter(Qt.Orientation.Horizontal)
-        splitter.addWidget(self.navigation)
+        splitter.addWidget(sidebar)
         splitter.addWidget(content_widget)
         splitter.setChildrenCollapsible(False)
         splitter.setStretchFactor(0, 0)
@@ -1840,6 +1881,8 @@ class MainWindow(QMainWindow):
         self._suspend_config_watch = False
         self._update_runtime_status_widgets()
         self._sync_toolbar_profile_combo(profile_names)
+        self._refresh_profile_buttons()
+
 
     def _sync_toolbar_profile_combo(self, profile_names: list[str]) -> None:
         """Populate toolbar profile combo and wire it to the General tab's activatedprofile widget."""
@@ -1877,6 +1920,73 @@ class MainWindow(QMainWindow):
         self.toolbar_profile_combo.blockSignals(True)
         set_combo_value(self.toolbar_profile_combo, combo_value(general_combo))
         self.toolbar_profile_combo.blockSignals(False)
+
+    MAX_PROFILES = 20
+
+    def _refresh_profile_buttons(self) -> None:
+        count = len(self.profile_tabs)
+        row = self.navigation.currentRow()
+        self.add_profile_btn.setEnabled(count < self.MAX_PROFILES)
+        self.remove_profile_btn.setEnabled(count > 1 and row > 0)
+
+    def _next_profile_name(self, existing: list[str]) -> str:
+        existing_lower = {n.lower() for n in existing}
+        for n in range(1, self.MAX_PROFILES + 1):
+            for candidate in (tr(f"配置{n}", f"Profile {n}"), f"配置{n}", f"Profile {n}"):
+                if candidate.lower() not in existing_lower:
+                    return candidate
+        return tr(f"配置{len(existing) + 1}", f"Profile {len(existing) + 1}")
+
+    def _write_parser(self, parser: configparser.ConfigParser) -> None:
+        with self.config_path.open("w", encoding="utf-16") as fh:
+            fh.write("; Linux GUI config for D3keyHelper\r\n")
+            parser.write(fh)
+
+    def _add_profile(self) -> None:
+        self.save_config(log_message="")
+        parser = load_parser(self.config_path)
+        profile_names = [s for s in parser.sections() if s.lower() != "general"]
+        if len(profile_names) >= self.MAX_PROFILES:
+            return
+        new_name = self._next_profile_name(profile_names)
+        parser[new_name] = default_profile_dict()
+        self._write_parser(parser)
+        new_row = 1 + len(profile_names)  # 1-based after General
+        self.reload_config()
+        self.navigation.setCurrentRow(new_row)
+        self._append_log(tr(f"已添加配置：{new_name}", f"Added profile: {new_name}"))
+
+    def _remove_profile(self) -> None:
+        row = self.navigation.currentRow()
+        if row <= 0 or row > len(self.profile_tabs):
+            return
+        tab = self.profile_tabs[row - 1]
+        name = tab.section_name
+        reply = QMessageBox.question(
+            self,
+            tr("删除配置", "Remove profile"),
+            tr(f'确定要删除配置「{name}」？此操作不可撤销。', f'Delete profile "{name}"? This cannot be undone.'),
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+        self.save_config(log_message="")
+        parser = load_parser(self.config_path)
+        profile_names = [s for s in parser.sections() if s.lower() != "general"]
+        removed_index = profile_names.index(name) + 1  # 1-based
+        parser.remove_section(name)
+        new_count = len(profile_names) - 1
+        old_active = int(parser["general"].get("activatedprofile", "1"))
+        if old_active > removed_index:
+            parser["general"]["activatedprofile"] = str(old_active - 1)
+        elif old_active == removed_index:
+            parser["general"]["activatedprofile"] = str(min(removed_index, new_count))
+        self._write_parser(parser)
+        target_row = max(1, min(row, new_count))
+        self.reload_config()
+        self.navigation.setCurrentRow(target_row)
+        self._append_log(tr(f"已删除配置：{name}", f"Removed profile: {name}"))
 
     def _build_general_tab(self, section: configparser.SectionProxy, profile_names: list[str]) -> QWidget:
         container = QWidget()

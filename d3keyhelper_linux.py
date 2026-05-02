@@ -50,7 +50,7 @@ except ImportError:
 DEFAULT_VERSION = "260403"
 CONFIG_DIR_NAME = "d3helperforlinux"
 CONFIG_FILE_NAME = "d3oldsand.ini"
-DEFAULT_PROFILE_NAMES = ["配置1", "配置2", "配置3", "配置4"]
+DEFAULT_PROFILE_NAMES = ["配置1"]
 START_METHOD_MOUSE = {
     1: "mouse:right",
     2: "mouse:middle",
@@ -2247,6 +2247,38 @@ def default_skill_hotkey(index: int) -> str:
     return defaults[index]
 
 
+def default_profile_dict() -> dict[str, str]:
+    """Return the default key/value pairs for a new profile section."""
+    values: dict[str, str] = {
+        "profilehkmethod": "1",
+        "profilehkkey": "",
+        "movingmethod": "1",
+        "movinginterval": "100",
+        "potionmethod": "1",
+        "potioninterval": "500",
+        "lazymode": "1",
+        "enablequickpause": "0",
+        "quickpausemethod1": "1",
+        "quickpausemethod2": "1",
+        "quickpausemethod3": "1",
+        "quickpausedelay": "1500",
+        "useskillqueue": "0",
+        "useskillqueueinterval": "200",
+        "autostartmarco": "0",
+    }
+    for index in range(1, 7):
+        values[f"skill_{index}"] = default_skill_hotkey(index)
+        values[f"action_{index}"] = "1"
+        values[f"interval_{index}"] = "300"
+        values[f"delay_{index}"] = "10"
+        values[f"random_{index}"] = "1"
+        values[f"priority_{index}"] = "1"
+        values[f"repeat_{index}"] = "1"
+        values[f"repeatinterval_{index}"] = "30"
+        values[f"triggerbutton_{index}"] = "LButton"
+    return values
+
+
 def default_config_dir() -> Path:
     base_dir = os.environ.get("XDG_CONFIG_HOME", "").strip()
     if base_dir:
@@ -2302,33 +2334,7 @@ def create_default_config(config_path: Path) -> None:
         "custompotionhk": "q",
     }
     for name in DEFAULT_PROFILE_NAMES:
-        parser[name] = {
-            "profilehkmethod": "1",
-            "profilehkkey": "",
-            "movingmethod": "1",
-            "movinginterval": "100",
-            "potionmethod": "1",
-            "potioninterval": "500",
-            "lazymode": "1",
-            "enablequickpause": "0",
-            "quickpausemethod1": "1",
-            "quickpausemethod2": "1",
-            "quickpausemethod3": "1",
-            "quickpausedelay": "1500",
-            "useskillqueue": "0",
-            "useskillqueueinterval": "200",
-            "autostartmarco": "0",
-        }
-        for index in range(1, 7):
-            parser[name][f"skill_{index}"] = default_skill_hotkey(index)
-            parser[name][f"action_{index}"] = "1"
-            parser[name][f"interval_{index}"] = "300"
-            parser[name][f"delay_{index}"] = "10"
-            parser[name][f"random_{index}"] = "1"
-            parser[name][f"priority_{index}"] = "1"
-            parser[name][f"repeat_{index}"] = "1"
-            parser[name][f"repeatinterval_{index}"] = "30"
-            parser[name][f"triggerbutton_{index}"] = "LButton"
+        parser[name] = default_profile_dict()
 
     with config_path.open("w", encoding="utf-16") as handle:
         handle.write("; Linux native config for D3keyHelper\r\n")
