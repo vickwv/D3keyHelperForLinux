@@ -53,7 +53,7 @@ except ImportError:
 
 
 UI_LANGUAGE_ENV = "D3HELPER_LANG"
-LANGUAGE_ITEMS = [("zh", "简体中文"), ("en", "English"), ("zh_TW", "繁體中文")]
+LANGUAGE_TOOLBAR_ITEMS = [("zh", "简"), ("en", "EN"), ("zh_TW", "繁")]
 
 
 def normalize_ui_language(value: str | None) -> str | None:
@@ -1626,6 +1626,7 @@ class MainWindow(QMainWindow):
         self.profile_tabs: list[ProfileTab] = []
         self.profile_nav_items: list[QListWidgetItem] = []
         self._toolbar_profile_synced = False
+        self._toolbar_language_synced = False
         self._last_log_line = tr("尚无日志。", "No log messages yet.")
         self._path_text = str(self.config_path)
         self._log_expanded = False
@@ -1676,6 +1677,14 @@ class MainWindow(QMainWindow):
         start_button.clicked.connect(self.start_runner)
         stop_button = QPushButton(tr("停止", "Stop"))
         stop_button.clicked.connect(lambda _checked=False: self.stop_runner())
+        self.language_combo = QComboBox()
+        tune_combo_box(self.language_combo)
+        self.language_combo.setFixedWidth(64)
+        self.language_combo.setToolTip(tr("界面语言", "Interface language"))
+        for data, text in LANGUAGE_TOOLBAR_ITEMS:
+            self.language_combo.addItem(text, data)
+        set_combo_value(self.language_combo, UI_LANGUAGE)
+        self.language_combo.currentIndexChanged.connect(self._apply_language_selection)
         toolbar.addWidget(self.path_label)
         toolbar.addStretch(1)
         profile_label = QLabel(tr("激活配置:", "Profile:"))
@@ -1686,6 +1695,7 @@ class MainWindow(QMainWindow):
         self.toolbar_profile_combo.setToolTip(tr("当前激活配置", "Active profile"))
         toolbar.addWidget(profile_label)
         toolbar.addWidget(self.toolbar_profile_combo)
+        toolbar.addWidget(self.language_combo)
         toolbar.addWidget(reload_button)
         toolbar.addWidget(save_button)
         toolbar.addWidget(start_button)
@@ -1859,7 +1869,6 @@ class MainWindow(QMainWindow):
         root.addLayout(columns)
 
         self.general_widgets["activatedprofile"] = build_profile_selector(profile_names, int(section.get("activatedprofile", "1")))
-        self.general_widgets["language"] = self._combo(LANGUAGE_ITEMS, normalize_ui_language(section.get("language", "")) or UI_LANGUAGE)
         self.general_widgets["startmethod"] = self._combo(START_METHOD_ITEMS, int(section.get("startmethod", "7")))
         self.general_widgets["starthotkey"] = QLineEdit(section.get("starthotkey", "F2"))
         self.general_widgets["oldsandhelpermethod"] = self._combo(COMMON_METHOD_ITEMS, int(section.get("oldsandhelpermethod", "7")))
@@ -1912,13 +1921,11 @@ class MainWindow(QMainWindow):
         self.general_widgets["helperspeed"].currentIndexChanged.connect(self._apply_helper_speed_preset)
         self.general_widgets["helpermousespeed"].valueChanged.connect(self._sync_helper_speed_preset)
         self.general_widgets["helperanimationdelay"].valueChanged.connect(self._sync_helper_speed_preset)
-        self.general_widgets["language"].currentIndexChanged.connect(self._apply_language_selection)
         basic_section, basic_layout = build_section(tr("基础", "Basics"))
         basic_layout.addWidget(
             build_option_grid(
                 [
                     ("当前激活配置", self.general_widgets["activatedprofile"]),
-                    ("界面语言", self.general_widgets["language"]),
                     ("战斗宏启动方式", self.general_widgets["startmethod"]),
                     ("战斗宏启动热键", self.general_widgets["starthotkey"]),
                     ("助手启动方式", self.general_widgets["oldsandhelpermethod"], HELPER_HOTKEY_TOOLTIP),
@@ -2035,10 +2042,13 @@ class MainWindow(QMainWindow):
     def _bool_text(self, widget: QCheckBox) -> str:
         return "1" if widget.isChecked() else "0"
 
+    def _current_selected_language(self) -> str:
+        return normalize_ui_language(str(combo_data(self.language_combo))) or "zh"
+
     def _apply_language_selection(self, *_args) -> None:
         if self._suspend_config_watch:
             return
-        selected = normalize_ui_language(str(combo_data(self.general_widgets["language"]))) or "zh"
+        selected = self._current_selected_language()
         if selected == UI_LANGUAGE:
             return
         self._config_apply_timer.stop()
@@ -2049,6 +2059,7 @@ class MainWindow(QMainWindow):
     def _rebuild_shell(self) -> None:
         self._suspend_config_watch = True
         self._toolbar_profile_synced = False
+        self._toolbar_language_synced = False
         old_central = self.centralWidget()
         if old_central is not None:
             old_central.deleteLater()
@@ -2215,7 +2226,7 @@ class MainWindow(QMainWindow):
         parser.optionxform = str.lower
         parser["General"] = {
             "version": DEFAULT_VERSION,
-            "language": str(combo_data(self.general_widgets["language"])),
+            "language": self._current_selected_language(),
             "activatedprofile": str(combo_value(self.general_widgets["activatedprofile"])),
             "oldsandhelpermethod": str(combo_value(self.general_widgets["oldsandhelpermethod"])),
             "oldsandhelperhk": self.general_widgets["oldsandhelperhk"].text().strip(),
@@ -2372,8 +2383,6 @@ class MainWindow(QMainWindow):
 
     def _connect_config_change_watchers(self) -> None:
         for key, widget in self.general_widgets.items():
-            if key == "language":
-                continue
             if isinstance(widget, QWidget):
                 self._connect_widget_change(widget)
         for tab in self.profile_tabs:

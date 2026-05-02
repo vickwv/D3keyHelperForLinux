@@ -154,7 +154,7 @@ On first launch, the GUI detects the current system language:
 3. `zh*` uses Simplified Chinese
 4. Other languages fall back to Simplified Chinese
 
-You can also switch manually in **General settings -> Interface language**. Manual selection is saved to `d3oldsand.ini` and takes priority on later launches.
+You can also switch manually from the compact language selector in the top toolbar, shown as `简 / EN / 繁`. Manual selection is saved to `d3oldsand.ini` and takes priority on later launches.
 
 For temporary override, set `D3HELPER_LANG` before launch:
 
