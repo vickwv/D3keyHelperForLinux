@@ -1763,15 +1763,17 @@ class MainWindow(QMainWindow):
         self.navigation.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.navigation.setVerticalScrollMode(QListWidget.ScrollMode.ScrollPerPixel)
         self.navigation.setSpacing(2)
+        self.navigation.setSelectionMode(QListWidget.SelectionMode.ExtendedSelection)
         self.navigation.currentRowChanged.connect(self._select_page)
         self.navigation.currentRowChanged.connect(lambda _: self._refresh_profile_buttons())
+        self.navigation.itemSelectionChanged.connect(self._refresh_profile_buttons)
         self.add_profile_btn = QPushButton(tr("＋ 添加配置", "+ Add profile"))
         self.add_profile_btn.setObjectName("navActionButton")
         self.add_profile_btn.setToolTip(tr("添加新配置（最多20个）", "Add profile (max 20)"))
         self.add_profile_btn.clicked.connect(self._add_profile)
         self.remove_profile_btn = QPushButton(tr("－ 删除配置", "− Remove profile"))
         self.remove_profile_btn.setObjectName("navActionButton")
-        self.remove_profile_btn.setToolTip(tr("删除当前配置", "Remove current profile"))
+        self.remove_profile_btn.setToolTip(tr("删除选中配置（可多选）", "Remove selected profiles (multi-select supported)"))
         self.remove_profile_btn.clicked.connect(self._remove_profile)
         sidebar = QWidget()
         sidebar.setObjectName("navSidebar")
@@ -1924,9 +1926,9 @@ class MainWindow(QMainWindow):
 
     def _refresh_profile_buttons(self) -> None:
         count = len(self.profile_tabs)
-        row = self.navigation.currentRow()
+        selected_profile_rows = [self.navigation.row(i) for i in self.navigation.selectedItems() if self.navigation.row(i) > 0]
         self.add_profile_btn.setEnabled(True)
-        self.remove_profile_btn.setEnabled(count > 1 and row > 0)
+        self.remove_profile_btn.setEnabled(count > 1 and len(selected_profile_rows) > 0)
 
     def _new_profile_id(self, existing: list[str]) -> str:
         existing_lower = {s.lower() for s in existing}
@@ -1953,16 +1955,37 @@ class MainWindow(QMainWindow):
         self._append_log(tr(f"已添加配置：{new_name}", f"Added profile: {new_name}"))
 
     def _remove_profile(self) -> None:
-        row = self.navigation.currentRow()
-        if row <= 0 or row > len(self.profile_tabs):
+        # Collect selected profile rows (exclude row 0 = General)
+        selected_rows = sorted(
+            {self.navigation.row(i) for i in self.navigation.selectedItems() if self.navigation.row(i) > 0},
+            reverse=True,
+        )
+        if not selected_rows or len(self.profile_tabs) <= 1:
             return
-        tab = self.profile_tabs[row - 1]
-        # Use the saved display name (same as what save_config would write as section key)
-        name = tab.widgets["name"].text().strip() or tab.section_name
+        # Resolve display names before save (same key save_config will write)
+        names_to_delete = []
+        for row in sorted(selected_rows):
+            tab = self.profile_tabs[row - 1]
+            names_to_delete.append(tab.widgets["name"].text().strip() or tab.section_name)
+        # Enforce: cannot delete all profiles
+        if len(names_to_delete) >= len(self.profile_tabs):
+            QMessageBox.warning(
+                self,
+                tr("无法删除", "Cannot delete"),
+                tr("至少需要保留一个配置。", "At least one profile must remain."),
+            )
+            return
+        if len(names_to_delete) == 1:
+            msg = tr(f'确定要删除配置「{names_to_delete[0]}」？此操作不可撤销。',
+                     f'Delete profile "{names_to_delete[0]}"? This cannot be undone.')
+        else:
+            joined = "、".join(f'「{n}」' for n in names_to_delete)
+            msg = tr(f'确定要删除 {len(names_to_delete)} 个配置：{joined}？此操作不可撤销。',
+                     f'Delete {len(names_to_delete)} profiles: {", ".join(names_to_delete)}? This cannot be undone.')
         reply = QMessageBox.question(
             self,
             tr("删除配置", "Remove profile"),
-            tr(f'确定要删除配置「{name}」？此操作不可撤销。', f'Delete profile "{name}"? This cannot be undone.'),
+            msg,
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No,
         )
@@ -1971,22 +1994,29 @@ class MainWindow(QMainWindow):
         self.save_config(log_message="")
         parser = load_parser(self.config_path)
         profile_names = [s for s in parser.sections() if s.lower() != "general"]
-        if name not in profile_names:
-            return
-        removed_index = profile_names.index(name) + 1  # 1-based
-        parser.remove_section(name)
-        new_count = len(profile_names) - 1
         general_key = next(s for s in parser.sections() if s.lower() == "general")
         old_active = int(parser[general_key].get("activatedprofile", "1"))
-        if old_active > removed_index:
-            parser[general_key]["activatedprofile"] = str(old_active - 1)
-        elif old_active == removed_index:
-            parser[general_key]["activatedprofile"] = str(min(removed_index, new_count))
+        # Remove all sections and compute new activatedprofile
+        removed_indices = sorted(
+            [profile_names.index(n) + 1 for n in names_to_delete if n in profile_names]
+        )
+        for name in names_to_delete:
+            if name in profile_names:
+                parser.remove_section(name)
+        new_profile_names = [s for s in parser.sections() if s.lower() != "general"]
+        new_count = len(new_profile_names)
+        # Shift activatedprofile: count how many removed indices are <= old_active
+        shift = sum(1 for idx in removed_indices if idx <= old_active)
+        new_active = max(1, min(old_active - shift, new_count))
+        parser[general_key]["activatedprofile"] = str(new_active)
         self._write_parser(parser)
-        target_row = max(1, min(row, new_count))
+        # Navigate to the profile just above the first deleted row
+        first_deleted_row = min(r for r in selected_rows)
+        target_row = max(1, min(first_deleted_row - 1, new_count)) if first_deleted_row > new_count else min(first_deleted_row, new_count)
         self.reload_config()
         self.navigation.setCurrentRow(target_row)
-        self._append_log(tr(f"已删除配置：{name}", f"Removed profile: {name}"))
+        label = "、".join(names_to_delete)
+        self._append_log(tr(f"已删除配置：{label}", f"Removed profiles: {', '.join(names_to_delete)}"))
 
     def _build_general_tab(self, section: configparser.SectionProxy, profile_names: list[str]) -> QWidget:
         container = QWidget()
