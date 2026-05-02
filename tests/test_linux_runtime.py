@@ -449,14 +449,14 @@ class GuiParityTests(unittest.TestCase):
                 parser.write(handle)
             window = gui.MainWindow(config_path)
             try:
-                gui.set_combo_value(window.language_combo, "en")
+                window._lang_btns["en"].click()
                 app.processEvents()
                 parser = gui.load_parser(config_path)
                 self.assertEqual(parser["General"]["language"], "en")
                 self.assertEqual(gui.UI_LANGUAGE, "en")
                 self.assertEqual(window.navigation.item(0).text(), "General")
                 self.assertEqual(window.toolbar_profile_combo.itemText(0), "1 - Profile 1")
-                self.assertEqual(gui.combo_data(window.language_combo), "en")
+                self.assertTrue(window._lang_btns["en"].isChecked())
             finally:
                 window.close()
                 app.processEvents()

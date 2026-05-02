@@ -13,6 +13,7 @@ from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QAbstractSpinBox,
     QApplication,
+    QButtonGroup,
     QCheckBox,
     QComboBox,
     QDoubleSpinBox,
@@ -458,6 +459,29 @@ QFrame#toolbarFrame {
 QLabel#toolbarLabel {
     color: #48566a;
     font-size: 12px;
+}
+QFrame#langSwitcher {
+    border: 1px solid #d0d5dc;
+    border-radius: 5px;
+    background: transparent;
+}
+QPushButton#langButton {
+    border: none;
+    background: transparent;
+    color: #48566a;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 0 6px;
+    min-width: 28px;
+    min-height: 22px;
+    border-radius: 4px;
+}
+QPushButton#langButton:checked {
+    background: #3b6fe8;
+    color: #ffffff;
+}
+QPushButton#langButton:hover:!checked {
+    background: #eef1f5;
 }
 QLabel#sectionHint {
     color: #5d6978;
@@ -1677,16 +1701,25 @@ class MainWindow(QMainWindow):
         start_button.clicked.connect(self.start_runner)
         stop_button = QPushButton(tr("停止", "Stop"))
         stop_button.clicked.connect(lambda _checked=False: self.stop_runner())
-        self.language_combo = QComboBox()
-        tune_combo_box(self.language_combo)
-        self.language_combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
-        self.language_combo.setMinimumWidth(60)
-        self.language_combo.setToolTip(tr("界面语言", "Interface language"))
-        for data, text in LANGUAGE_TOOLBAR_ITEMS:
-            self.language_combo.addItem(text, data)
-        set_combo_value(self.language_combo, UI_LANGUAGE)
-        self.language_combo.currentIndexChanged.connect(self._apply_language_selection)
-        toolbar.addWidget(self.language_combo)
+        lang_frame = QFrame()
+        lang_frame.setObjectName("langSwitcher")
+        lang_layout = QHBoxLayout(lang_frame)
+        lang_layout.setContentsMargins(2, 2, 2, 2)
+        lang_layout.setSpacing(1)
+        self._lang_btn_group = QButtonGroup(lang_frame)
+        self._lang_btn_group.setExclusive(True)
+        self._lang_btns: dict[str, QPushButton] = {}
+        for i, (code, label) in enumerate(LANGUAGE_TOOLBAR_ITEMS):
+            btn = QPushButton(label)
+            btn.setObjectName("langButton")
+            btn.setCheckable(True)
+            btn.setChecked(code == UI_LANGUAGE)
+            btn.setToolTip(tr("界面语言", "Interface language"))
+            btn.clicked.connect(self._apply_language_selection)
+            self._lang_btn_group.addButton(btn, i)
+            self._lang_btns[code] = btn
+            lang_layout.addWidget(btn)
+        toolbar.addWidget(lang_frame)
         toolbar.addStretch(1)
         profile_label = QLabel(tr("激活配置:", "Profile:"))
         profile_label.setObjectName("toolbarLabel")
@@ -2043,7 +2076,10 @@ class MainWindow(QMainWindow):
         return "1" if widget.isChecked() else "0"
 
     def _current_selected_language(self) -> str:
-        return normalize_ui_language(str(combo_data(self.language_combo))) or "zh"
+        for code, btn in self._lang_btns.items():
+            if btn.isChecked():
+                return normalize_ui_language(code) or "zh"
+        return "zh"
 
     def _apply_language_selection(self, *_args) -> None:
         if self._suspend_config_watch:
