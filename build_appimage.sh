@@ -40,7 +40,10 @@ fi
   --distpath "${DIST_DIR}" \
   --name "${APP_NAME}" \
   --hidden-import PySide6.QtDBus \
-  --collect-submodules PySide6 \
+  --collect-submodules PySide6.QtCore \
+  --collect-submodules PySide6.QtGui \
+  --collect-submodules PySide6.QtWidgets \
+  --collect-submodules PySide6.QtDBus \
   --add-data "${ROOT_DIR}/mainwindow.png:." \
   --add-data "${ICON_DIR}/${ICON_NAME}-256.png:." \
   "${ROOT_DIR}/d3keyhelper_linux_gui.py"
