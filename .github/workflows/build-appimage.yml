@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -67,7 +69,17 @@ jobs:
           notes=".github/release-notes/${GITHUB_REF_NAME}.md"
           if [ ! -f "$notes" ]; then
             mkdir -p .github/release-notes
-            printf "# %s\n\nAutomated AppImage build.\n" "$GITHUB_REF_NAME" > "$notes"
+            previous_tag="$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null || true)"
+            {
+              printf "# D3keyHelperForLinux %s\n\n" "$GITHUB_REF_NAME"
+              printf "## Changes\n\n"
+              if [ -n "$previous_tag" ]; then
+                git log --pretty=format:"- %s (%h)" "${previous_tag}..${GITHUB_REF_NAME}"
+              else
+                git log --pretty=format:"- %s (%h)" "${GITHUB_REF_NAME}"
+              fi
+              printf "\n\n## Artifact\n\n- D3keyHelper-Linux-x86_64.AppImage\n"
+            } > "$notes"
           fi
 
       - name: Upload AppImage to GitHub Release
