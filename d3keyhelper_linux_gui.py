@@ -328,6 +328,9 @@ QListWidget#navigationList::item:selected {
 QWidget#navSidebar {
     background: transparent;
 }
+QFrame#navActions {
+    background: transparent;
+}
 QStackedWidget {
     background: #ffffff;
 }
@@ -443,20 +446,20 @@ QScrollArea > QWidget {
     background: transparent;
 }
 QTableWidget {
-    background: #ffffff;
-    alternate-background-color: #f6f8fb;
-    border: 1px solid #dde2ea;
-    border-radius: 4px;
-    gridline-color: #eaedf2;
-    selection-background-color: #dbeafe;
-    selection-color: #1f2933;
+    background: #f8faff;
+    alternate-background-color: #eef3fc;
+    border: 1px solid #c8d6f0;
+    border-radius: 6px;
+    gridline-color: #dce8f7;
+    selection-background-color: #cfe0fc;
+    selection-color: #1a3a6b;
 }
 QHeaderView::section {
-    background: #edf0f5;
-    color: #344054;
+    background: #dce8f7;
+    color: #1a3a6b;
     border: none;
-    border-right: 1px solid #dde2ea;
-    border-bottom: 2px solid #d0d5de;
+    border-right: 1px solid #c8d6f0;
+    border-bottom: 2px solid #2f72c4;
     padding: 4px 6px;
     font-weight: 600;
 }
@@ -520,8 +523,9 @@ INLINE_LABEL_WIDTH = 110
 TOOLBAR_PATH_MIN_WIDTH = 80
 TOOLBAR_PATH_MAX_WIDTH = 160
 NAV_WIDTH = 150
-SKILL_TEXT_WIDTH = 68
-SKILL_TRIGGER_WIDTH = 72
+NAV_ACTION_MARGIN = 6
+SKILL_TEXT_WIDTH = 84
+SKILL_TRIGGER_WIDTH = 84
 SKILL_ACTION_WIDTH = 118
 SKILL_NUMBER_WIDTH = 60
 SKILL_TABLE_ROW_HEIGHT = 32
@@ -1181,7 +1185,7 @@ def build_runner_command(config_path: Path, profile: str) -> list[str]:
 
 
 # Column weight ratios (pixels at baseline window size — distributed proportionally)
-_SKILL_COL_WEIGHTS = [66, 68, 118, 60, 60, 54, 60, 60, 86, 72]
+_SKILL_COL_WEIGHTS = [66, 84, 118, 60, 60, 54, 60, 60, 86, 84]
 _SKILL_COL_TOTAL = sum(_SKILL_COL_WEIGHTS)
 
 
@@ -1681,9 +1685,15 @@ class MainWindow(QMainWindow):
         sidebar_layout = QVBoxLayout(sidebar)
         sidebar_layout.setContentsMargins(0, 0, 0, 0)
         sidebar_layout.setSpacing(0)
+        nav_actions = QFrame()
+        nav_actions.setObjectName("navActions")
+        nav_actions_layout = QVBoxLayout(nav_actions)
+        nav_actions_layout.setContentsMargins(NAV_ACTION_MARGIN, 0, NAV_ACTION_MARGIN, 0)
+        nav_actions_layout.setSpacing(4)
+        nav_actions_layout.addWidget(self.add_profile_btn)
+        nav_actions_layout.addWidget(self.remove_profile_btn)
         sidebar_layout.addWidget(self.navigation)
-        sidebar_layout.addWidget(self.add_profile_btn)
-        sidebar_layout.addWidget(self.remove_profile_btn)
+        sidebar_layout.addWidget(nav_actions)
         content_widget = QFrame()
         content_widget.setObjectName("contentPanel")
         content_layout = QVBoxLayout(content_widget)
@@ -1712,7 +1722,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(splitter, 1)
         self.status_strip = QFrame()
         self.status_strip.setObjectName("statusStrip")
-        self.status_strip.setFixedHeight(34)
+        self.status_strip.setFixedHeight(40)
         status_layout = QHBoxLayout(self.status_strip)
         status_layout.setContentsMargins(10, 4, 12, 4)
         status_layout.setSpacing(8)
@@ -1730,8 +1740,7 @@ class MainWindow(QMainWindow):
         self.status_log_value.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         self.log_toggle_button = FluentPushButton(tr("展开日志", "Show Log"))
         self.log_toggle_button.setCheckable(True)
-        self.log_toggle_button.setFixedHeight(24)
-        self.log_toggle_button.setMinimumWidth(76)
+        self.log_toggle_button.setMinimumWidth(100)
         self.log_toggle_button.toggled.connect(self._set_log_expanded)
         status_layout.addWidget(self.status_dot)
         status_layout.addWidget(self.status_runner_label)
