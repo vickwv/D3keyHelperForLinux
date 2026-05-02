@@ -39,7 +39,12 @@ fi
   --workpath "${ROOT_DIR}/build" \
   --distpath "${DIST_DIR}" \
   --name "${APP_NAME}" \
+  --hidden-import pynput.keyboard._xorg \
+  --hidden-import pynput.mouse._xorg \
   --hidden-import PySide6.QtDBus \
+  --collect-submodules Xlib \
+  --collect-submodules mss \
+  --collect-submodules pynput \
   --collect-submodules PySide6.QtCore \
   --collect-submodules PySide6.QtGui \
   --collect-submodules PySide6.QtWidgets \
