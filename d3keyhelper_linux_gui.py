@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
     QHeaderView,
     QLabel,
     QLineEdit,
+    QListView,
     QListWidget,
     QListWidgetItem,
     QMainWindow,
@@ -166,11 +167,63 @@ QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox {
     selection-background-color: #3584e4;
     min-height: 26px;
 }
+QComboBox {
+    padding-right: 28px;
+}
+QComboBox:hover {
+    border-color: #aeb8c5;
+    background: #fbfcfe;
+}
 QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus {
     border: 1px solid #2f72c4;
 }
+QComboBox:disabled {
+    color: #8a94a3;
+    background: #f1f3f6;
+}
 QComboBox::drop-down {
     border: none;
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 24px;
+    background: #eef2f7;
+    border-left: 1px solid #d8dee7;
+    border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
+}
+QComboBox::drop-down:hover {
+    background: #e5ebf4;
+}
+QComboBox::down-arrow {
+    image: none;
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid #526173;
+    margin-right: 8px;
+}
+QComboBox QAbstractItemView {
+    background: #ffffff;
+    color: #233142;
+    border: 1px solid #b8c2cf;
+    border-radius: 6px;
+    padding: 4px;
+    outline: none;
+    selection-background-color: #e7f0ff;
+    selection-color: #1d4f91;
+}
+QComboBox QAbstractItemView::item {
+    min-height: 24px;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+QComboBox QAbstractItemView::item:hover {
+    background: #f1f4f8;
+}
+QComboBox QAbstractItemView::item:selected {
+    background: #e7f0ff;
+    color: #1d4f91;
 }
 QPlainTextEdit {
     background: #fbfcfd;
@@ -284,6 +337,14 @@ QTableWidget QLineEdit, QTableWidget QComboBox, QTableWidget QSpinBox {
     padding: 1px 4px;
     min-height: 22px;
     background: transparent;
+}
+QTableWidget QComboBox {
+    padding-right: 22px;
+}
+QTableWidget QComboBox::drop-down {
+    width: 20px;
+    background: transparent;
+    border-left: none;
 }
 QTableWidget QLineEdit:focus, QTableWidget QComboBox:focus, QTableWidget QSpinBox:focus {
     background: #ffffff;
@@ -433,6 +494,15 @@ def set_combo_value(combo: QComboBox, value) -> None:
     combo.setCurrentIndex(index if index >= 0 else 0)
 
 
+def tune_combo_box(combo: QComboBox) -> QComboBox:
+    popup = QListView()
+    popup.setUniformItemSizes(True)
+    popup.setSpacing(1)
+    combo.setView(popup)
+    combo.setMaxVisibleItems(12)
+    return combo
+
+
 def combo_value(combo: QComboBox) -> int:
     return int(combo.currentData())
 
@@ -466,6 +536,7 @@ def helper_speed_preset_from_values(mouse_speed: int, animation_delay: int, conf
 
 def build_profile_selector(profile_names: list[str], active_profile: int) -> QComboBox:
     combo = QComboBox()
+    tune_combo_box(combo)
     count = max(len(profile_names), active_profile, 1)
     for index in range(1, count + 1):
         name = profile_names[index - 1] if index <= len(profile_names) else f"配置{index}"
@@ -1214,6 +1285,7 @@ class ProfileTab(QWidget):
 
     def _combo(self, items, value: int) -> QComboBox:
         combo = QComboBox()
+        tune_combo_box(combo)
         for data, text in items:
             combo.addItem(text, data)
         set_combo_value(combo, value)
@@ -1411,6 +1483,7 @@ class MainWindow(QMainWindow):
         profile_label = QLabel(tr("激活配置:", "Profile:"))
         profile_label.setObjectName("toolbarLabel")
         self.toolbar_profile_combo = QComboBox()
+        tune_combo_box(self.toolbar_profile_combo)
         self.toolbar_profile_combo.setFixedWidth(140)
         self.toolbar_profile_combo.setToolTip(tr("当前激活配置", "Active profile"))
         toolbar.addWidget(profile_label)
@@ -1731,6 +1804,7 @@ class MainWindow(QMainWindow):
 
     def _combo(self, items, value: int) -> QComboBox:
         combo = QComboBox()
+        tune_combo_box(combo)
         for data, text in items:
             combo.addItem(text, data)
         set_combo_value(combo, value)
