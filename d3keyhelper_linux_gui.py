@@ -194,18 +194,18 @@ QComboBox::drop-down:hover {
     border-bottom-right-radius: 5px;
 }
 QComboBox QAbstractItemView {
-    background: #ffffff;
+    background: #fbfcfd;
     color: #233142;
     border: none;
     border-radius: 0;
-    padding: 1px;
+    padding: 3px 2px;
     outline: none;
     selection-background-color: #e7f0ff;
     selection-color: #1d4f91;
 }
 QComboBox QAbstractItemView::item {
     min-height: 24px;
-    padding: 4px 8px;
+    padding: 4px 9px;
     border-radius: 4px;
 }
 QComboBox QAbstractItemView::item:hover {
