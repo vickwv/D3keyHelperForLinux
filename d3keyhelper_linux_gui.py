@@ -1554,6 +1554,12 @@ class MainWindow(QMainWindow):
                     ("当前激活配置", self.general_widgets["activatedprofile"]),
                     ("战斗宏启动方式", self.general_widgets["startmethod"]),
                     ("战斗宏启动热键", self.general_widgets["starthotkey"]),
+                    ("助手启动方式", self.general_widgets["oldsandhelpermethod"], HELPER_HOTKEY_TOOLTIP),
+                    ("助手启动热键", self.general_widgets["oldsandhelperhk"], HELPER_HOTKEY_TOOLTIP),
+                    ("发送模式", self.general_widgets["sendmode"], SEND_MODE_TOOLTIP),
+                    ("游戏分辨率", self.general_widgets["gameresolution"], GAME_RESOLUTION_TOOLTIP),
+                    ("游戏 Gamma", self.general_widgets["gamegamma"], GAME_GAMMA_TOOLTIP),
+                    ("Buff 续按阈值", self.general_widgets["buffpercent"], BUFF_PERCENT_TOOLTIP),
                 ]
             )
         )
@@ -1567,30 +1573,16 @@ class MainWindow(QMainWindow):
                 ]
             )
         )
-        basic_layout.addWidget(build_sub_header(tr("输入", "Input")))
-        basic_layout.addWidget(
-            build_option_grid(
-                [("发送模式", self.general_widgets["sendmode"], SEND_MODE_TOOLTIP)]
-            )
-        )
-        basic_layout.addWidget(
+        basic_layout.addStretch(1)
+        columns.addWidget(basic_section, 1)
+
+        input_section, input_layout = build_section(tr("助手/输入", "Helpers / Input"))
+        input_layout.addWidget(
             build_toggle_grid(
                 [
                     (self.general_widgets["customstanding"], "自定义强制站立", CUSTOM_STANDING_TOOLTIP, "按键", self.general_widgets["customstandinghk"]),
                     (self.general_widgets["custommoving"], "自定义强制移动", CUSTOM_MOVING_TOOLTIP, "按键", self.general_widgets["custommovinghk"]),
                     (self.general_widgets["custompotion"], "自定义药水按键", CUSTOM_POTION_TOOLTIP, "按键", self.general_widgets["custompotionhk"]),
-                ]
-            )
-        )
-        basic_layout.addStretch(1)
-        columns.addWidget(basic_section, 1)
-
-        input_section, input_layout = build_section(tr("助手", "Helpers"))
-        input_layout.addWidget(
-            build_option_grid(
-                [
-                    ("助手启动方式", self.general_widgets["oldsandhelpermethod"], HELPER_HOTKEY_TOOLTIP),
-                    ("助手启动热键", self.general_widgets["oldsandhelperhk"], HELPER_HOTKEY_TOOLTIP),
                 ]
             )
         )
@@ -1613,13 +1605,9 @@ class MainWindow(QMainWindow):
                 ]
             )
         )
-        input_layout.addWidget(build_sub_header(tr("高级", "Advanced")))
         input_layout.addWidget(
             build_option_grid(
                 [
-                    ("游戏分辨率", self.general_widgets["gameresolution"], GAME_RESOLUTION_TOOLTIP),
-                    ("游戏 Gamma", self.general_widgets["gamegamma"], GAME_GAMMA_TOOLTIP),
-                    ("Buff 续按阈值", self.general_widgets["buffpercent"], BUFF_PERCENT_TOOLTIP),
                     ("动画速度预设", self.general_widgets["helperspeed"], HELPER_SPEED_PRESET_TOOLTIP),
                     ("辅助鼠标速度", self.general_widgets["helpermousespeed"], HELPER_SPEED_TOOLTIP),
                     ("辅助动画延迟", self.general_widgets["helperanimationdelay"], HELPER_SPEED_TOOLTIP),
