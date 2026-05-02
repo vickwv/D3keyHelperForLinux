@@ -70,10 +70,6 @@
 
 ![Main Window](./mainwindow.png)
 
-### 紧凑界面
-
-![Compact Window](./mainwindow_compact.png)
-
 ### 配置说明图
 
 ![Settings](./settings.png)

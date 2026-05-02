@@ -217,8 +217,17 @@ class GuiParityTests(unittest.TestCase):
             runtime.create_default_config(config_path)
             window = gui.MainWindow(config_path)
             try:
+                self.assertFalse(window.log_panel.isVisible())
                 self.assertIn("升级页面", window.general_widgets["enableupgradehelper"].toolTip())
                 self.assertIn("智能分解", window.general_widgets["salvagehelpermethod"].toolTip())
+                self.assertEqual(
+                    window.general_widgets["helpermousespeed"].buttonSymbols(),
+                    gui.QAbstractSpinBox.ButtonSymbols.NoButtons,
+                )
+                self.assertEqual(
+                    window.general_widgets["gamegamma"].buttonSymbols(),
+                    gui.QAbstractSpinBox.ButtonSymbols.NoButtons,
+                )
                 self.assertEqual(gui.combo_value(window.general_widgets["helperspeed"]), 3)
                 window.general_widgets["helperspeed"].setCurrentIndex(0)
                 self.assertEqual(window.general_widgets["helpermousespeed"].value(), 0)
@@ -285,14 +294,18 @@ class GuiParityTests(unittest.TestCase):
                 profile.refresh_dynamic_state()
                 app.processEvents()
                 self.assertFalse(profile.skill_queue_warning.isHidden())
-                self.assertEqual(window.tabs.tabText(0), "通用")
-                window.general_widgets["compactmode"].setChecked(True)
+                self.assertEqual(window.navigation.item(0).text(), "通用")
+                self.assertNotIn("statusconfig", window.general_widgets)
+                self.assertNotIn("compactmode", window.general_widgets)
+                original_size = (window.width(), window.height())
+                window._set_log_expanded(True)
                 app.processEvents()
-                self.assertFalse(window.log.isVisible())
-                self.assertTrue(window.activity_panel.isVisible())
-                self.assertIn("最近日志", window.activity_log_label.text())
-                self.assertEqual(window.general_widgets["statusconfig"].text(), str(config_path))
-                self.assertEqual((window.width(), window.height()), gui.COMPACT_WINDOW_SIZE)
+                self.assertTrue(window.log.isVisible())
+                self.assertTrue(window.log_panel.isVisible())
+                self.assertTrue(window.status_strip.isVisible())
+                self.assertIn("已载入配置", window.status_log_value.toolTip())
+                self.assertEqual(window.path_label.toolTip(), str(config_path))
+                self.assertEqual((window.width(), window.height()), original_size)
             finally:
                 window.close()
                 app.processEvents()
@@ -306,12 +319,11 @@ class GuiParityTests(unittest.TestCase):
             try:
                 gui.set_combo_value(window.general_widgets["sendmode"], "Input")
                 window.general_widgets["enablesoundplay"].setChecked(False)
-                window.general_widgets["compactmode"].setChecked(True)
                 window.save_config(log_message="")
                 parser = gui.load_parser(config_path)
                 self.assertEqual(parser["General"]["sendmode"], "Input")
                 self.assertEqual(parser["General"]["enablesoundplay"], "0")
-                self.assertEqual(parser["General"]["compactmode"], "1")
+                self.assertEqual(parser["General"]["compactmode"], "0")
             finally:
                 window.close()
                 app.processEvents()

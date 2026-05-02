@@ -1,0 +1,209 @@
+<svg width="1280" height="820" viewBox="0 0 1280 820" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1280" height="820" fill="#f6f7f9"/>
+
+  <style>
+    .title { font: 600 13px "Noto Sans CJK SC", "Noto Sans", sans-serif; fill: #1f2933; }
+    .text { font: 12px "Noto Sans CJK SC", "Noto Sans", sans-serif; fill: #1f2933; }
+    .muted { font: 12px "Noto Sans CJK SC", "Noto Sans", sans-serif; fill: #5d6875; }
+    .small { font: 11px "Noto Sans CJK SC", "Noto Sans", sans-serif; fill: #5d6875; }
+    .button { font: 12px "Noto Sans CJK SC", "Noto Sans", sans-serif; fill: #1f2933; }
+    .primary { font: 12px "Noto Sans CJK SC", "Noto Sans", sans-serif; fill: #ffffff; }
+    .nav { font: 12px "Noto Sans CJK SC", "Noto Sans", sans-serif; fill: #344054; }
+    .nav-active { font: 600 12px "Noto Sans CJK SC", "Noto Sans", sans-serif; fill: #245ec7; }
+    .table-head { font: 600 11px "Noto Sans CJK SC", "Noto Sans", sans-serif; fill: #344054; }
+    .mono { font: 11px "Noto Sans Mono", "Noto Sans CJK SC", monospace; fill: #344054; }
+  </style>
+
+  <!-- App frame -->
+  <rect x="14" y="14" width="1252" height="792" rx="6" fill="#ffffff" stroke="#d7dce2"/>
+
+  <!-- Toolbar -->
+  <rect x="14" y="14" width="1252" height="52" rx="6" fill="#f9fafb"/>
+  <line x1="14" y1="66" x2="1266" y2="66" stroke="#e6e9ee"/>
+
+  <rect x="26" y="25" width="278" height="30" rx="4" fill="#ffffff" stroke="#cfd6df"/>
+  <text x="38" y="44" class="muted">/home/vick/.config/d3helperforlinux/d3oldsand.ini</text>
+
+  <rect x="314" y="25" width="205" height="30" rx="4" fill="#ffffff" stroke="#cfd6df"/>
+  <text x="326" y="44" class="muted">启动时可选：配置名或编号</text>
+
+  <rect x="868" y="25" width="78" height="30" rx="4" fill="#ffffff" stroke="#cfd6df"/>
+  <text x="884" y="44" class="button">重新载入</text>
+
+  <rect x="956" y="25" width="78" height="30" rx="4" fill="#ffffff" stroke="#cfd6df"/>
+  <text x="978" y="44" class="button">保存配置</text>
+
+  <rect x="1044" y="25" width="92" height="30" rx="4" fill="#2f6feb"/>
+  <text x="1062" y="44" class="primary">启动运行器</text>
+
+  <rect x="1146" y="25" width="92" height="30" rx="4" fill="#ffffff" stroke="#cfd6df"/>
+  <text x="1164" y="44" class="button">停止运行器</text>
+
+  <!-- Main content shell -->
+  <rect x="14" y="66" width="160" height="704" fill="#fbfcfd"/>
+  <line x1="174" y1="66" x2="174" y2="770" stroke="#d7dce2"/>
+
+  <!-- Sidebar -->
+  <rect x="26" y="82" width="136" height="36" rx="4" fill="#dbeafe"/>
+  <text x="42" y="104" class="nav-active">通用</text>
+  <text x="42" y="150" class="nav">配置1</text>
+  <text x="42" y="194" class="nav">配置2</text>
+  <text x="42" y="238" class="nav">配置3</text>
+  <text x="42" y="282" class="nav">配置4</text>
+
+  <!-- Content title -->
+  <text x="202" y="102" class="title">通用设置</text>
+  <text x="202" y="124" class="muted">编辑全局热键、助手行为、输入方式与高级参数</text>
+
+  <!-- Column backgrounds: unframed layout, only separators -->
+  <line x1="202" y1="144" x2="1218" y2="144" stroke="#e6e9ee"/>
+  <line x1="710" y1="144" x2="710" y2="666" stroke="#edf0f3"/>
+
+  <!-- Left column: Basics -->
+  <text x="202" y="174" class="title">基础</text>
+  <line x1="202" y1="184" x2="674" y2="184" stroke="#e6e9ee"/>
+
+  <text x="220" y="214" class="text">当前激活配置</text>
+  <rect x="352" y="196" width="156" height="28" rx="4" fill="#ffffff" stroke="#cfd6df"/>
+  <text x="364" y="214" class="text">1</text>
+
+  <text x="220" y="252" class="text">战斗宏启动方式</text>
+  <rect x="352" y="234" width="156" height="28" rx="4" fill="#ffffff" stroke="#cfd6df"/>
+  <text x="364" y="252" class="text">键盘按键</text>
+
+  <text x="220" y="290" class="text">战斗宏启动热键</text>
+  <rect x="352" y="272" width="156" height="28" rx="4" fill="#ffffff" stroke="#cfd6df"/>
+  <text x="364" y="290" class="text">F2</text>
+
+  <rect x="220" y="324" width="14" height="14" rx="2" fill="#ffffff" stroke="#9aa3ad"/>
+  <path d="M223 331L227 335L233 325" stroke="#1f2933" stroke-width="1.6"/>
+  <text x="244" y="336" class="text">宏启动瞬间执行一次</text>
+
+  <rect x="220" y="362" width="14" height="14" rx="2" fill="#ffffff" stroke="#9aa3ad"/>
+  <path d="M223 369L227 373L233 363" stroke="#1f2933" stroke-width="1.6"/>
+  <text x="244" y="374" class="text">只作用于 Diablo III 前台窗口</text>
+
+  <rect x="220" y="400" width="14" height="14" rx="2" fill="#ffffff" stroke="#9aa3ad"/>
+  <path d="M223 407L227 411L233 401" stroke="#1f2933" stroke-width="1.6"/>
+  <text x="244" y="412" class="text">智能暂停</text>
+
+  <!-- Left column: Input -->
+  <text x="202" y="468" class="title">输入</text>
+  <line x1="202" y1="478" x2="674" y2="478" stroke="#e6e9ee"/>
+
+  <text x="220" y="508" class="text">发送模式</text>
+  <rect x="352" y="490" width="156" height="28" rx="4" fill="#ffffff" stroke="#cfd6df"/>
+  <text x="364" y="508" class="text">Event</text>
+
+  <rect x="220" y="542" width="14" height="14" rx="2" fill="#ffffff" stroke="#9aa3ad"/>
+  <text x="244" y="554" class="text">自定义强制站立</text>
+  <text x="456" y="554" class="muted">强制站立按键</text>
+  <rect x="562" y="536" width="112" height="28" rx="4" fill="#f8fafc" stroke="#d7dce2"/>
+  <text x="574" y="554" class="muted">LShift</text>
+
+  <rect x="220" y="580" width="14" height="14" rx="2" fill="#ffffff" stroke="#9aa3ad"/>
+  <text x="244" y="592" class="text">自定义强制移动</text>
+  <text x="456" y="592" class="muted">强制移动按键</text>
+  <rect x="562" y="574" width="112" height="28" rx="4" fill="#f8fafc" stroke="#d7dce2"/>
+  <text x="574" y="592" class="muted">e</text>
+
+  <rect x="220" y="618" width="14" height="14" rx="2" fill="#ffffff" stroke="#9aa3ad"/>
+  <text x="244" y="630" class="text">自定义药水按键</text>
+  <text x="456" y="630" class="muted">药水按键</text>
+  <rect x="562" y="612" width="112" height="28" rx="4" fill="#f8fafc" stroke="#d7dce2"/>
+  <text x="574" y="630" class="muted">q</text>
+
+  <!-- Right column: Helpers -->
+  <text x="738" y="174" class="title">助手</text>
+  <line x1="738" y1="184" x2="1218" y2="184" stroke="#e6e9ee"/>
+
+  <text x="756" y="214" class="text">助手启动方式</text>
+  <rect x="888" y="196" width="156" height="28" rx="4" fill="#ffffff" stroke="#cfd6df"/>
+  <text x="900" y="214" class="text">键盘按键</text>
+
+  <text x="756" y="252" class="text">助手启动热键</text>
+  <rect x="888" y="234" width="156" height="28" rx="4" fill="#ffffff" stroke="#cfd6df"/>
+  <text x="900" y="252" class="text">F5</text>
+
+  <rect x="756" y="286" width="14" height="14" rx="2" fill="#ffffff" stroke="#9aa3ad"/>
+  <path d="M759 293L763 297L769 287" stroke="#1f2933" stroke-width="1.6"/>
+  <text x="780" y="298" class="text">赌博助手</text>
+  <text x="998" y="298" class="text">赌博点击次数</text>
+  <rect x="1104" y="280" width="92" height="28" rx="4" fill="#ffffff" stroke="#cfd6df"/>
+  <text x="1116" y="298" class="text">15</text>
+
+  <rect x="756" y="324" width="14" height="14" rx="2" fill="#ffffff" stroke="#9aa3ad"/>
+  <text x="780" y="336" class="text">拾取助手</text>
+  <text x="998" y="336" class="muted">拾取点击次数</text>
+  <rect x="1104" y="318" width="92" height="28" rx="4" fill="#f8fafc" stroke="#d7dce2"/>
+  <text x="1116" y="336" class="muted">30</text>
+
+  <rect x="756" y="362" width="14" height="14" rx="2" fill="#ffffff" stroke="#9aa3ad"/>
+  <text x="780" y="374" class="text">分解助手</text>
+  <text x="998" y="374" class="muted">分解策略</text>
+  <rect x="1104" y="356" width="92" height="28" rx="4" fill="#f8fafc" stroke="#d7dce2"/>
+  <text x="1116" y="374" class="muted">快速分解</text>
+
+  <rect x="756" y="400" width="14" height="14" rx="2" fill="#ffffff" stroke="#9aa3ad"/>
+  <text x="780" y="412" class="text">重铸助手</text>
+  <text x="998" y="412" class="muted">重铸策略</text>
+  <rect x="1104" y="394" width="92" height="28" rx="4" fill="#f8fafc" stroke="#d7dce2"/>
+  <text x="1116" y="412" class="muted">重铸一次</text>
+
+  <rect x="756" y="438" width="14" height="14" rx="2" fill="#ffffff" stroke="#9aa3ad"/>
+  <text x="780" y="450" class="text">升级助手</text>
+  <rect x="912" y="438" width="14" height="14" rx="2" fill="#ffffff" stroke="#9aa3ad"/>
+  <text x="936" y="450" class="text">转化助手</text>
+  <rect x="1064" y="438" width="14" height="14" rx="2" fill="#ffffff" stroke="#9aa3ad"/>
+  <text x="1088" y="450" class="text">丢装助手</text>
+
+  <!-- Right column: Advanced -->
+  <text x="738" y="506" class="title">高级</text>
+  <line x1="738" y1="516" x2="1218" y2="516" stroke="#e6e9ee"/>
+
+  <text x="756" y="546" class="text">动画速度预设</text>
+  <rect x="888" y="528" width="156" height="28" rx="4" fill="#ffffff" stroke="#cfd6df"/>
+  <text x="900" y="546" class="text">中等</text>
+
+  <text x="756" y="584" class="text">辅助鼠标速度</text>
+  <rect x="888" y="566" width="92" height="28" rx="4" fill="#ffffff" stroke="#cfd6df"/>
+  <text x="900" y="584" class="text">2</text>
+
+  <text x="998" y="584" class="text">动画延迟</text>
+  <rect x="1104" y="566" width="92" height="28" rx="4" fill="#ffffff" stroke="#cfd6df"/>
+  <text x="1116" y="584" class="text">150</text>
+
+  <text x="756" y="622" class="text">安全格</text>
+  <rect x="888" y="604" width="156" height="28" rx="4" fill="#ffffff" stroke="#cfd6df"/>
+  <text x="900" y="622" class="muted">61,62,63</text>
+
+  <text x="998" y="622" class="text">最大重铸次数</text>
+  <rect x="1104" y="604" width="92" height="28" rx="4" fill="#f8fafc" stroke="#d7dce2"/>
+  <text x="1116" y="622" class="muted">10</text>
+
+  <!-- Compact skill table preview strip -->
+  <rect x="202" y="684" width="1016" height="66" rx="4" fill="#fbfcfd" stroke="#d7dce2"/>
+  <text x="218" y="708" class="title">配置页预览：技能表格</text>
+  <line x1="218" y1="720" x2="1202" y2="720" stroke="#e6e9ee"/>
+  <text x="226" y="740" class="table-head">槽位</text>
+  <text x="292" y="740" class="table-head">按键</text>
+  <text x="382" y="740" class="table-head">策略</text>
+  <text x="512" y="740" class="table-head">间隔</text>
+  <text x="602" y="740" class="table-head">延迟</text>
+  <text x="692" y="740" class="table-head">随机</text>
+  <text x="782" y="740" class="table-head">优先级</text>
+  <text x="888" y="740" class="table-head">重复</text>
+  <text x="982" y="740" class="table-head">重复间隔</text>
+  <text x="1110" y="740" class="table-head">触发键</text>
+
+  <!-- Status bar -->
+  <rect x="14" y="770" width="1252" height="36" fill="#f9fafb"/>
+  <line x1="14" y1="770" x2="1266" y2="770" stroke="#d7dce2"/>
+  <circle cx="32" cy="788" r="5" fill="#9aa3ad"/>
+  <text x="48" y="792" class="text">未运行</text>
+  <text x="112" y="792" class="text">完整布局</text>
+  <text x="190" y="792" class="text">最近日志</text>
+  <text x="252" y="792" class="mono">已载入配置：/home/vick/.config/d3helperforlinux/d3oldsand.ini</text>
+  <rect x="1168" y="778" width="70" height="22" rx="4" fill="#ffffff" stroke="#cfd6df"/>
+  <text x="1184" y="793" class="small">展开日志</text>
+</svg>

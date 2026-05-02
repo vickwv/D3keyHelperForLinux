@@ -70,10 +70,6 @@ Current completeness:
 
 ![Main Window](./mainwindow.png)
 
-### Compact window
-
-![Compact Window](./mainwindow_compact.png)
-
 ### Settings illustration
 
 ![Settings](./settings.png)
