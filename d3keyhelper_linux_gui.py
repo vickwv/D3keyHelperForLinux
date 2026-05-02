@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
+    QHeaderView,
     QLabel,
     QLineEdit,
     QListWidget,
@@ -340,12 +341,11 @@ INLINE_LABEL_WIDTH = 76
 
 TOOLBAR_PATH_MIN_WIDTH = 220
 TOOLBAR_PATH_MAX_WIDTH = 320
-TOOLBAR_PROFILE_WIDTH = 190
 NAV_WIDTH = 150
-SKILL_TEXT_WIDTH = 76
-SKILL_TRIGGER_WIDTH = 64
-SKILL_ACTION_WIDTH = 126
-SKILL_NUMBER_WIDTH = 68
+SKILL_TEXT_WIDTH = 68
+SKILL_TRIGGER_WIDTH = 72
+SKILL_ACTION_WIDTH = 118
+SKILL_NUMBER_WIDTH = 60
 SKILL_TABLE_ROW_HEIGHT = 32
 SKILL_TABLE_HEADER_HEIGHT = 30
 
@@ -926,18 +926,17 @@ def tune_skill_widget(widget: QWidget, role: str) -> None:
     if not isinstance(widget, (QLineEdit, QComboBox, QSpinBox)):
         return
     widget.setMinimumHeight(FORM_CONTROL_HEIGHT)
-    width = SKILL_NUMBER_WIDTH
-    if role in {"hotkey", "triggerbutton"}:
-        width = SKILL_TEXT_WIDTH
-    if role == "triggerbutton":
-        width = SKILL_TRIGGER_WIDTH
-    elif role == "action":
-        width = SKILL_ACTION_WIDTH
-    widget.setMinimumWidth(width)
-    if role == "triggerbutton":
+    if role == "action":
+        # Strategy column stretches — let the widget expand to fill the cell
+        widget.setMinimumWidth(SKILL_ACTION_WIDTH)
         widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-    else:
-        widget.setMaximumWidth(width)
+        return
+    width = SKILL_NUMBER_WIDTH
+    if role == "hotkey":
+        width = SKILL_TEXT_WIDTH
+    elif role == "triggerbutton":
+        width = SKILL_TRIGGER_WIDTH
+    widget.setFixedWidth(width)
 
 
 def load_parser(config_path: Path) -> configparser.ConfigParser:
@@ -1094,13 +1093,15 @@ class ProfileTab(QWidget):
         self.skill_table.setShowGrid(True)
         self.skill_table.setAlternatingRowColors(True)
         self.skill_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-        self.skill_table.horizontalHeader().setStretchLastSection(True)
+        self.skill_table.horizontalHeader().setStretchLastSection(False)
         self.skill_table.horizontalHeader().setDefaultSectionSize(SKILL_NUMBER_WIDTH)
         self.skill_table.horizontalHeader().setMinimumSectionSize(40)
         self.skill_table.horizontalHeader().setFixedHeight(SKILL_TABLE_HEADER_HEIGHT)
         self.skill_table.horizontalHeader().setDefaultAlignment(
             Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
         )
+        self.skill_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Fixed)
+        self.skill_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
         self.skill_table.verticalScrollBar().setEnabled(False)
         self.skill_table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.skill_table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -1151,15 +1152,16 @@ class ProfileTab(QWidget):
             self.skill_table.setCellWidget(index - 1, 8, row["repeatinterval"])
             self.skill_table.setCellWidget(index - 1, 9, row["triggerbutton"])
             skill_widgets.append(row)
-        self.skill_table.setColumnWidth(0, 62)
-        self.skill_table.setColumnWidth(1, SKILL_TEXT_WIDTH)
-        self.skill_table.setColumnWidth(2, SKILL_ACTION_WIDTH)
-        self.skill_table.setColumnWidth(3, SKILL_NUMBER_WIDTH)
-        self.skill_table.setColumnWidth(4, SKILL_NUMBER_WIDTH)
-        self.skill_table.setColumnWidth(5, 52)
-        self.skill_table.setColumnWidth(6, SKILL_NUMBER_WIDTH)
-        self.skill_table.setColumnWidth(7, SKILL_NUMBER_WIDTH)
-        self.skill_table.setColumnWidth(8, 112)
+        self.skill_table.setColumnWidth(0, 50)   # 槽位
+        self.skill_table.setColumnWidth(1, SKILL_TEXT_WIDTH)    # 按键
+        # col 2 (策略) — Stretch, set by header resize mode
+        self.skill_table.setColumnWidth(3, SKILL_NUMBER_WIDTH)  # 间隔
+        self.skill_table.setColumnWidth(4, SKILL_NUMBER_WIDTH)  # 延迟
+        self.skill_table.setColumnWidth(5, 54)   # 随机
+        self.skill_table.setColumnWidth(6, SKILL_NUMBER_WIDTH)  # 优先级
+        self.skill_table.setColumnWidth(7, SKILL_NUMBER_WIDTH)  # 重复
+        self.skill_table.setColumnWidth(8, 86)   # 重复间隔
+        self.skill_table.setColumnWidth(9, SKILL_TRIGGER_WIDTH) # 触发
         self.widgets["skills"] = skill_widgets
         self.skill_queue_warning = QLabel(
             tr(
@@ -1362,9 +1364,6 @@ class MainWindow(QMainWindow):
         self.path_label.setMinimumWidth(TOOLBAR_PATH_MIN_WIDTH)
         self.path_label.setMaximumWidth(TOOLBAR_PATH_MAX_WIDTH)
         self.path_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        self.profile_line = QLineEdit()
-        self.profile_line.setPlaceholderText(tr("启动时可选：配置名或编号", "Optional: profile name or number"))
-        self.profile_line.setFixedWidth(TOOLBAR_PROFILE_WIDTH)
         reload_button = QPushButton(tr("重新载入", "Reload"))
         reload_button.clicked.connect(self.reload_config)
         save_button = QPushButton(tr("保存配置", "Save"))
@@ -1375,7 +1374,6 @@ class MainWindow(QMainWindow):
         stop_button = QPushButton(tr("停止运行器", "Stop runner"))
         stop_button.clicked.connect(self.stop_runner)
         toolbar.addWidget(self.path_label)
-        toolbar.addWidget(self.profile_line)
         toolbar.addStretch(1)
         toolbar.addWidget(reload_button)
         toolbar.addWidget(save_button)
@@ -1926,7 +1924,7 @@ class MainWindow(QMainWindow):
         if save_first:
             self.save_config()
         self.stop_runner(log_message=None)
-        command = build_runner_command(self.config_path, self.profile_line.text().strip())
+        command = build_runner_command(self.config_path, "")
         self.process = QProcess(self)
         self.process.setProcessChannelMode(QProcess.ProcessChannelMode.MergedChannels)
         self.process.readyReadStandardOutput.connect(self._read_process_output)
