@@ -364,6 +364,25 @@ class GuiParityTests(unittest.TestCase):
                 window.close()
                 app.processEvents()
 
+    def test_stop_runner_logs_stop_message(self) -> None:
+        app = get_qt_app()
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            config_path = Path(tmp_dir) / "d3oldsand.ini"
+            runtime.create_default_config(config_path)
+            window = gui.MainWindow(config_path)
+            try:
+                process = mock.Mock()
+                process.state.return_value = gui.QProcess.ProcessState.Running
+                process.waitForFinished.return_value = True
+                window.process = process
+                window.stop_runner()
+                self.assertIn("已停止运行器。", window.log.toPlainText())
+                process.terminate.assert_called_once()
+                self.assertIsNone(window.process)
+            finally:
+                window.close()
+                app.processEvents()
+
 
 class GeometryTests(unittest.TestCase):
     def test_parse_resolution(self) -> None:
