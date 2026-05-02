@@ -16,8 +16,10 @@ from pathlib import Path
 
 try:
     from .enums import MovingMethod, PotionMethod, QuickPauseAction, QuickPauseMode, QueueReason, ReforgeMethod, SalvageMethod, SkillAction, StartMode
+    from .runner_events import emit_runner_event, emit_runner_log
 except ImportError:
     from enums import MovingMethod, PotionMethod, QuickPauseAction, QuickPauseMode, QueueReason, ReforgeMethod, SalvageMethod, SkillAction, StartMode  # type: ignore[no-redef]
+    from runner_events import emit_runner_event, emit_runner_log  # type: ignore[no-redef]
 
 try:
     from pynput import keyboard, mouse
@@ -646,8 +648,8 @@ class MacroApp:
         if profile.use_skill_queue:
             self._spawn_periodic_worker(self._make_skill_queue_worker(profile.use_skill_queue_interval_ms))
 
-        print(f"EVENT:macro_started:{profile.name}", flush=True)
-        print(f"已启动 Linux 战斗宏：{profile.name}", flush=True)
+        emit_runner_event("macro_started", profile.name)
+        emit_runner_log(f"已启动 Linux 战斗宏：{profile.name}")
 
     def stop_macro(self, reason: str | None) -> None:
         with self._lock:
@@ -672,11 +674,11 @@ class MacroApp:
             except Exception:
                 pass
         if reason:
-            print(f"EVENT:macro_stopped:{reason}", flush=True)
-            print(f"已停止战斗宏：{reason}", flush=True)
+            emit_runner_event("macro_stopped", reason)
+            emit_runner_log(f"已停止战斗宏：{reason}")
         else:
-            print("EVENT:macro_stopped", flush=True)
-            print("已停止战斗宏", flush=True)
+            emit_runner_event("macro_stopped")
+            emit_runner_log("已停止战斗宏")
 
     def toggle_pause(self) -> None:
         with self._lock:
@@ -688,13 +690,13 @@ class MacroApp:
         if paused:
             for send_spec in reversed(held_keys):
                 self.sender.release(send_spec)
-            print("EVENT:macro_paused", flush=True)
-            print("战斗宏已暂停", flush=True)
+            emit_runner_event("macro_paused")
+            emit_runner_log("战斗宏已暂停")
         else:
             for send_spec in held_keys:
                 self.sender.press(send_spec)
-            print("EVENT:macro_resumed", flush=True)
-            print("战斗宏已恢复", flush=True)
+            emit_runner_event("macro_resumed")
+            emit_runner_log("战斗宏已恢复")
 
     def send_once_actions(self) -> None:
         profile = self.current_profile
@@ -712,8 +714,8 @@ class MacroApp:
         self.stop_macro(reason=None)
         self.current_profile_index = index
         profile = self.current_profile
-        print(f"EVENT:profile_switched:{profile.name}", flush=True)
-        print(f"已切换配置：{profile.name}", flush=True)
+        emit_runner_event("profile_switched", profile.name)
+        emit_runner_log(f"已切换配置：{profile.name}")
         if self.general.sound_on_profile_switch:
             play_notification_sound()
         self._print_profile_notes(profile)
@@ -760,7 +762,12 @@ class MacroApp:
         if skill.action in {SkillAction.SPAM, SkillAction.KEY_TRIGGER}:
             for repeat_index in range(max(skill.repeat, 1)):
                 if use_queue:
-                    self._skill_queue.put((skill.hotkey, QueueReason.SPAM))
+                    # Re-check _running while holding the lock so we never put
+                    # items into the queue after stop_macro() has drained it.
+                    with self._lock:
+                        if not self._running:
+                            return
+                        self._skill_queue.put((skill.hotkey, QueueReason.SPAM))
                 else:
                     self.sender.tap(skill.hotkey)
                 if repeat_index + 1 < skill.repeat and skill.repeat_interval_ms > 0:
@@ -793,7 +800,10 @@ class MacroApp:
         if current_active:
             return
         if use_queue:
-            self._skill_queue.put((skill.hotkey, QueueReason.KEEP_BUFF))
+            with self._lock:
+                if not self._running:
+                    return
+                self._skill_queue.put((skill.hotkey, QueueReason.KEEP_BUFF))
         elif skill.hotkey.base == "mouse:left":
             self._send_with_force_standing(skill.hotkey)
         else:
