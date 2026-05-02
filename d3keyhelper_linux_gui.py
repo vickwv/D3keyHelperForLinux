@@ -196,9 +196,9 @@ QComboBox::drop-down:hover {
 QComboBox QAbstractItemView {
     background: #ffffff;
     color: #233142;
-    border: 1px solid #b8c2cf;
-    border-radius: 6px;
-    padding: 4px;
+    border: 1px solid #c5ceda;
+    border-radius: 5px;
+    padding: 2px;
     outline: none;
     selection-background-color: #e7f0ff;
     selection-color: #1d4f91;
@@ -486,8 +486,11 @@ def set_combo_value(combo: QComboBox, value) -> None:
 
 def tune_combo_box(combo: QComboBox) -> QComboBox:
     popup = QListView()
+    popup.setFrameShape(QFrame.Shape.NoFrame)
     popup.setUniformItemSizes(True)
     popup.setSpacing(1)
+    popup.setViewportMargins(0, 0, 0, 0)
+    popup.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
     combo.setView(popup)
     combo.setMaxVisibleItems(12)
     return combo
