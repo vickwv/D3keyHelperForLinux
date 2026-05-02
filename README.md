@@ -5,7 +5,25 @@
 
 **Language:** English | [简体中文](./README.zh-CN.md)
 
-`D3keyHelperForLinux` is a native Linux port of the original **D3keyHelper** project, focused on **Diablo III running through Steam + Proton**. It provides combat macros, helper automation, a Qt GUI editor, AppImage packaging, and compatibility with the original `d3oldsand.ini` configuration format.
+`D3keyHelperForLinux` is a key helper for playing **Diablo III on Linux**. It ports the combat macro runner and one-button helper workflows from the original **D3keyHelper** project, then adds a new Qt GUI for editing profiles, starting and stopping the runner, switching active configs, and watching runtime status.
+
+The project focuses on three practical goals:
+
+1. Keep existing D3keyHelper-style macro configs usable under **Steam + Proton + Battle.net + Diablo III**.
+2. Handle key sending, mouse actions, window detection, and inventory screenshots through Linux-native code.
+3. Ship as an AppImage so users do not have to manage a Python environment manually.
+
+It is not a general automation framework or a game modification tool. It is scoped around Diablo III key loops, helper actions, and compatibility with the original `d3oldsand.ini` format.
+
+## v1.0.1 highlights
+
+`v1.0.1` is primarily a major UI refresh:
+
+1. Redesigned the main window layout to reduce dense, stacked forms.
+2. Added left-side navigation, a clearer runtime status area, and a cleaner log panel.
+3. Improved profile pages, skill tables, toolbar behavior, and active profile display.
+4. Reworked the app icon around a dark Diablo-style `D3` mark.
+5. Trimmed AppImage packaging so unrelated Qt modules are no longer bundled.
 
 ## Credits and license
 
@@ -28,25 +46,36 @@ Current completeness:
 2. **KDE Wayland + XWayland game window:** usable
 3. **Pure native Wayland end-to-end control path:** still limited
 
-## Features
+## Feature Overview
 
-### Combat macro features
+### Combat macro runner
 
-1. GUI editor for `d3oldsand.ini`
-2. Lazy toggle mode / hold-to-run mode / one-shot mode
-3. Skill actions:
+The runner executes key loops and helper logic in game. Configuration is still saved in the original-compatible `d3oldsand.ini` format.
+
+1. Supports lazy toggle mode, hold-to-run mode, and one-shot mode.
+2. Supports independent actions for six skill slots:
    - hold key
    - repeated tapping
    - keep buff active
    - trigger-on-key
-4. Delay, randomized delay, priority, repeat count
-5. Single-thread skill queue
-6. Force stand still, force move, potion helper, potion cooldown helper
-7. Quick pause and smart pause
-8. Fast profile switching
-9. Auto-save config changes and auto-restart runner when needed
+3. Supports delay, randomized delay, priority, and repeat count.
+4. Supports force stand still, force move, potion helper, and potion cooldown helper.
+5. Supports quick pause, smart pause, and fast profile switching.
+6. Auto-saves config changes and restarts the runner when a live change requires it.
 
-### One-button helper features
+### Graphical interface
+
+The GUI is the main entry point in the current version and replaces most manual ini editing.
+
+1. Edits general options, profile settings, and skill strategies through structured forms.
+2. Shows the general page and all profiles in left-side navigation.
+3. Shows the active profile in the top toolbar and provides runner start/stop controls.
+4. Shows config path, runtime state, and recent messages in the bottom status/log area.
+5. Preserves original config fields where possible to avoid breaking existing setups.
+
+### One-button helpers
+
+These helpers target town workflows, inventory cleanup, and batch material operations:
 
 1. Gamble helper
 2. Loot helper
