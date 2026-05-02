@@ -8,9 +8,14 @@ import sys
 import uuid
 from pathlib import Path
 
-from config_schema import gd, pd, skill_hotkey_default
-from enums import MovingMethod, PotionMethod, QuickPauseMode, SkillAction, StartMethod, StartMode
-from runner_events import parse_runner_event
+try:
+    from .config_schema import gd, pd, skill_hotkey_default
+    from .enums import MovingMethod, PotionMethod, QuickPauseMode, SkillAction, StartMethod, StartMode
+    from .runner_events import parse_runner_event
+except ImportError:
+    from config_schema import gd, pd, skill_hotkey_default  # type: ignore[no-redef]
+    from enums import MovingMethod, PotionMethod, QuickPauseMode, SkillAction, StartMethod, StartMode  # type: ignore[no-redef]
+    from runner_events import parse_runner_event  # type: ignore[no-redef]
 
 from PySide6.QtCore import QEvent, QObject, QProcess, QTimer, Qt
 from PySide6.QtGui import QIcon

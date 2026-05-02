@@ -18,15 +18,26 @@ from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 
-from config_schema import (
-    build_general_section,
-    gd,
-    pd,
-    sd,
-    skill_hotkey_default,
-    default_profile_dict as _schema_default_profile_dict,
-)
-from enums import MovingMethod, PotionMethod, QuickPauseAction, QuickPauseMode, QueueReason, ReforgeMethod, SalvageMethod, SkillAction, StartMode
+try:
+    from .config_schema import (
+        build_general_section,
+        gd,
+        pd,
+        sd,
+        skill_hotkey_default,
+        default_profile_dict as _schema_default_profile_dict,
+    )
+    from .enums import MovingMethod, PotionMethod, QuickPauseAction, QuickPauseMode, QueueReason, ReforgeMethod, SalvageMethod, SkillAction, StartMode
+except ImportError:
+    from config_schema import (  # type: ignore[no-redef]
+        build_general_section,
+        gd,
+        pd,
+        sd,
+        skill_hotkey_default,
+        default_profile_dict as _schema_default_profile_dict,
+    )
+    from enums import MovingMethod, PotionMethod, QuickPauseAction, QuickPauseMode, QueueReason, ReforgeMethod, SalvageMethod, SkillAction, StartMode  # type: ignore[no-redef]
 
 try:
     from pynput import keyboard, mouse
@@ -1518,8 +1529,7 @@ class MacroApp:
             stop_event = self._stop_event
             delay_s = max(interval_ms, 50) / 1000.0
             while not stop_event.is_set():
-                if not self._skill_queue.empty():
-                    self._process_skill_queue_once(max(interval_ms, 50))
+                self._process_skill_queue_once(max(interval_ms, 50))
                 if stop_event.wait(delay_s):
                     break
 

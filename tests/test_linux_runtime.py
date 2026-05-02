@@ -15,8 +15,8 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-import d3keyhelper_linux as runtime
-import d3keyhelper_linux_gui as gui
+import d3keyhelper_linux as runtime  # noqa: E402
+import d3keyhelper_linux_gui as gui  # noqa: E402
 
 
 def get_qt_app() -> QApplication:
@@ -507,19 +507,62 @@ class GuiParityTests(unittest.TestCase):
                 gui.set_ui_language(previous_language)
 
     def test_config_round_trip_no_field_loss(self) -> None:
-        """Default config -> GUI save -> runtime load: no field is lost."""
+        """Default config -> GUI save -> runtime load: no INI key is lost.
+
+        Reads the raw keys before and after GUI save and asserts the set of
+        keys only grows (never shrinks).  GUI-only keys like ``language`` are
+        allowed as new additions; runtime-required keys must all survive.
+        """
+        import configparser as _cp
+
+        def _ini_keys(path: Path) -> dict[str, set[str]]:
+            """Return {section_lower: {key, ...}} for every section."""
+            p = _cp.ConfigParser(interpolation=None)
+            p.optionxform = str.lower
+            for enc in ("utf-16", "utf-8-sig", "utf-8"):
+                try:
+                    with path.open("r", encoding=enc) as f:
+                        p.read_file(f)
+                    break
+                except (UnicodeDecodeError, UnicodeError):
+                    continue
+            return {s.lower(): set(p.options(s)) for s in p.sections()}
+
         app = get_qt_app()
         with tempfile.TemporaryDirectory() as tmpdir:
             cfg = Path(tmpdir) / "rt.ini"
             runtime.create_default_config(cfg)
+            keys_before = _ini_keys(cfg)
+
             w = gui.MainWindow(cfg)
             try:
                 w.save_config()
             finally:
                 w.close()
             app.processEvents()
-            general, profiles = runtime.load_config(cfg)
-        self.assertIsNotNone(general.start_hotkey or True)
+            keys_after = _ini_keys(cfg)
+
+        # Every section present before must still exist
+        for section in keys_before:
+            self.assertIn(section, keys_after, f"Section [{section}] disappeared after GUI save")
+            missing = keys_before[section] - keys_after[section]
+            self.assertFalse(
+                missing,
+                f"Keys lost in [{section}] after GUI save: {missing}",
+            )
+
+        # Runtime load must succeed and produce sane values
+        with tempfile.TemporaryDirectory() as tmpdir2:
+            cfg2 = Path(tmpdir2) / "rt2.ini"
+            runtime.create_default_config(cfg2)
+            w2 = gui.MainWindow(cfg2)
+            try:
+                w2.save_config()
+            finally:
+                w2.close()
+            app.processEvents()
+            general, profiles = runtime.load_config(cfg2)
+
         self.assertGreater(len(profiles), 0)
         self.assertEqual(general.game_resolution, "Auto")
         self.assertAlmostEqual(general.game_gamma, 1.0, places=5)
@@ -527,6 +570,41 @@ class GuiParityTests(unittest.TestCase):
         self.assertEqual(len(p.skills), 6)
         self.assertEqual(p.skills[0].interval_ms, 300)
         self.assertEqual(p.skills[4].interval_ms, 300)
+
+
+class PackageImportTests(unittest.TestCase):
+    """Verify that the modules import cleanly when used as a package."""
+
+    def test_package_import_runtime(self) -> None:
+        """d3keyhelper_linux must be importable from its parent directory."""
+        parent = str(REPO_ROOT.parent)
+        result = subprocess.run(
+            [sys.executable, "-c", "import D3keyHelperForLinux.d3keyhelper_linux"],
+            capture_output=True,
+            text=True,
+            env={**os.environ, "PYTHONPATH": parent},
+        )
+        self.assertEqual(
+            result.returncode,
+            0,
+            f"Package import failed:\n{result.stderr}",
+        )
+
+    def test_package_import_gui(self) -> None:
+        """d3keyhelper_linux_gui must be importable from its parent directory."""
+        parent = str(REPO_ROOT.parent)
+        env = {**os.environ, "PYTHONPATH": parent, "QT_QPA_PLATFORM": "offscreen"}
+        result = subprocess.run(
+            [sys.executable, "-c", "import D3keyHelperForLinux.d3keyhelper_linux_gui"],
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+        self.assertEqual(
+            result.returncode,
+            0,
+            f"Package GUI import failed:\n{result.stderr}",
+        )
 
 
 class GeometryTests(unittest.TestCase):
