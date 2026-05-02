@@ -5,7 +5,7 @@
 
 **Language:** English | [简体中文](./README.zh-CN.md)
 
-`D3keyHelperForLinux` is a key helper for playing **Diablo III on Linux**. It ports the combat macro runner and one-button helper workflows from the original **D3keyHelper** project, then adds a new Qt GUI for editing profiles, starting and stopping the runner, switching active configs, and watching runtime status.
+`D3keyHelperForLinux` is a key helper for playing **Diablo III on Linux**. It ports the combat macro runner and one-button helper workflows from the original **[D3keyHelper](https://github.com/WeijieH/D3keyHelper)** project, then adds a new Qt GUI for editing profiles, starting and stopping the runner, switching active configs, and watching runtime status.
 
 The project focuses on three practical goals:
 

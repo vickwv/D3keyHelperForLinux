@@ -5,7 +5,7 @@
 
 **语言:** [English](./README.md) | 简体中文
 
-`D3keyHelperForLinux` 是给 **Linux 下玩 Diablo III** 的玩家使用的按键助手。它把原版 **D3keyHelper** 的战斗宏和一键整理功能移植到 Linux，并提供一个新的 Qt 图形界面，用来编辑配置、启动/停止运行器、切换配置和查看运行状态。
+`D3keyHelperForLinux` 是给 **Linux 下玩 Diablo III** 的玩家使用的按键助手。它把原版 **[D3keyHelper](https://github.com/WeijieH/D3keyHelper)** 的战斗宏和一键整理功能移植到 Linux，并提供一个新的 Qt 图形界面，用来编辑配置、启动/停止运行器、切换配置和查看运行状态。
 
 这个项目主要解决三个问题：
 
