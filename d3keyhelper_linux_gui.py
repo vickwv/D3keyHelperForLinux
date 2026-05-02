@@ -2,22 +2,18 @@
 from __future__ import annotations
 
 import configparser
-import locale
-import os
 import sys
 import uuid
 from pathlib import Path
 
 try:
-    from .config_schema import gd, pd, skill_hotkey_default
-    from .enums import MovingMethod, PotionMethod, QuickPauseMode, SkillAction, StartMethod, StartMode
+    from .config_schema import gd
     from .runner_events import parse_runner_event
 except ImportError:
-    from config_schema import gd, pd, skill_hotkey_default  # type: ignore[no-redef]
-    from enums import MovingMethod, PotionMethod, QuickPauseMode, SkillAction, StartMethod, StartMode  # type: ignore[no-redef]
+    from config_schema import gd  # type: ignore[no-redef]
     from runner_events import parse_runner_event  # type: ignore[no-redef]
 
-from PySide6.QtCore import QEvent, QObject, QProcess, QTimer, Qt
+from PySide6.QtCore import QProcess, QTimer, Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QAbstractSpinBox,
@@ -27,23 +23,16 @@ from PySide6.QtWidgets import (
     QComboBox,
     QDoubleSpinBox,
     QFrame,
-    QFormLayout,
-    QGridLayout,
     QHBoxLayout,
-    QHeaderView,
     QLabel,
     QLineEdit,
-    QListView,
     QListWidget,
     QListWidgetItem,
     QMainWindow,
     QMessageBox,
     QPushButton,
     QSizePolicy,
-    QSpacerItem,
     QSplitter,
-    QTableWidget,
-    QTableWidgetItem,
     QSpinBox,
     QStackedWidget,
     QVBoxLayout,
@@ -58,7 +47,6 @@ from qfluentwidgets import (  # noqa: E402
     Theme,
     setThemeColor,
     ComboBox as FluentComboBox,
-    LineEdit,
     SpinBox,
     DoubleSpinBox,
     CheckBox,
@@ -68,7 +56,6 @@ from qfluentwidgets import (  # noqa: E402
     ListWidget,
     SmoothScrollArea,
     FluentIcon as FIF,
-    TableWidget,
 )
 sys.stdout = _stdout_backup
 del _stdout_backup, _io
@@ -84,13 +71,13 @@ except ImportError:
 
 
 try:
-    from .gui_i18n import (
+    from .gui_i18n import (  # noqa: F401
         UI_LANGUAGE_ENV, LANGUAGE_TOOLBAR_ITEMS,
         normalize_ui_language, resolve_ui_language, set_ui_language,
         configured_ui_language, UI_LANGUAGE, EN_TEXT, ZH_TW_MAP,
         zh_to_tw, localize_text, tr, load_parser,
     )
-    from .gui_widgets import (
+    from .gui_widgets import (  # noqa: F401
         app_icon_path, APP_STYLE_SHEET,
         START_METHOD_ITEMS, COMMON_METHOD_ITEMS, SKILL_ACTION_ITEMS,
         START_MODE_ITEMS, MOVING_METHOD_ITEMS, POTION_METHOD_ITEMS,
@@ -125,15 +112,15 @@ try:
         build_page_header, tune_form_widget, tune_skill_widget,
         build_runner_command,
     )
-    from .gui_profile_page import ProfileTab, _SkillColumnDistributor
+    from .gui_profile_page import ProfileTab, _SkillColumnDistributor  # noqa: F401
 except ImportError:
-    from gui_i18n import (  # type: ignore[no-redef]
+    from gui_i18n import (  # type: ignore[no-redef]  # noqa: F401
         UI_LANGUAGE_ENV, LANGUAGE_TOOLBAR_ITEMS,
         normalize_ui_language, resolve_ui_language, set_ui_language,
         configured_ui_language, UI_LANGUAGE, EN_TEXT, ZH_TW_MAP,
         zh_to_tw, localize_text, tr, load_parser,
     )
-    from gui_widgets import (  # type: ignore[no-redef]
+    from gui_widgets import (  # type: ignore[no-redef]  # noqa: F401
         app_icon_path, APP_STYLE_SHEET,
         START_METHOD_ITEMS, COMMON_METHOD_ITEMS, SKILL_ACTION_ITEMS,
         START_MODE_ITEMS, MOVING_METHOD_ITEMS, POTION_METHOD_ITEMS,
@@ -168,7 +155,7 @@ except ImportError:
         build_page_header, tune_form_widget, tune_skill_widget,
         build_runner_command,
     )
-    from gui_profile_page import ProfileTab, _SkillColumnDistributor  # type: ignore[no-redef]
+    from gui_profile_page import ProfileTab, _SkillColumnDistributor  # type: ignore[no-redef]  # noqa: F401
 
 try:
     from . import gui_i18n as _gui_i18n

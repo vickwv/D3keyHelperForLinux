@@ -2,7 +2,6 @@ from __future__ import annotations
 import configparser
 import sys
 import io as _io
-from pathlib import Path
 
 _stdout_backup = sys.stdout
 sys.stdout = _io.StringIO()
@@ -17,8 +16,8 @@ finally:
     sys.stdout = _stdout_backup
 del _stdout_backup, _io
 
-from PySide6.QtCore import QEvent, QObject, Qt
-from PySide6.QtWidgets import (
+from PySide6.QtCore import QEvent, QObject, Qt  # noqa: E402
+from PySide6.QtWidgets import (  # noqa: E402
     QAbstractSpinBox,
     QHeaderView,
     QHBoxLayout,
@@ -33,7 +32,7 @@ try:
     from .gui_i18n import tr, localize_text
     from .gui_widgets import (
         AUTOSTART_TOOLTIP, COMMON_METHOD_ITEMS, DELAY_TOOLTIP,
-        FORM_CONTROL_HEIGHT, MOVING_METHOD_ITEMS, POTION_METHOD_ITEMS,
+        MOVING_METHOD_ITEMS, POTION_METHOD_ITEMS,
         PRIORITY_TOOLTIP, PROFILE_HOTKEY_TOOLTIP, POTION_TOOLTIP,
         QUICK_PAUSE_ACTION_ITEMS, QUICK_PAUSE_MODE_ITEMS,
         QUICK_PAUSE_TRIGGER_ITEMS, RANDOM_TOOLTIP, REPEAT_TOOLTIP,
@@ -53,7 +52,7 @@ except ImportError:
     from gui_i18n import tr, localize_text  # type: ignore[no-redef]
     from gui_widgets import (  # type: ignore[no-redef]
         AUTOSTART_TOOLTIP, COMMON_METHOD_ITEMS, DELAY_TOOLTIP,
-        FORM_CONTROL_HEIGHT, MOVING_METHOD_ITEMS, POTION_METHOD_ITEMS,
+        MOVING_METHOD_ITEMS, POTION_METHOD_ITEMS,
         PRIORITY_TOOLTIP, PROFILE_HOTKEY_TOOLTIP, POTION_TOOLTIP,
         QUICK_PAUSE_ACTION_ITEMS, QUICK_PAUSE_MODE_ITEMS,
         QUICK_PAUSE_TRIGGER_ITEMS, RANDOM_TOOLTIP, REPEAT_TOOLTIP,
