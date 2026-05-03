@@ -47,6 +47,7 @@ try:
         tune_skill_widget,
     )
     from .config_schema import pd, skill_hotkey_default
+    from .config_io import parse_int
     from .enums import MovingMethod, PotionMethod, QuickPauseMode, SkillAction, StartMethod, StartMode
 except ImportError:
     from gui_i18n import tr, localize_text  # type: ignore[no-redef]
@@ -67,11 +68,16 @@ except ImportError:
         tune_skill_widget,
     )
     from config_schema import pd, skill_hotkey_default  # type: ignore[no-redef]
+    from config_io import parse_int  # type: ignore[no-redef]
     from enums import MovingMethod, PotionMethod, QuickPauseMode, SkillAction, StartMethod, StartMode  # type: ignore[no-redef]
 
 # Column weight ratios (pixels at baseline window size — distributed proportionally)
 _SKILL_COL_WEIGHTS = [66, 84, 118, 60, 60, 54, 60, 60, 86, 84]
 _SKILL_COL_TOTAL = sum(_SKILL_COL_WEIGHTS)
+
+
+def _section_int(section: configparser.SectionProxy, key: str, default: str) -> int:
+    return parse_int(section.get(key, default), parse_int(default, 0))
 
 
 class _SkillColumnDistributor(QObject):
@@ -119,21 +125,21 @@ class ProfileTab(QWidget):
         root.addWidget(self.page_header)
 
         self.widgets["name"] = _make_line_edit(section_name)
-        self.widgets["profilehkmethod"] = self._combo(COMMON_METHOD_ITEMS, int(section.get("profilehkmethod", pd("profilehkmethod"))))
+        self.widgets["profilehkmethod"] = self._combo(COMMON_METHOD_ITEMS, _section_int(section, "profilehkmethod", pd("profilehkmethod")))
         self.widgets["profilehkkey"] = _make_line_edit(section.get("profilehkkey", pd("profilehkkey")))
         self.widgets["autostartmarco"] = self._check(section.get("autostartmarco", pd("autostartmarco")) == "1")
-        self.widgets["lazymode"] = self._combo(START_MODE_ITEMS, int(section.get("lazymode", pd("lazymode"))))
-        self.widgets["movingmethod"] = self._combo(MOVING_METHOD_ITEMS, int(section.get("movingmethod", pd("movingmethod"))))
-        self.widgets["movinginterval"] = self._spin(20, 3000, int(section.get("movinginterval", pd("movinginterval"))))
-        self.widgets["potionmethod"] = self._combo(POTION_METHOD_ITEMS, int(section.get("potionmethod", pd("potionmethod"))))
-        self.widgets["potioninterval"] = self._spin(200, 30000, int(section.get("potioninterval", pd("potioninterval"))))
+        self.widgets["lazymode"] = self._combo(START_MODE_ITEMS, _section_int(section, "lazymode", pd("lazymode")))
+        self.widgets["movingmethod"] = self._combo(MOVING_METHOD_ITEMS, _section_int(section, "movingmethod", pd("movingmethod")))
+        self.widgets["movinginterval"] = self._spin(20, 3000, _section_int(section, "movinginterval", pd("movinginterval")))
+        self.widgets["potionmethod"] = self._combo(POTION_METHOD_ITEMS, _section_int(section, "potionmethod", pd("potionmethod")))
+        self.widgets["potioninterval"] = self._spin(200, 30000, _section_int(section, "potioninterval", pd("potioninterval")))
         self.widgets["useskillqueue"] = self._check(section.get("useskillqueue", pd("useskillqueue")) == "1")
-        self.widgets["useskillqueueinterval"] = self._spin(50, 1000, int(section.get("useskillqueueinterval", pd("useskillqueueinterval"))))
+        self.widgets["useskillqueueinterval"] = self._spin(50, 1000, _section_int(section, "useskillqueueinterval", pd("useskillqueueinterval")))
         self.widgets["enablequickpause"] = self._check(section.get("enablequickpause", pd("enablequickpause")) == "1")
-        self.widgets["quickpausemethod1"] = self._combo(QUICK_PAUSE_MODE_ITEMS, int(section.get("quickpausemethod1", pd("quickpausemethod1"))))
-        self.widgets["quickpausemethod2"] = self._combo(QUICK_PAUSE_TRIGGER_ITEMS, int(section.get("quickpausemethod2", pd("quickpausemethod2"))))
-        self.widgets["quickpausemethod3"] = self._combo(QUICK_PAUSE_ACTION_ITEMS, int(section.get("quickpausemethod3", pd("quickpausemethod3"))))
-        self.widgets["quickpausedelay"] = self._spin(50, 5000, int(section.get("quickpausedelay", pd("quickpausedelay"))))
+        self.widgets["quickpausemethod1"] = self._combo(QUICK_PAUSE_MODE_ITEMS, _section_int(section, "quickpausemethod1", pd("quickpausemethod1")))
+        self.widgets["quickpausemethod2"] = self._combo(QUICK_PAUSE_TRIGGER_ITEMS, _section_int(section, "quickpausemethod2", pd("quickpausemethod2")))
+        self.widgets["quickpausemethod3"] = self._combo(QUICK_PAUSE_ACTION_ITEMS, _section_int(section, "quickpausemethod3", pd("quickpausemethod3")))
+        self.widgets["quickpausedelay"] = self._spin(50, 5000, _section_int(section, "quickpausedelay", pd("quickpausedelay")))
 
         settings_columns = QHBoxLayout()
         settings_columns.setContentsMargins(0, 0, 0, 0)
@@ -256,13 +262,13 @@ class ProfileTab(QWidget):
         for index in range(1, 7):
             row = {}
             row["hotkey"] = _make_line_edit(section.get(f"skill_{index}", skill_hotkey_default(index)))
-            row["action"] = self._combo(SKILL_ACTION_ITEMS, int(section.get(f"action_{index}", "1")))
-            row["interval"] = self._spin(20, 60000, int(section.get(f"interval_{index}", "300")))
-            row["delay"] = self._spin(-30000, 30000, int(section.get(f"delay_{index}", "10")))
+            row["action"] = self._combo(SKILL_ACTION_ITEMS, _section_int(section, f"action_{index}", "1"))
+            row["interval"] = self._spin(20, 60000, _section_int(section, f"interval_{index}", "300"))
+            row["delay"] = self._spin(-30000, 30000, _section_int(section, f"delay_{index}", "10"))
             row["random"] = self._check(section.get(f"random_{index}", "1") == "1")
-            row["priority"] = self._spin(1, 10, int(section.get(f"priority_{index}", "1")))
-            row["repeat"] = self._spin(1, 99, int(section.get(f"repeat_{index}", "1")))
-            row["repeatinterval"] = self._spin(0, 1000, int(section.get(f"repeatinterval_{index}", "30")))
+            row["priority"] = self._spin(1, 10, _section_int(section, f"priority_{index}", "1"))
+            row["repeat"] = self._spin(1, 99, _section_int(section, f"repeat_{index}", "1"))
+            row["repeatinterval"] = self._spin(0, 1000, _section_int(section, f"repeatinterval_{index}", "30"))
             row["triggerbutton"] = _make_line_edit(section.get(f"triggerbutton_{index}", "LButton"))
             row["action"].setToolTip(SKILL_ACTION_TOOLTIP)
             row["delay"].setToolTip(DELAY_TOOLTIP)

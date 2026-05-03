@@ -108,6 +108,29 @@ class ConfigTests(unittest.TestCase):
         )
         self.assertTrue(runtime.looks_like_proton_diablo_window(window))
 
+    def test_kwin_window_detection_uses_process_commandline_fallback(self) -> None:
+        samples = [
+            "'pid': <352866>, 'x': <0.0>, 'y': <0.0>, 'width': <3440.0>, 'height': <1440.0>",
+            "'pid': <uint32 352866>, 'x': <int32 0>, 'y': <int32 0>, 'width': <int32 3440>, 'height': <int32 1440>",
+        ]
+        for sample in samples:
+            completed = subprocess.CompletedProcess(
+                args=["gdbus"],
+                returncode=0,
+                stdout=f"({{'caption': <'?????III'>, 'resourceClass': <'steam_app_4238117006'>, {sample}}},)",
+                stderr="",
+            )
+            with mock.patch.object(runtime.subprocess, "run", return_value=completed), mock.patch.object(
+                runtime, "read_process_commandline", return_value=r"C:\Games\Diablo III\x64\Diablo III64.exe"
+            ):
+                matcher = runtime.KWinWindowMatcher(title_regex="Diablo III", class_regex=None)
+                window = matcher.get_active_window()
+                self.assertIsNotNone(window)
+                self.assertEqual(window.pid, 352866)
+                self.assertEqual(window.width, 3440)
+                self.assertEqual(window.height, 1440)
+                self.assertTrue(matcher.matches_active_window())
+
     def test_build_runner_command_for_source_gui(self) -> None:
         config_path = Path("/tmp/d3oldsand.ini")
         with mock.patch.object(gui.sys, "frozen", False, create=True):
@@ -362,6 +385,68 @@ class GuiParityTests(unittest.TestCase):
                 window.general_widgets["safezone"].setText("bad")
                 window._refresh_general_state()
                 self.assertEqual(window.general_widgets["safezonestatus"].text(), gui.localize_text("安全格状态：格式错误"))
+            finally:
+                window.close()
+                app.processEvents()
+
+    def test_gui_loads_invalid_numeric_values_with_defaults(self) -> None:
+        app = get_qt_app()
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            config_path = Path(tmp_dir) / "d3oldsand.ini"
+            runtime.create_default_config(config_path)
+            parser = gui.load_parser(config_path)
+            parser["General"]["gamegamma"] = "bad"
+            parser["配置1"]["movinginterval"] = "bad"
+            with config_path.open("w", encoding="utf-16") as handle:
+                handle.write("; Linux GUI config for D3keyHelper\r\n")
+                parser.write(handle)
+            window = gui.MainWindow(config_path)
+            try:
+                self.assertAlmostEqual(window.general_widgets["gamegamma"].value(), 1.0, places=5)
+                self.assertEqual(window.profile_tabs[0].widgets["movinginterval"].value(), 100)
+            finally:
+                window.close()
+                app.processEvents()
+
+    def test_save_config_preserves_unknown_ini_keys(self) -> None:
+        app = get_qt_app()
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            config_path = Path(tmp_dir) / "d3oldsand.ini"
+            runtime.create_default_config(config_path)
+            parser = gui.load_parser(config_path)
+            parser["General"]["futurekey"] = "keepme"
+            parser["配置1"]["futureprofilekey"] = "keepme"
+            with config_path.open("w", encoding="utf-16") as handle:
+                handle.write("; Linux GUI config for D3keyHelper\r\n")
+                parser.write(handle)
+            window = gui.MainWindow(config_path)
+            try:
+                self.assertTrue(window.save_config(log_message=""))
+                saved = gui.load_parser(config_path)
+                self.assertEqual(saved["General"]["futurekey"], "keepme")
+                self.assertEqual(saved["配置1"]["futureprofilekey"], "keepme")
+            finally:
+                window.close()
+                app.processEvents()
+
+    def test_duplicate_profile_names_do_not_overwrite_sections(self) -> None:
+        app = get_qt_app()
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            config_path = Path(tmp_dir) / "d3oldsand.ini"
+            runtime.create_default_config(config_path)
+            parser = gui.load_parser(config_path)
+            parser["配置2"] = runtime.default_profile_dict()
+            with config_path.open("w", encoding="utf-16") as handle:
+                handle.write("; Linux GUI config for D3keyHelper\r\n")
+                parser.write(handle)
+            window = gui.MainWindow(config_path)
+            try:
+                window.profile_tabs[0].widgets["name"].setText("same")
+                window.profile_tabs[1].widgets["name"].setText("same")
+                with mock.patch.object(gui.QMessageBox, "warning"):
+                    self.assertFalse(window.save_config(log_message=""))
+                saved = gui.load_parser(config_path)
+                self.assertEqual([s for s in saved.sections() if s.lower() != "general"], ["配置1", "配置2"])
             finally:
                 window.close()
                 app.processEvents()

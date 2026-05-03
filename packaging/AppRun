@@ -1,4 +1,20 @@
 #!/bin/sh
 set -eu
 HERE="$(dirname "$(readlink -f "$0")")"
+
+# Let Qt discover the system's input-method plugins (fcitx5, ibus, …).
+# The bundled PyInstaller directory only contains Qt's own plugins; the
+# fcitx5 platform-input-context plugin lives in the system Qt6 plugin tree.
+for _d in \
+    /usr/lib/x86_64-linux-gnu/qt6/plugins \
+    /usr/lib/aarch64-linux-gnu/qt6/plugins \
+    /usr/lib/qt6/plugins \
+    /usr/lib64/qt6/plugins \
+    /usr/lib/qt/plugins; do
+    if [ -d "$_d/platforminputcontexts" ]; then
+        QT_PLUGIN_PATH="${_d}${QT_PLUGIN_PATH:+:${QT_PLUGIN_PATH}}"
+    fi
+done
+export QT_PLUGIN_PATH
+
 exec "$HERE/usr/lib/d3keyhelper-linux/D3keyHelper-Linux" "$@"

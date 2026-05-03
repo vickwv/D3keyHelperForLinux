@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+if [ -z "${BASH_VERSION:-}" ]; then
+  exec bash "$0" "$@"
+fi
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -8,17 +11,17 @@ APP_NAME="D3keyHelper-Linux"
 APPDIR="${BUILD_DIR}/AppDir"
 ICON_NAME="d3keyhelper-linux"
 ICON_DIR="${ROOT_DIR}/packaging/icons"
-PYTHON_BIN="${PYTHON_BIN:-python}"
+if [[ -z "${PYTHON_BIN:-}" ]]; then
+  if [[ -x "${ROOT_DIR}/.venv311/bin/python" ]]; then
+    PYTHON_BIN="${ROOT_DIR}/.venv311/bin/python"
+  elif command -v python3.11 >/dev/null 2>&1; then
+    PYTHON_BIN="python3.11"
+  else
+    PYTHON_BIN="python"
+  fi
+fi
 USER_CONFIG_PATH="${DIST_DIR}/${APP_NAME}/d3oldsand.ini"
 USER_CONFIG_BACKUP="${BUILD_DIR}/preserved-d3oldsand.ini"
-
-mkdir -p "${BUILD_DIR}"
-if [[ -f "${USER_CONFIG_PATH}" ]]; then
-  cp "${USER_CONFIG_PATH}" "${USER_CONFIG_BACKUP}"
-else
-  rm -f "${USER_CONFIG_BACKUP}"
-fi
-rm -rf "${APPDIR}" "${DIST_DIR}/${APP_NAME}" "${ROOT_DIR}/build/${APP_NAME}.spec"
 
 if ! "${PYTHON_BIN}" -m pip --version >/dev/null 2>&1; then
   "${PYTHON_BIN}" -m ensurepip --upgrade >/dev/null 2>&1 || true
@@ -27,8 +30,23 @@ if ! "${PYTHON_BIN}" -m pip --version >/dev/null 2>&1; then
   echo "Error: ${PYTHON_BIN} does not provide pip. Set PYTHON_BIN to a Python interpreter with pip." >&2
   exit 1
 fi
+PYTHON_VERSION="$("${PYTHON_BIN}" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+if [[ "${PYTHON_VERSION}" != "3.11" ]]; then
+  echo "Error: AppImage builds must use Python 3.11 to match CI. Current ${PYTHON_BIN} is Python ${PYTHON_VERSION}." >&2
+  echo "Create the local environment with: uv python install 3.11 && UV_CACHE_DIR=/tmp/uv-cache uv venv --python 3.11 .venv311" >&2
+  exit 1
+fi
 
-"${PYTHON_BIN}" -m pip install --upgrade pyinstaller
+"${PYTHON_BIN}" -m pip install -r "${ROOT_DIR}/requirements.txt"
+"${PYTHON_BIN}" -m pip install -r "${ROOT_DIR}/requirements-build.txt"
+
+mkdir -p "${BUILD_DIR}"
+if [[ -f "${USER_CONFIG_PATH}" ]]; then
+  cp "${USER_CONFIG_PATH}" "${USER_CONFIG_BACKUP}"
+else
+  rm -f "${USER_CONFIG_BACKUP}"
+fi
+rm -rf "${APPDIR}" "${DIST_DIR}/${APP_NAME}" "${ROOT_DIR}/build/${APP_NAME}.spec"
 
 "${PYTHON_BIN}" -m PyInstaller \
   --noconfirm \
@@ -39,6 +57,7 @@ fi
   --workpath "${ROOT_DIR}/build" \
   --distpath "${DIST_DIR}" \
   --name "${APP_NAME}" \
+  --collect-submodules backports \
   --hidden-import pynput.keyboard._xorg \
   --hidden-import pynput.mouse._xorg \
   --hidden-import PySide6.QtDBus \
@@ -75,9 +94,13 @@ chmod +x "${APPDIR}/AppRun"
 
 APPIMAGETOOL="${BUILD_DIR}/appimagetool-x86_64.AppImage"
 if [[ ! -x "${APPIMAGETOOL}" ]]; then
+  APPIMAGETOOL_URL="${APPIMAGETOOL_URL:-https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage}"
   curl -L \
-    "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage" \
+    "${APPIMAGETOOL_URL}" \
     -o "${APPIMAGETOOL}"
+  if [[ -n "${APPIMAGETOOL_SHA256:-}" ]]; then
+    printf '%s  %s\n' "${APPIMAGETOOL_SHA256}" "${APPIMAGETOOL}" | sha256sum -c -
+  fi
   chmod +x "${APPIMAGETOOL}"
 fi
 

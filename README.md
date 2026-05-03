@@ -57,9 +57,10 @@ Recent project highlights:
 ### 1. Install dependencies
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+uv python install 3.11
+UV_CACHE_DIR=/tmp/uv-cache uv venv --python 3.11 .venv311
+source .venv311/bin/activate
+pip install -r requirements.txt -r requirements-dev.txt
 ```
 
 On Arch Linux, a typical base setup is:
@@ -234,6 +235,8 @@ instead of reporting it as an invalid format.
 ## AppImage Packaging
 
 ### Build locally
+
+Local AppImage builds use Python 3.11 to match GitHub Actions. The build script prefers `.venv311/bin/python`, then `python3.11`; it exits if another Python version is selected.
 
 ```bash
 ./build_appimage.sh

@@ -2,6 +2,7 @@ from __future__ import annotations
 import configparser
 import os
 import re
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -519,8 +520,28 @@ def create_default_config(config_path: Path) -> None:
     for name in DEFAULT_PROFILE_NAMES:
         parser[name] = default_profile_dict()
 
-    with config_path.open("w", encoding="utf-16") as handle:
-        handle.write("; Linux native config for D3keyHelper\r\n")
-        parser.write(handle)
+    write_config_parser_atomic(config_path, parser, "; Linux native config for D3keyHelper\r\n")
 
 
+def write_config_parser_atomic(config_path: Path, parser: configparser.ConfigParser, header: str) -> None:
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            "w",
+            encoding="utf-16",
+            dir=config_path.parent,
+            prefix=f".{config_path.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as handle:
+            tmp_path = Path(handle.name)
+            handle.write(header)
+            parser.write(handle)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(tmp_path, config_path)
+        tmp_path = None
+    finally:
+        if tmp_path is not None:
+            tmp_path.unlink(missing_ok=True)

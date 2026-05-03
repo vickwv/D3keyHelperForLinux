@@ -2,15 +2,18 @@
 from __future__ import annotations
 
 import configparser
+import os
 import sys
 import uuid
 from pathlib import Path
 
 try:
     from .config_schema import gd
+    from .config_io import parse_float, parse_int, write_config_parser_atomic
     from .runner_events import parse_runner_event
 except ImportError:
     from config_schema import gd  # type: ignore[no-redef]
+    from config_io import parse_float, parse_int, write_config_parser_atomic  # type: ignore[no-redef]
     from runner_events import parse_runner_event  # type: ignore[no-redef]
 
 from PySide6.QtCore import QProcess, QTimer, Qt
@@ -178,6 +181,14 @@ NAV_FONT_FAMILIES = [
     "WenQuanYi Micro Hei",
     "DejaVu Sans",
 ]
+
+
+def _section_int(section: configparser.SectionProxy, key: str, default: str) -> int:
+    return parse_int(section.get(key, default), parse_int(default, 0))
+
+
+def _section_float(section: configparser.SectionProxy, key: str, default: str) -> float:
+    return parse_float(section.get(key, default), parse_float(default, 0.0))
 
 
 def apply_navigation_font_family(font: QFont) -> None:
@@ -484,12 +495,11 @@ class MainWindow(QMainWindow):
                 return new_id
 
     def _write_parser(self, parser: configparser.ConfigParser) -> None:
-        with self.config_path.open("w", encoding="utf-16") as fh:
-            fh.write("; Linux GUI config for D3keyHelper\r\n")
-            parser.write(fh)
+        write_config_parser_atomic(self.config_path, parser, "; Linux GUI config for D3keyHelper\r\n")
 
     def _add_profile(self) -> None:
-        self.save_config(log_message="")
+        if not self.save_config(log_message=""):
+            return
         parser = load_parser(self.config_path)
         profile_names = [s for s in parser.sections() if s.lower() != "general"]
         new_name = self._new_profile_id(profile_names)
@@ -537,11 +547,12 @@ class MainWindow(QMainWindow):
         )
         if reply != QMessageBox.StandardButton.Yes:
             return
-        self.save_config(log_message="")
+        if not self.save_config(log_message=""):
+            return
         parser = load_parser(self.config_path)
         profile_names = [s for s in parser.sections() if s.lower() != "general"]
         general_key = next(s for s in parser.sections() if s.lower() == "general")
-        old_active = int(parser[general_key].get("activatedprofile", "1"))
+        old_active = parse_int(parser[general_key].get("activatedprofile", "1"), 1)
         # Remove all sections and compute new activatedprofile
         removed_indices = sorted(
             [profile_names.index(n) + 1 for n in names_to_delete if n in profile_names]
@@ -572,9 +583,9 @@ class MainWindow(QMainWindow):
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(10)
         helper_speed_preset = helper_speed_preset_from_values(
-            int(section.get("helpermousespeed", gd("helpermousespeed"))),
-            int(section.get("helperanimationdelay", gd("helperanimationdelay"))),
-            int(section.get("helperspeed", gd("helperspeed"))),
+            _section_int(section, "helpermousespeed", gd("helpermousespeed")),
+            _section_int(section, "helperanimationdelay", gd("helperanimationdelay")),
+            _section_int(section, "helperspeed", gd("helperspeed")),
         )
         root.addWidget(
             build_page_header(
@@ -587,10 +598,10 @@ class MainWindow(QMainWindow):
         columns.setSpacing(32)
         root.addLayout(columns)
 
-        self.general_widgets["activatedprofile"] = build_profile_selector(profile_names, int(section.get("activatedprofile", gd("activatedprofile"))))
-        self.general_widgets["startmethod"] = self._combo(START_METHOD_ITEMS, int(section.get("startmethod", gd("startmethod"))))
+        self.general_widgets["activatedprofile"] = build_profile_selector(profile_names, _section_int(section, "activatedprofile", gd("activatedprofile")))
+        self.general_widgets["startmethod"] = self._combo(START_METHOD_ITEMS, _section_int(section, "startmethod", gd("startmethod")))
         self.general_widgets["starthotkey"] = _make_line_edit(section.get("starthotkey", gd("starthotkey")))
-        self.general_widgets["oldsandhelpermethod"] = self._combo(COMMON_METHOD_ITEMS, int(section.get("oldsandhelpermethod", gd("oldsandhelpermethod"))))
+        self.general_widgets["oldsandhelpermethod"] = self._combo(COMMON_METHOD_ITEMS, _section_int(section, "oldsandhelpermethod", gd("oldsandhelpermethod")))
         self.general_widgets["oldsandhelperhk"] = _make_line_edit(section.get("oldsandhelperhk", gd("oldsandhelperhk")))
         self.general_widgets["sendmode"] = self._combo(SEND_MODE_ITEMS, section.get("sendmode", gd("sendmode")))
         self.general_widgets["runonstart"] = self._check(section.get("runonstart", gd("runonstart")) == "1")
@@ -598,8 +609,8 @@ class MainWindow(QMainWindow):
         self.general_widgets["enablesmartpause"] = self._check(section.get("enablesmartpause", gd("enablesmartpause")) == "1")
         self.general_widgets["enablesoundplay"] = self._check(section.get("enablesoundplay", gd("enablesoundplay")) == "1")
         self.general_widgets["gameresolution"] = _make_line_edit(section.get("gameresolution", gd("gameresolution")))
-        self.general_widgets["gamegamma"] = self._float_spin(0.5, 1.5, float(section.get("gamegamma", gd("gamegamma"))), 6)
-        self.general_widgets["buffpercent"] = self._float_spin(0.0, 1.0, float(section.get("buffpercent", gd("buffpercent"))), 6)
+        self.general_widgets["gamegamma"] = self._float_spin(0.5, 1.5, _section_float(section, "gamegamma", gd("gamegamma")), 6)
+        self.general_widgets["buffpercent"] = self._float_spin(0.0, 1.0, _section_float(section, "buffpercent", gd("buffpercent")), 6)
         for key, value in [
             ("customstanding", section.get("customstanding", gd("customstanding")) == "1"),
             ("custommoving", section.get("custommoving", gd("custommoving")) == "1"),
@@ -616,15 +627,15 @@ class MainWindow(QMainWindow):
         self.general_widgets["customstandinghk"] = _make_line_edit(section.get("customstandinghk", gd("customstandinghk")))
         self.general_widgets["custommovinghk"] = _make_line_edit(section.get("custommovinghk", gd("custommovinghk")))
         self.general_widgets["custompotionhk"] = _make_line_edit(section.get("custompotionhk", gd("custompotionhk")))
-        self.general_widgets["gamblehelpertimes"] = self._spin(1, 60, int(section.get("gamblehelpertimes", gd("gamblehelpertimes"))))
-        self.general_widgets["loothelpertimes"] = self._spin(1, 99, int(section.get("loothelpertimes", gd("loothelpertimes"))))
-        self.general_widgets["salvagehelpermethod"] = self._combo(SALVAGE_METHOD_ITEMS, int(section.get("salvagehelpermethod", gd("salvagehelpermethod"))))
-        self.general_widgets["reforgehelpermethod"] = self._combo(REFORGE_METHOD_ITEMS, int(section.get("reforgehelpermethod", gd("reforgehelpermethod"))))
+        self.general_widgets["gamblehelpertimes"] = self._spin(1, 60, _section_int(section, "gamblehelpertimes", gd("gamblehelpertimes")))
+        self.general_widgets["loothelpertimes"] = self._spin(1, 99, _section_int(section, "loothelpertimes", gd("loothelpertimes")))
+        self.general_widgets["salvagehelpermethod"] = self._combo(SALVAGE_METHOD_ITEMS, _section_int(section, "salvagehelpermethod", gd("salvagehelpermethod")))
+        self.general_widgets["reforgehelpermethod"] = self._combo(REFORGE_METHOD_ITEMS, _section_int(section, "reforgehelpermethod", gd("reforgehelpermethod")))
         self.general_widgets["helperspeed"] = self._combo(HELPER_SPEED_PRESET_ITEMS, helper_speed_preset)
-        self.general_widgets["helpermousespeed"] = self._spin(0, 10, int(section.get("helpermousespeed", gd("helpermousespeed"))))
-        self.general_widgets["helperanimationdelay"] = self._spin(1, 1000, int(section.get("helperanimationdelay", gd("helperanimationdelay"))))
+        self.general_widgets["helpermousespeed"] = self._spin(0, 10, _section_int(section, "helpermousespeed", gd("helpermousespeed")))
+        self.general_widgets["helperanimationdelay"] = self._spin(1, 1000, _section_int(section, "helperanimationdelay", gd("helperanimationdelay")))
         self.general_widgets["safezone"] = _make_line_edit(section.get("safezone", gd("safezone")))
-        self.general_widgets["maxreforge"] = self._spin(1, 999, int(section.get("maxreforge", gd("maxreforge"))))
+        self.general_widgets["maxreforge"] = self._spin(1, 999, _section_int(section, "maxreforge", gd("maxreforge")))
         self.general_widgets["safezonestatus"] = QLabel()
         self.general_widgets["enablegamblehelper"].setToolTip(GAMBLE_TOOLTIP)
         self.general_widgets["gamblehelpertimes"].setToolTip(GAMBLE_TOOLTIP)
@@ -776,7 +787,8 @@ class MainWindow(QMainWindow):
         if selected == UI_LANGUAGE:
             return
         self._config_apply_timer.stop()
-        self.save_config(log_message="")
+        if not self.save_config(log_message=""):
+            return
         set_ui_language(selected)
         self._rebuild_shell()
 
@@ -939,10 +951,60 @@ class MainWindow(QMainWindow):
         self._update_path_label()
         self._update_runtime_status_widgets()
 
-    def save_config(self, log_message: str = "已保存配置。") -> None:
-        parser = configparser.ConfigParser(interpolation=None)
-        parser.optionxform = str.lower
-        parser["General"] = {
+    def _profile_save_names(self) -> list[str] | None:
+        names: list[str] = []
+        seen: set[str] = set()
+        duplicates: list[str] = []
+        for tab in self.profile_tabs:
+            name = tab.widgets["name"].text().strip() or tab.section_name
+            normalized = name.lower()
+            if not name or normalized == "general":
+                QMessageBox.warning(
+                    self,
+                    tr("配置名无效", "Invalid profile name"),
+                    tr("配置名不能为空，也不能使用 General。", "Profile names cannot be empty or General."),
+                )
+                self._append_log(tr("配置未保存：配置名无效。", "Config was not saved: invalid profile name."))
+                return None
+            if normalized in seen:
+                duplicates.append(name)
+            seen.add(normalized)
+            names.append(name)
+        if duplicates:
+            duplicate_text = "、".join(duplicates)
+            QMessageBox.warning(
+                self,
+                tr("配置名重复", "Duplicate profile name"),
+                tr(
+                    f"存在重复配置名：{duplicate_text}。请先改成唯一名称。",
+                    f"Duplicate profile names: {duplicate_text}. Rename them before saving.",
+                ),
+            )
+            self._append_log(tr("配置未保存：存在重复配置名。", "Config was not saved: duplicate profile names."))
+            return None
+        return names
+
+    def _load_parser_for_save(self) -> configparser.ConfigParser:
+        try:
+            return load_parser(self.config_path)
+        except Exception:
+            parser = configparser.ConfigParser(interpolation=None)
+            parser.optionxform = str.lower
+            return parser
+
+    def _update_section_values(self, parser: configparser.ConfigParser, section: str, values: dict[str, str]) -> None:
+        if not parser.has_section(section):
+            parser.add_section(section)
+        for key, value in values.items():
+            parser[section][key] = value
+
+    def save_config(self, log_message: str = "已保存配置。") -> bool:
+        profile_names = self._profile_save_names()
+        if profile_names is None:
+            return False
+        parser = self._load_parser_for_save()
+        general_name = next((name for name in parser.sections() if name.lower() == "general"), "General")
+        general_values = {
             "version": DEFAULT_VERSION,
             "language": self._current_selected_language(),
             "activatedprofile": str(combo_value(self.general_widgets["activatedprofile"])),
@@ -982,10 +1044,12 @@ class MainWindow(QMainWindow):
             "maxreforge": str(self.general_widgets["maxreforge"].value()),
             "compactmode": "0",
         }
+        self._update_section_values(parser, general_name, general_values)
 
-        for tab in self.profile_tabs:
-            name = tab.widgets["name"].text().strip() or tab.section_name
-            parser[name] = {
+        profile_payloads: list[tuple[str, dict[str, str]]] = []
+        for tab, name in zip(self.profile_tabs, profile_names):
+            values = dict(parser[tab.section_name].items()) if parser.has_section(tab.section_name) else {}
+            values.update({
                 "profilehkmethod": str(combo_value(tab.widgets["profilehkmethod"])),
                 "profilehkkey": tab.widgets["profilehkkey"].text().strip(),
                 "movingmethod": str(combo_value(tab.widgets["movingmethod"])),
@@ -1001,22 +1065,30 @@ class MainWindow(QMainWindow):
                 "useskillqueue": self._bool_text(tab.widgets["useskillqueue"]),
                 "useskillqueueinterval": str(tab.widgets["useskillqueueinterval"].value()),
                 "autostartmarco": self._bool_text(tab.widgets["autostartmarco"]),
-            }
+            })
             for index, row in enumerate(tab.widgets["skills"], start=1):
-                parser[name][f"skill_{index}"] = row["hotkey"].text().strip() or DEFAULT_SKILLS[index]
-                parser[name][f"action_{index}"] = str(combo_value(row["action"]))
-                parser[name][f"interval_{index}"] = str(row["interval"].value())
-                parser[name][f"delay_{index}"] = str(row["delay"].value())
-                parser[name][f"random_{index}"] = "1" if row["random"].isChecked() else "0"
-                parser[name][f"priority_{index}"] = str(row["priority"].value())
-                parser[name][f"repeat_{index}"] = str(row["repeat"].value())
-                parser[name][f"repeatinterval_{index}"] = str(row["repeatinterval"].value())
-                parser[name][f"triggerbutton_{index}"] = row["triggerbutton"].text().strip() or "LButton"
+                values[f"skill_{index}"] = row["hotkey"].text().strip() or DEFAULT_SKILLS[index]
+                values[f"action_{index}"] = str(combo_value(row["action"]))
+                values[f"interval_{index}"] = str(row["interval"].value())
+                values[f"delay_{index}"] = str(row["delay"].value())
+                values[f"random_{index}"] = "1" if row["random"].isChecked() else "0"
+                values[f"priority_{index}"] = str(row["priority"].value())
+                values[f"repeat_{index}"] = str(row["repeat"].value())
+                values[f"repeatinterval_{index}"] = str(row["repeatinterval"].value())
+                values[f"triggerbutton_{index}"] = row["triggerbutton"].text().strip() or "LButton"
+            profile_payloads.append((name, values))
 
-        self.config_path.parent.mkdir(parents=True, exist_ok=True)
-        with self.config_path.open("w", encoding="utf-16") as handle:
-            handle.write("; Linux GUI config for D3keyHelper\r\n")
-            parser.write(handle)
+        for tab in self.profile_tabs:
+            if parser.has_section(tab.section_name):
+                parser.remove_section(tab.section_name)
+        for name, values in profile_payloads:
+            if parser.has_section(name):
+                parser.remove_section(name)
+            parser.add_section(name)
+            for key, value in values.items():
+                parser[name][key] = value
+
+        self._write_parser(parser)
         if log_message:
             self._append_log(log_message)
         for item, tab in zip(self.profile_nav_items, self.profile_tabs):
@@ -1024,6 +1096,8 @@ class MainWindow(QMainWindow):
             item.setText(title)
             if hasattr(tab, "page_header") and hasattr(tab.page_header, "title_label"):
                 tab.page_header.title_label.setText(title)
+            tab.section_name = title
+        return True
 
     def start_runner(self) -> None:
         self._launch_runner(save_first=True, log_message="已启动运行器。")
@@ -1031,7 +1105,8 @@ class MainWindow(QMainWindow):
     def _launch_runner(self, save_first: bool, log_message: str) -> None:
         self._config_apply_timer.stop()
         if save_first:
-            self.save_config()
+            if not self.save_config():
+                return
         self.stop_runner(log_message=None)
         command = build_runner_command(self.config_path, "")
         self.process = QProcess(self)
@@ -1133,7 +1208,8 @@ class MainWindow(QMainWindow):
         if self._suspend_config_watch:
             return
         was_running = self._runner_is_active()
-        self.save_config(log_message="已自动保存配置。")
+        if not self.save_config(log_message="已自动保存配置。"):
+            return
         if was_running:
             self._launch_runner(save_first=False, log_message="检测到配置变更，已自动重启运行器。")
 
@@ -1147,6 +1223,18 @@ def main() -> int:
         finally:
             sys.argv = original_argv
     config_path = Path(sys.argv[1]).expanduser().resolve() if len(sys.argv) > 1 else default_config_path().resolve()
+    # When running from a PyInstaller bundle the Qt plugin directory is
+    # isolated to the bundle.  Add system Qt6 plugin directories so Qt can
+    # find the fcitx5/ibus platform-input-context plugin for CJK input.
+    for _p in (
+        "/usr/lib/x86_64-linux-gnu/qt6/plugins",
+        "/usr/lib/aarch64-linux-gnu/qt6/plugins",
+        "/usr/lib/qt6/plugins",
+        "/usr/lib64/qt6/plugins",
+        "/usr/lib/qt/plugins",
+    ):
+        if os.path.isdir(_p):
+            QApplication.addLibraryPath(_p)
     app = QApplication(sys.argv)
     setTheme(Theme.LIGHT)
     setThemeColor('#2f72c4')

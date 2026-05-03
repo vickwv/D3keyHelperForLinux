@@ -57,9 +57,10 @@
 ### 1. 安装依赖
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+uv python install 3.11
+UV_CACHE_DIR=/tmp/uv-cache uv venv --python 3.11 .venv311
+source .venv311/bin/activate
+pip install -r requirements.txt -r requirements-dev.txt
 ```
 
 如果你是 Arch Linux，常见基础安装方式：
@@ -234,6 +235,8 @@ safezone=61,62,63
 ## AppImage 打包
 
 ### 本地构建
+
+本地 AppImage 构建使用 Python 3.11，与 GitHub Actions 保持一致。构建脚本会优先使用 `.venv311/bin/python`，其次使用 `python3.11`；如果选中了其他 Python 版本会直接退出。
 
 ```bash
 ./build_appimage.sh

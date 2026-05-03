@@ -318,6 +318,11 @@ class KWinWindowMatcher:
     def __init__(self, title_regex: str | None, class_regex: str | None) -> None:
         self._title_pattern = re.compile(title_regex, re.IGNORECASE) if title_regex else None
         self._class_pattern = re.compile(class_regex, re.IGNORECASE) if class_regex else None
+        self._use_proton_fallback = not class_regex and title_regex == "Diablo III"
+
+    def _variant_number(self, value: str, default: float = 0.0) -> float:
+        matches = re.findall(r"-?\d+(?:\.\d+)?", str(value))
+        return float(matches[-1]) if matches else default
 
     def get_active_window(self) -> WindowInfo | None:
         try:
@@ -345,25 +350,32 @@ class KWinWindowMatcher:
             return None
         title = pairs.get("caption", "").strip("'")
         wm_class = pairs.get("resourceClass", "").strip("'") or pairs.get("desktopFile", "").strip("'")
+        pid = int(self._variant_number(str(pairs.get("pid", "0")).strip("'"), 0.0))
         return WindowInfo(
             window_id=0,
             title=title,
             wm_class=wm_class,
-            x=int(float(pairs.get("x", "0.0"))),
-            y=int(float(pairs.get("y", "0.0"))),
-            width=int(float(pairs.get("width", "0.0"))),
-            height=int(float(pairs.get("height", "0.0"))),
+            x=int(self._variant_number(pairs.get("x", "0.0"))),
+            y=int(self._variant_number(pairs.get("y", "0.0"))),
+            width=int(self._variant_number(pairs.get("width", "0.0"))),
+            height=int(self._variant_number(pairs.get("height", "0.0"))),
+            pid=pid,
+            commandline=read_process_commandline(pid),
         )
 
     def matches_active_window(self) -> bool:
         window = self.get_active_window()
         if window is None:
             return False
-        if self._title_pattern and not self._title_pattern.search(window.title):
+        title_matches = bool(self._title_pattern and self._title_pattern.search(window.title))
+        class_matches = bool(self._class_pattern and self._class_pattern.search(window.wm_class))
+        proton_matches = self._use_proton_fallback and looks_like_proton_diablo_window(window)
+        if self._title_pattern and not title_matches:
+            if not proton_matches:
+                return False
+        if self._class_pattern and not class_matches:
             return False
-        if self._class_pattern and not self._class_pattern.search(window.wm_class):
-            return False
-        return bool(self._title_pattern or self._class_pattern)
+        return bool(title_matches or class_matches or proton_matches)
 
 
 class MacroApp:
@@ -392,8 +404,10 @@ class MacroApp:
         self._pressed_bases: set[str] = set()
         self._pressed_modifiers: set[str] = set()
         self._focus_thread: threading.Thread | None = None
-        if matcher is not None and mss is not None and np is not None:
-            self._capture = SpectacleGameCapture(matcher, general) if capture_backend == "kde-wayland" else X11GameCapture(matcher, general)
+        if matcher is not None and np is not None and capture_backend == "kde-wayland" and Image is not None:
+            self._capture = SpectacleGameCapture(matcher, general)
+        elif matcher is not None and mss is not None and np is not None:
+            self._capture = X11GameCapture(matcher, general)
         else:
             self._capture = None
         self._skill_queue: queue.Queue[tuple[SendSpec, int]] = queue.Queue()
@@ -1425,17 +1439,24 @@ def resolve_profile_index(profiles: list[ProfileConfig], selection: str | None, 
     raise ConfigError(f"找不到配置：{selection}")
 
 
-def ensure_runtime_dependencies() -> None:
+def ensure_runtime_dependencies(capture_backend: str) -> None:
     if keyboard is None or mouse is None:
         raise ConfigError("未安装 pynput，请先执行：pip install -r requirements.txt")
-    if xdisplay is None or X is None:
-        raise ConfigError("未安装 python-xlib，请先执行：pip install -r requirements.txt")
-    if mss is None:
-        raise ConfigError("未安装 mss，请先执行：pip install -r requirements.txt")
+    if capture_backend == "none":
+        return
     if np is None:
         raise ConfigError("未安装 numpy，请先执行：pip install -r requirements.txt")
+    if capture_backend == "x11" and (xdisplay is None or X is None):
+        raise ConfigError("未安装 python-xlib，请先执行：pip install -r requirements.txt")
+    if capture_backend == "x11" and mss is None:
+        raise ConfigError("未安装 mss，请先执行：pip install -r requirements.txt")
     if Image is None:
         raise ConfigError("未安装 Pillow，请先执行：pip install -r requirements.txt")
+    if capture_backend == "kde-wayland":
+        if not shutil.which("gdbus"):
+            raise ConfigError("缺少 gdbus，无法通过 KDE/KWin 获取活动窗口。")
+        if not shutil.which("spectacle"):
+            raise ConfigError("缺少 spectacle，无法使用 KDE Wayland 截图后端。")
 
 
 def normalize_keyboard_event(key_event) -> str | None:
@@ -1527,8 +1548,6 @@ def main() -> int:
             print(f"{index}. {profile.name}")
         return 0
 
-    ensure_runtime_dependencies()
-
     start_profile_index = resolve_profile_index(profiles, args.profile, general.activated_profile)
     if args.any_window:
         general.d3only = False
@@ -1552,6 +1571,7 @@ def main() -> int:
                 title_regex=args.window_title_regex or None,
                 class_regex=args.window_class_regex or None,
             )
+    ensure_runtime_dependencies(capture_backend if general.d3only else "none")
 
     event_filter = SyntheticEventFilter()
     sender = InputSender(event_filter)
