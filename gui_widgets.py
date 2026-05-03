@@ -32,9 +32,11 @@ sys.stdout = _stdout_backup
 del _stdout_backup, _io
 
 try:
-    from .gui_i18n import tr, localize_text, UI_LANGUAGE
+    from .gui_i18n import tr, localize_text
+    from . import gui_i18n as _gui_i18n
 except ImportError:
-    from gui_i18n import tr, localize_text, UI_LANGUAGE  # type: ignore[no-redef]
+    from gui_i18n import tr, localize_text  # type: ignore[no-redef]
+    import gui_i18n as _gui_i18n  # type: ignore[no-redef]
 
 def app_icon_path() -> Path | None:
     filename = "d3keyhelper-linux-256.png"
@@ -988,7 +990,7 @@ def build_runner_command(config_path: Path, profile: str) -> list[str]:
         command = [sys.executable, str(Path(__file__).resolve()), "--runner", "--config", str(config_path)]
     if profile:
         command += ["--profile", profile]
-    command += ["--lang", UI_LANGUAGE]
+    command += ["--lang", _gui_i18n.UI_LANGUAGE]
     return command
 
 
