@@ -61,6 +61,7 @@ rm -rf "${APPDIR}" "${DIST_DIR}/${APP_NAME}" "${ROOT_DIR}/build/${APP_NAME}.spec
   --hidden-import pynput.keyboard._xorg \
   --hidden-import pynput.mouse._xorg \
   --hidden-import PySide6.QtDBus \
+  --collect-all numpy \
   --collect-submodules Xlib \
   --collect-submodules mss \
   --collect-submodules pynput \
