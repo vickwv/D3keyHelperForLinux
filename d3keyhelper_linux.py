@@ -22,6 +22,11 @@ except ImportError:
     from runner_events import emit_runner_event, emit_runner_log  # type: ignore[no-redef]
 
 try:
+    from .gui_i18n import tr, set_ui_language
+except ImportError:
+    from gui_i18n import tr, set_ui_language  # type: ignore[no-redef]
+
+try:
     from pynput import keyboard, mouse
 except ImportError:
     keyboard = None
@@ -582,7 +587,7 @@ class MacroApp:
             return
         if profile.start_mode == StartMode.HOLD_WHILE:
             if self.general.start_hotkey and self.general.start_hotkey.base in {"wheel_up", "wheel_down"}:
-                print("当前配置使用滚轮作为启动键，但 Linux 首版不支持“仅按下时”滚轮保持模式。", flush=True)
+                print(tr("当前配置使用滚轮作为启动键，但 Linux 首版不支持“仅按下时”滚轮保持模式。", 'Current profile uses scroll wheel as start key, but "hold while pressed" scroll wheel mode is not supported on Linux.'), flush=True)
                 return
             if not self._running:
                 self.run_macro()
@@ -596,7 +601,7 @@ class MacroApp:
                 return
         if self.general.d3only and self.matcher and not self.matcher.matches_active_window():
             active_window = self.matcher.get_active_window() if hasattr(self.matcher, "get_active_window") else None
-            print(f"未检测到目标游戏窗口，当前不会启动宏。前台窗口：{format_window_debug(active_window)}", flush=True)
+            print(tr(f"未检测到目标游戏窗口，当前不会启动宏。前台窗口：{format_window_debug(active_window)}", f"Game window not found; macro will not start. Active window: {format_window_debug(active_window)}"), flush=True)
             return
 
         standing_key = self.general.custom_standing_key if self.general.custom_standing_enabled else parse_send_spec("LShift")
@@ -625,7 +630,7 @@ class MacroApp:
             elif skill.action == SkillAction.KEEP_BUFF:
                 self._spawn_periodic_worker(self._make_skill_worker(skill))
             elif skill.action == SkillAction.KEY_TRIGGER and skill.trigger is None:
-                print(f"[{profile.name}] 检测到按键触发策略，但触发键无效，已跳过。", flush=True)
+                print(tr(f"[{profile.name}] 检测到按键触发策略，但触发键无效，已跳过。", f"[{profile.name}] Key-trigger skill has no trigger key; skipped."), flush=True)
 
         if profile.moving_method == MovingMethod.FORCE_STAND:
             self._hold_key(standing_key)
@@ -663,7 +668,7 @@ class MacroApp:
             self._spawn_periodic_worker(self._make_skill_queue_worker(profile.use_skill_queue_interval_ms))
 
         emit_runner_event("macro_started", profile.name)
-        emit_runner_log(f"已启动 Linux 战斗宏：{profile.name}")
+        emit_runner_log(tr(f"已启动 Linux 战斗宏：{profile.name}", f"Combat macro started: {profile.name}"))
 
     def stop_macro(self, reason: str | None) -> None:
         with self._lock:
@@ -689,10 +694,10 @@ class MacroApp:
                 pass
         if reason:
             emit_runner_event("macro_stopped", reason)
-            emit_runner_log(f"已停止战斗宏：{reason}")
+            emit_runner_log(tr(f"已停止战斗宏：{reason}", f"Combat macro stopped: {reason}"))
         else:
             emit_runner_event("macro_stopped")
-            emit_runner_log("已停止战斗宏")
+            emit_runner_log(tr("已停止战斗宏", "Combat macro stopped"))
 
     def toggle_pause(self) -> None:
         with self._lock:
@@ -705,19 +710,19 @@ class MacroApp:
             for send_spec in reversed(held_keys):
                 self.sender.release(send_spec)
             emit_runner_event("macro_paused")
-            emit_runner_log("战斗宏已暂停")
+            emit_runner_log(tr("战斗宏已暂停", "Combat macro paused"))
         else:
             for send_spec in held_keys:
                 self.sender.press(send_spec)
             emit_runner_event("macro_resumed")
-            emit_runner_log("战斗宏已恢复")
+            emit_runner_log(tr("战斗宏已恢复", "Combat macro resumed"))
 
     def send_once_actions(self) -> None:
         profile = self.current_profile
         for skill in profile.skills:
             if skill.action == SkillAction.HOLD and skill.hotkey is not None:
                 self.sender.tap(skill.hotkey)
-        print(f"已执行一次性按键：{profile.name}", flush=True)
+        print(tr(f"已执行一次性按键：{profile.name}", f"One-shot actions sent: {profile.name}"), flush=True)
 
     def switch_profile(self, index: int) -> None:
         with self._lock:
@@ -729,7 +734,7 @@ class MacroApp:
         self.current_profile_index = index
         profile = self.current_profile
         emit_runner_event("profile_switched", profile.name)
-        emit_runner_log(f"已切换配置：{profile.name}")
+        emit_runner_log(tr(f"已切换配置：{profile.name}", f"Profile switched: {profile.name}"))
         if self.general.sound_on_profile_switch:
             play_notification_sound()
         self._print_profile_notes(profile)
@@ -1032,14 +1037,14 @@ class MacroApp:
         with self._lock:
             if self._helper_running:
                 self._helper_break = True
-                print("已请求停止当前助手流程。", flush=True)
+                print(tr("已请求停止当前助手流程。", "Stop requested for current helper."), flush=True)
                 return
             if self._running:
-                print("战斗宏运行中，当前不会启动助手。", flush=True)
+                print(tr("战斗宏运行中，当前不会启动助手。", "Combat macro is running; helper will not start."), flush=True)
                 return
             self._helper_running = True
             self._helper_break = False
-        print("已收到助手热键，正在识别当前界面...", flush=True)
+        print(tr("已收到助手热键，正在识别当前界面...", "Helper hotkey received; detecting current screen..."), flush=True)
         self._helper_thread = threading.Thread(target=self._run_helper, daemon=True)
         self._helper_thread.start()
 
@@ -1047,7 +1052,7 @@ class MacroApp:
         try:
             capture = self._capture_game_image()
             if capture is None:
-                print("助手未执行：无法截取当前游戏画面。", flush=True)
+                print(tr("助手未执行：无法截取当前游戏画面。", "Helper skipped: unable to capture game screen."), flush=True)
                 return
             image, width, height = capture
             window = image.window
@@ -1061,7 +1066,7 @@ class MacroApp:
                 mouse_position = 2
 
             if rel_x < 680 * height / 1440.0 and self.general.helper.gamble_enabled and is_gamble_open(image, height):
-                print(f"助手已启动：识别到赌博界面，连续右键 {self.general.helper.gamble_times} 次。", flush=True)
+                print(tr(f"助手已启动：识别到赌博界面，连续右键 {self.general.helper.gamble_times} 次。", f"Helper started: Gambling detected; right-clicking {self.general.helper.gamble_times} times."), flush=True)
                 self._gamble_helper()
                 return
 
@@ -1069,48 +1074,48 @@ class MacroApp:
                 salvage_state = is_salvage_page_open(image, width, height)
                 if salvage_state[0] == 2:
                     if self.general.helper.salvage_method == SalvageMethod.QUICK and mouse_position == 1:
-                        print("助手已启动：识别到分解页，执行快速分解。", flush=True)
+                        print(tr("助手已启动：识别到分解页，执行快速分解。", "Helper started: Salvage page detected; running fast salvage."), flush=True)
                         self._quick_salvage_helper(width, height)
                         return
                     if not self._prepare_salvage_helper_mode(width, height, salvage_state):
                         if not self._helper_should_break():
-                            print("助手未执行：无法进入可分解状态。", flush=True)
+                            print(tr("助手未执行：无法进入可分解状态。", "Helper skipped: unable to enter salvageable state."), flush=True)
                         return
-                    print("助手已启动：识别到分解页，执行一键/智能分解。", flush=True)
+                    print(tr("助手已启动：识别到分解页，执行一键/智能分解。", "Helper started: Salvage page detected; running one-click/smart salvage."), flush=True)
                     self._one_button_salvage_helper(width, height, mouse_x, mouse_y)
                     return
                 if salvage_state[0] == 1:
-                    print("助手未执行：识别到分解界面，但当前标签页不是可执行的装备分解页。", flush=True)
+                    print(tr("助手未执行：识别到分解界面，但当前标签页不是可执行的装备分解页。", "Helper skipped: Salvage UI detected, but current tab is not the equipment salvage page."), flush=True)
                     return
 
             if self.general.helper.reforge_enabled or self.general.helper.upgrade_enabled or self.general.helper.convert_enabled:
                 kanai_state = is_kanai_cube_open(image, width, height, window.title)
                 if kanai_state == 2 and self.general.helper.reforge_enabled and mouse_position == 1:
-                    print("助手已启动：识别到卡奈魔盒重铸页，开始重铸。", flush=True)
+                    print(tr("助手已启动：识别到卡奈魔盒重铸页，开始重铸。", "Helper started: Kanai's Cube reforge page detected; starting reforge."), flush=True)
                     self._one_button_reforge_helper(width, height, mouse_x, mouse_y)
                     return
                 if kanai_state == 3 and self.general.helper.upgrade_enabled:
-                    print("助手已启动：识别到卡奈魔盒升级页，开始升级黄色装备。", flush=True)
+                    print(tr("助手已启动：识别到卡奈魔盒升级页，开始升级黄色装备。", "Helper started: Kanai's Cube upgrade page detected; upgrading rare items."), flush=True)
                     self._one_button_upgrade_convert_helper(width, height, mouse_x, mouse_y)
                     return
                 if kanai_state == 4 and self.general.helper.convert_enabled:
-                    print("助手已启动：识别到卡奈魔盒转化页，开始转化材料。", flush=True)
+                    print(tr("助手已启动：识别到卡奈魔盒转化页，开始转化材料。", "Helper started: Kanai's Cube convert page detected; converting materials."), flush=True)
                     self._one_button_upgrade_convert_helper(width, height, mouse_x, mouse_y)
                     return
                 if kanai_state == 1:
-                    print("助手未执行：识别到卡奈魔盒，但当前不是重铸/升级/转化页。", flush=True)
+                    print(tr("助手未执行：识别到卡奈魔盒，但当前不是重铸/升级/转化页。", "Helper skipped: Kanai's Cube detected, but current tab is not reforge/upgrade/convert."), flush=True)
                     return
 
             if self.general.helper.abandon_enabled and mouse_position > 0 and is_inventory_open(image, width, height):
-                print("助手已启动：识别到背包界面，执行丢装助手。", flush=True)
+                print(tr("助手已启动：识别到背包界面，执行丢装助手。", "Helper started: Inventory detected; running drop/store helper."), flush=True)
                 self._one_button_abandon_helper(width, height, mouse_x, mouse_y, mouse_position)
                 return
 
             if self.general.helper.loot_enabled:
-                print("助手已启动：执行拾取助手。", flush=True)
+                print(tr("助手已启动：执行拾取助手。", "Helper started: Running loot helper."), flush=True)
                 self._loot_helper(width, height)
                 return
-            print(f"助手未执行：未识别到已启用的助手场景。前台窗口：{format_window_debug(window)}", flush=True)
+            print(tr(f"助手未执行：未识别到已启用的助手场景。前台窗口：{format_window_debug(window)}", f"Helper skipped: No enabled helper scenario detected. Active window: {format_window_debug(window)}"), flush=True)
         finally:
             with self._lock:
                 self._helper_running = False
@@ -1395,7 +1400,7 @@ class MacroApp:
                 with self._lock:
                     running = self._running
                 if running and not self.matcher.matches_active_window():
-                    self.stop_macro(reason="检测到窗口焦点已离开游戏")
+                    self.stop_macro(reason=tr("检测到窗口焦点已离开游戏", "Game window lost focus"))
                 if self._shutdown_event.wait(0.3):
                     break
 
@@ -1405,22 +1410,22 @@ class MacroApp:
     def _print_profile_notes(self, profile: ProfileConfig) -> None:
         notes: list[str] = []
         if self._capture is None and any(skill.action == SkillAction.KEEP_BUFF for skill in profile.skills):
-            notes.append("保持 Buff 需要图像捕获依赖")
+            notes.append(tr("保持 Buff 需要图像捕获依赖", "Keep Buff requires image capture dependencies"))
         if self._capture is None and profile.potion_method == PotionMethod.KEEP_CD:
-            notes.append("保持药水 CD 需要图像捕获依赖")
+            notes.append(tr("保持药水 CD 需要图像捕获依赖", "Keep Potion CD requires image capture dependencies"))
         if notes:
-            print(f"[{profile.name}] 当前配置提示：{', '.join(notes)}", flush=True)
+            print(tr(f"[{profile.name}] 当前配置提示：{'、'.join(notes)}", f"[{profile.name}] Profile notes: {', '.join(notes)}"), flush=True)
 
     def _print_helper_notes(self) -> None:
         enabled_helpers = describe_enabled_helpers(self.general.helper)
-        helper_summary = "、".join(enabled_helpers) if enabled_helpers else "无已启用助手"
+        helper_summary = tr("、", ", ").join(enabled_helpers) if enabled_helpers else tr("无已启用助手", "No helpers enabled")
         print(
-            f"助手热键：{format_hotkey(self.general.helper.hotkey)}；已启用：{helper_summary}",
+            tr(f"助手热键：{format_hotkey(self.general.helper.hotkey)}；已启用：{helper_summary}", f"Helper hotkey: {format_hotkey(self.general.helper.hotkey)}; Enabled: {helper_summary}"),
             flush=True,
         )
         if session_uses_wayland_keyboard_hotkeys(self.general.helper.hotkey):
             print(
-                "当前为 Wayland 会话，键盘全局热键可能不稳定；若 F5 没反应，优先改用鼠标侧键/滚轮，或改用 X11/XWayland。",
+                tr("当前为 Wayland 会话，键盘全局热键可能不稳定；若 F5 没反应，优先改用鼠标侧键/滚轮，或改用 X11/XWayland。", "Wayland session detected; global keyboard hotkeys may be unreliable. If the hotkey doesn't respond, consider using a mouse side button/scroll wheel, or switch to X11/XWayland."),
                 flush=True,
             )
 
@@ -1521,12 +1526,15 @@ def build_argument_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="忽略配置中的 d3only，允许对任意当前前台窗口发送按键",
     )
+    parser.add_argument("--lang", default=None, help="界面语言 (zh/en/zh_TW)")
     return parser
 
 
 def main() -> int:
     parser = build_argument_parser()
     args = parser.parse_args()
+    if args.lang:
+        set_ui_language(args.lang)
     config_path = Path(args.config).expanduser().resolve()
 
     if args.gui:
@@ -1536,10 +1544,10 @@ def main() -> int:
 
     if args.init_config:
         if config_path.exists():
-            print(f"配置文件已存在，未覆盖：{config_path}")
+            print(tr(f"配置文件已存在，未覆盖：{config_path}", f"Config file already exists, skipped: {config_path}"))
             return 0
         create_default_config(config_path)
-        print(f"已生成默认配置文件：{config_path}")
+        print(tr(f"已生成默认配置文件：{config_path}", f"Default config created: {config_path}"))
         return 0
 
     general, profiles = load_config(config_path)
@@ -1612,16 +1620,16 @@ def main() -> int:
 
     profile = profiles[start_profile_index]
     print(
-        f"Linux 运行器已启动，当前配置：{profile.name}，启动热键：{format_hotkey(general.start_hotkey)}，捕获后端：{capture_backend}",
+        tr(f"Linux 运行器已启动，当前配置：{profile.name}，启动热键：{format_hotkey(general.start_hotkey)}，捕获后端：{capture_backend}", f"Linux runner started. Profile: {profile.name}, start hotkey: {format_hotkey(general.start_hotkey)}, capture backend: {capture_backend}"),
         flush=True,
     )
-    print("按 Ctrl+C 退出运行器。", flush=True)
+    print(tr("按 Ctrl+C 退出运行器。", "Press Ctrl+C to stop the runner."), flush=True)
 
     try:
         while True:
             time.sleep(1.0)
     except KeyboardInterrupt:
-        print("正在退出 Linux 运行器...", flush=True)
+        print(tr("正在退出 Linux 运行器...", "Stopping Linux runner..."), flush=True)
     finally:
         app.shutdown()
         if key_listener is not None:
@@ -1633,7 +1641,7 @@ def main() -> int:
 
 def format_hotkey(spec: HotkeySpec | None) -> str:
     if spec is None:
-        return "未配置"
+        return tr("未配置", "Not configured")
     parts = []
     if "ctrl" in spec.modifiers:
         parts.append("Ctrl")
@@ -1650,19 +1658,19 @@ def format_hotkey(spec: HotkeySpec | None) -> str:
 def describe_enabled_helpers(helper: HelperConfig) -> list[str]:
     enabled: list[str] = []
     if helper.gamble_enabled:
-        enabled.append("赌博")
+        enabled.append(tr("赌博", "Gamble"))
     if helper.loot_enabled:
-        enabled.append("拾取")
+        enabled.append(tr("拾取", "Loot"))
     if helper.salvage_enabled:
-        enabled.append("分解")
+        enabled.append(tr("分解", "Salvage"))
     if helper.reforge_enabled:
-        enabled.append("重铸")
+        enabled.append(tr("重铸", "Reforge"))
     if helper.upgrade_enabled:
-        enabled.append("升级")
+        enabled.append(tr("升级", "Upgrade"))
     if helper.convert_enabled:
-        enabled.append("转化")
+        enabled.append(tr("转化", "Convert"))
     if helper.abandon_enabled:
-        enabled.append("丢装")
+        enabled.append(tr("丢装", "Drop/store"))
     return enabled
 
 
@@ -1678,5 +1686,5 @@ if __name__ == "__main__":
     try:
         sys.exit(main())
     except ConfigError as exc:
-        print(f"错误：{exc}", file=sys.stderr)
+        print(tr(f"错误：{exc}", f"Error: {exc}"), file=sys.stderr)
         sys.exit(1)

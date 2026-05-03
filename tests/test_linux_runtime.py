@@ -92,6 +92,7 @@ class ConfigTests(unittest.TestCase):
             max_reforge=10,
             safezone=set(),
         )
+        runtime.set_ui_language("zh")
         self.assertEqual(runtime.describe_enabled_helpers(helper), ["拾取", "分解", "升级"])
 
     def test_proton_window_detection_uses_process_commandline(self) -> None:
@@ -138,7 +139,9 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(command[0], gui.sys.executable)
         self.assertEqual(command[2], "--runner")
         self.assertIn(str(config_path), command)
-        self.assertEqual(command[-1], "配置1")
+        profile_idx = command.index("--profile")
+        self.assertEqual(command[profile_idx + 1], "配置1")
+        self.assertIn("--lang", command)
 
     def test_gui_language_environment_supports_en_and_traditional_chinese(self) -> None:
         probe = (
@@ -182,7 +185,7 @@ class ConfigTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp_dir:
             config_path = Path(tmp_dir) / "test.ini"
             init = subprocess.run(
-                [sys.executable, str(REPO_ROOT / "d3keyhelper_linux.py"), "--init-config", "--config", str(config_path)],
+                [sys.executable, str(REPO_ROOT / "d3keyhelper_linux.py"), "--init-config", "--config", str(config_path), "--lang", "zh"],
                 check=True,
                 capture_output=True,
                 text=True,
