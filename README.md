@@ -16,6 +16,8 @@ Cross-platform combat macro helper for **Diablo III**. Based on the original **[
 | Linux – KDE Wayland | ✅ Via KDE/KWin backend |
 | Windows | ✅ Native ctypes window detection |
 
+> Windows support was added in v2.0.0. v1.x was Linux-only.
+
 ## Screenshots
 
 ### Main Window

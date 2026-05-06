@@ -16,6 +16,8 @@
 | Linux – KDE Wayland | ✅ 通过 KDE/KWin 后端 |
 | Windows | ✅ 原生 ctypes 窗口识别 |
 
+> Windows 支持从 v2.0.0 起加入，v1.x 仅支持 Linux。
+
 ## 截图
 
 ### 主窗口
