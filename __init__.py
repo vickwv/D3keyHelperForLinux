@@ -1,1 +1,1 @@
-"""Linux port package for D3keyHelper."""
+"""D3keyHelper – cross-platform Diablo III automation helper."""

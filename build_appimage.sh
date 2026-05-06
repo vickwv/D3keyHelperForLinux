@@ -71,7 +71,7 @@ rm -rf "${APPDIR}" "${DIST_DIR}/${APP_NAME}" "${ROOT_DIR}/build/${APP_NAME}.spec
   --collect-submodules PySide6.QtDBus \
   --add-data "${ROOT_DIR}/mainwindow.png:." \
   --add-data "${ICON_DIR}/${ICON_NAME}-256.png:." \
-  "${ROOT_DIR}/d3keyhelper_linux_gui.py"
+  "${ROOT_DIR}/d3keyhelper_gui.py"
 
 mkdir -p "${APPDIR}/usr/lib/d3keyhelper-linux"
 mkdir -p "${APPDIR}/usr/share/applications"

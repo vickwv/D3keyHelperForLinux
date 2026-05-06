@@ -15,8 +15,8 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-import d3keyhelper_linux as runtime  # noqa: E402
-import d3keyhelper_linux_gui as gui  # noqa: E402
+import d3keyhelper as runtime  # noqa: E402
+import d3keyhelper_gui as gui  # noqa: E402
 import runner_events  # noqa: E402
 
 
@@ -121,8 +121,8 @@ class ConfigTests(unittest.TestCase):
                 stdout=f"({{'caption': <'?????III'>, 'resourceClass': <'steam_app_4238117006'>, {sample}}},)",
                 stderr="",
             )
-            with mock.patch.object(runtime.subprocess, "run", return_value=completed), mock.patch.object(
-                runtime, "read_process_commandline", return_value=r"C:\Games\Diablo III\x64\Diablo III64.exe"
+            with mock.patch.object(runtime.subprocess, "run", return_value=completed), mock.patch(
+                "platform_compat.read_process_commandline", return_value=r"C:\Games\Diablo III\x64\Diablo III64.exe"
             ):
                 matcher = runtime.KWinWindowMatcher(title_regex="Diablo III", class_regex=None)
                 window = matcher.get_active_window()
@@ -145,7 +145,7 @@ class ConfigTests(unittest.TestCase):
 
     def test_gui_language_environment_supports_en_and_traditional_chinese(self) -> None:
         probe = (
-            "import d3keyhelper_linux_gui as g; "
+            "import d3keyhelper_gui as g; "
             "print(g.UI_LANGUAGE); "
             "print(g.localize_text('鼠标右键')); "
             "print(g.localize_text('安全格状态：格式错误'))"
@@ -170,7 +170,7 @@ class ConfigTests(unittest.TestCase):
         self.assertIn("zh_TW\n鼠標右鍵\n安全格狀態：格式錯誤", traditional.stdout)
 
     def test_gui_language_environment_defaults_to_simplified_for_unknown_locale(self) -> None:
-        probe = "import d3keyhelper_linux_gui as g; print(g.UI_LANGUAGE)"
+        probe = "import d3keyhelper_gui as g; print(g.UI_LANGUAGE)"
         completed = subprocess.run(
             [sys.executable, "-c", probe],
             check=True,
@@ -185,14 +185,14 @@ class ConfigTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp_dir:
             config_path = Path(tmp_dir) / "test.ini"
             init = subprocess.run(
-                [sys.executable, str(REPO_ROOT / "d3keyhelper_linux.py"), "--init-config", "--config", str(config_path), "--lang", "zh"],
+                [sys.executable, str(REPO_ROOT / "d3keyhelper.py"), "--init-config", "--config", str(config_path), "--lang", "zh"],
                 check=True,
                 capture_output=True,
                 text=True,
             )
             self.assertIn("已生成默认配置文件", init.stdout)
             listed = subprocess.run(
-                [sys.executable, str(REPO_ROOT / "d3keyhelper_linux.py"), "--list-profiles", "--config", str(config_path)],
+                [sys.executable, str(REPO_ROOT / "d3keyhelper.py"), "--list-profiles", "--config", str(config_path)],
                 check=True,
                 capture_output=True,
                 text=True,
@@ -674,10 +674,10 @@ class PackageImportTests(unittest.TestCase):
     """Verify that the modules import cleanly when used as a package."""
 
     def test_package_import_runtime(self) -> None:
-        """d3keyhelper_linux must be importable from its parent directory."""
+        """d3keyhelper must be importable from its parent directory."""
         parent = str(REPO_ROOT.parent)
         result = subprocess.run(
-            [sys.executable, "-c", "import D3keyHelperForLinux.d3keyhelper_linux"],
+            [sys.executable, "-c", "import D3keyHelperForLinux.d3keyhelper"],
             capture_output=True,
             text=True,
             env={**os.environ, "PYTHONPATH": parent},
@@ -689,11 +689,11 @@ class PackageImportTests(unittest.TestCase):
         )
 
     def test_package_import_gui(self) -> None:
-        """d3keyhelper_linux_gui must be importable from its parent directory."""
+        """d3keyhelper_gui must be importable from its parent directory."""
         parent = str(REPO_ROOT.parent)
         env = {**os.environ, "PYTHONPATH": parent, "QT_QPA_PLATFORM": "offscreen"}
         result = subprocess.run(
-            [sys.executable, "-c", "import D3keyHelperForLinux.d3keyhelper_linux_gui"],
+            [sys.executable, "-c", "import D3keyHelperForLinux.d3keyhelper_gui"],
             capture_output=True,
             text=True,
             env=env,

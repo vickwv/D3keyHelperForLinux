@@ -66,12 +66,12 @@ sys.stdout = _stdout_backup
 del _stdout_backup, _io
 
 try:
-    from .d3keyhelper_linux import DEFAULT_VERSION, create_default_config, default_config_path, default_profile_dict, main as runtime_main
+    from .d3keyhelper import DEFAULT_VERSION, create_default_config, default_config_path, default_profile_dict, main as runtime_main
 except ImportError:
     try:
-        from linux_port.d3keyhelper_linux import DEFAULT_VERSION, create_default_config, default_config_path, default_profile_dict, main as runtime_main
+        from linux_port.d3keyhelper import DEFAULT_VERSION, create_default_config, default_config_path, default_profile_dict, main as runtime_main
     except ImportError:
-        from d3keyhelper_linux import DEFAULT_VERSION, create_default_config, default_config_path, default_profile_dict, main as runtime_main
+        from d3keyhelper import DEFAULT_VERSION, create_default_config, default_config_path, default_profile_dict, main as runtime_main
 
 
 

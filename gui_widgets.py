@@ -1068,7 +1068,7 @@ def build_runner_command(config_path: Path, profile: str) -> list[str]:
     if getattr(sys, "frozen", False):
         command = [sys.executable, "--runner", "--config", str(config_path)]
     else:
-        command = [sys.executable, str(Path(__file__).resolve()), "--runner", "--config", str(config_path)]
+        command = [sys.executable, str(Path(__file__).with_name("d3keyhelper_gui.py")), "--runner", "--config", str(config_path)]
     if profile:
         command += ["--profile", profile]
     command += ["--lang", _gui_i18n.UI_LANGUAGE]

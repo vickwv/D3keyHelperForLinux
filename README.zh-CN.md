@@ -1,13 +1,19 @@
-# D3keyHelperForLinux
+# D3keyHelper
 
 [![AppImage Build](https://github.com/vickwv/D3keyHelperForLinux/actions/workflows/build-appimage.yml/badge.svg)](https://github.com/vickwv/D3keyHelperForLinux/actions/workflows/build-appimage.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
 **语言:** [English](./README.md) | 简体中文
 
-`D3keyHelperForLinux` 是原版 **[D3keyHelper](https://github.com/WeijieH/D3keyHelper)** 的 Linux 移植版，用于在 **Diablo III** 中使用辅助热键和可重复的战斗按键动作。项目尽量保持原版 `d3oldsand.ini` 配置兼容，同时加入 Linux 原生按键发送、窗口识别、截图处理和 Qt 图形界面。
+`D3keyHelper` 是原版 **[D3keyHelper](https://github.com/WeijieH/D3keyHelper)** 的跨平台移植版，用于在 **Diablo III** 中使用辅助热键和可重复的战斗按键动作。项目尽量保持原版 `d3oldsand.ini` 配置兼容，同时加入跨平台按键发送、窗口识别、截图处理和 Qt 图形界面。
 
 本项目只围绕 Diablo III 的按键循环、城镇助手、背包处理流程和原版配置兼容来设计。它不是通用自动化框架，也不是游戏修改器。
+
+## 支持平台
+
+- **Linux（X11 / XWayland）：** 支持最完整；含 AppImage 打包
+- **Linux（KDE Wayland + XWayland 游戏窗口）：** 可用，使用 KDE/KWin 后端
+- **Windows：** 支持，通过 `WindowsWindowMatcher`（纯 ctypes，无额外依赖）；使用 `build_windows.bat` 打包
 
 ## 致谢与许可证
 
@@ -27,6 +33,7 @@
 2. **Wayland 会话下，以 XWayland 窗口运行 Diablo III**
 3. **Steam + Proton + Battle.net + Diablo III**
 4. **KDE Plasma**，尤其是使用 KDE 侧截图路径时
+5. **Windows**（原生，通过 ctypes 窗口识别）
 
 支持完整度：
 
@@ -72,7 +79,7 @@ sudo pacman -S python python-pip
 ### 2. 生成默认配置
 
 ```bash
-python d3keyhelper_linux.py --init-config
+python d3keyhelper.py --init-config
 ```
 
 默认配置文件路径：
@@ -90,7 +97,7 @@ $XDG_CONFIG_HOME/d3helperforlinux/d3oldsand.ini
 ### 3. 启动 GUI
 
 ```bash
-python d3keyhelper_linux.py --gui
+python d3keyhelper.py --gui
 ```
 
 GUI 是推荐入口，可以编辑通用选项、配置页、技能策略、助手设置和运行器状态，不需要手动改 ini。
@@ -108,13 +115,13 @@ GUI 首次启动会检测当前系统语言：
 
 ```bash
 # 简体中文
-D3HELPER_LANG=zh python d3keyhelper_linux.py --gui
+D3HELPER_LANG=zh python d3keyhelper.py --gui
 
 # English
-D3HELPER_LANG=en python d3keyhelper_linux.py --gui
+D3HELPER_LANG=en python d3keyhelper.py --gui
 
 # 繁體中文
-D3HELPER_LANG=zh_TW python d3keyhelper_linux.py --gui
+D3HELPER_LANG=zh_TW python d3keyhelper.py --gui
 ```
 
 也可以使用 `zh-hant`、`zh_HK`、`tw`、`hk` 这类繁中别名。
@@ -122,29 +129,29 @@ D3HELPER_LANG=zh_TW python d3keyhelper_linux.py --gui
 ### 4. 或直接启动运行器
 
 ```bash
-python d3keyhelper_linux.py
+python d3keyhelper.py
 ```
 
 ## 常用命令
 
 ```bash
 # 图形界面
-python d3keyhelper_linux.py --gui
+python d3keyhelper.py --gui
 
 # 创建默认配置
-python d3keyhelper_linux.py --init-config
+python d3keyhelper.py --init-config
 
 # 列出配置
-python d3keyhelper_linux.py --list-profiles
+python d3keyhelper.py --list-profiles
 
 # 按配置名启动
-python d3keyhelper_linux.py --profile 配置1
+python d3keyhelper.py --profile 配置1
 
 # 强制使用 KDE Wayland 截图后端
-python d3keyhelper_linux.py --capture-backend kde-wayland
+python d3keyhelper.py --capture-backend kde-wayland
 
 # 临时忽略 d3only，只对当前前台窗口发按键
-python d3keyhelper_linux.py --any-window
+python d3keyhelper.py --any-window
 ```
 
 ## 功能
@@ -232,6 +239,18 @@ safezone=61,62,63
 
 而不是把它报成格式错误。
 
+## Windows 构建
+
+使用 PyInstaller 打包 Windows 独立可执行文件：
+
+```bat
+build_windows.bat
+```
+
+产物：`dist\D3keyHelper-Windows\D3keyHelper-Windows.exe`
+
+需要：Python 3.11+、pip 和网络访问（脚本会自动安装依赖）。
+
 ## AppImage 打包
 
 ### 本地构建
@@ -282,12 +301,14 @@ python -m unittest discover -s tests
 ├── vision.py
 ├── enums.py
 ├── runner_events.py
-├── d3keyhelper_linux.py
-├── d3keyhelper_linux_gui.py
+├── platform_compat.py
+├── d3keyhelper.py
+├── d3keyhelper_gui.py
 ├── gui_i18n.py
 ├── gui_widgets.py
 ├── gui_profile_page.py
 ├── build_appimage.sh
+├── build_windows.bat
 ├── requirements.txt
 ├── docs/
 ├── packaging/

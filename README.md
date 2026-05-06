@@ -1,13 +1,19 @@
-# D3keyHelperForLinux
+# D3keyHelper
 
 [![AppImage Build](https://github.com/vickwv/D3keyHelperForLinux/actions/workflows/build-appimage.yml/badge.svg)](https://github.com/vickwv/D3keyHelperForLinux/actions/workflows/build-appimage.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
 **Language:** English | [简体中文](./README.zh-CN.md)
 
-`D3keyHelperForLinux` is a Linux port of the original **[D3keyHelper](https://github.com/WeijieH/D3keyHelper)** project for playing **Diablo III** with helper hotkeys and repeatable combat actions. It keeps the original `d3oldsand.ini`-style configuration compatible where possible, then adds Linux-native input, window detection, screenshot handling, and a Qt GUI.
+`D3keyHelper` is a cross-platform port of the original **[D3keyHelper](https://github.com/WeijieH/D3keyHelper)** project for playing **Diablo III** with helper hotkeys and repeatable combat actions. It keeps the original `d3oldsand.ini`-style configuration compatible where possible, then adds platform-native input, window detection, screenshot handling, and a Qt GUI.
 
 This project is scoped to Diablo III key loops, town helpers, inventory workflows, and compatibility with the original configuration format. It is not a general automation framework or a game modification tool.
+
+## Supported Platforms
+
+- **Linux (X11 / XWayland):** best supported; includes AppImage packaging
+- **Linux (KDE Wayland + XWayland game window):** usable via KDE/KWin backend
+- **Windows:** supported via `WindowsWindowMatcher` (pure ctypes, no extra deps); build with `build_windows.bat`
 
 ## Credits And License
 
@@ -27,6 +33,7 @@ Recommended environment:
 2. **Wayland session with Diablo III running as an XWayland window**
 3. **Steam + Proton + Battle.net + Diablo III**
 4. **KDE Plasma**, especially when using the KDE-oriented screenshot path
+5. **Windows** (native, via ctypes window detection)
 
 Support level:
 
@@ -72,7 +79,7 @@ sudo pacman -S python python-pip
 ### 2. Generate the default config
 
 ```bash
-python d3keyhelper_linux.py --init-config
+python d3keyhelper.py --init-config
 ```
 
 Default config path:
@@ -90,7 +97,7 @@ $XDG_CONFIG_HOME/d3helperforlinux/d3oldsand.ini
 ### 3. Launch the GUI
 
 ```bash
-python d3keyhelper_linux.py --gui
+python d3keyhelper.py --gui
 ```
 
 The GUI is the recommended entry point. It edits general options, profile settings, skill strategies, helper settings, and runtime controls without requiring manual ini edits.
@@ -108,13 +115,13 @@ For temporary override, set `D3HELPER_LANG` before launch:
 
 ```bash
 # Simplified Chinese
-D3HELPER_LANG=zh python d3keyhelper_linux.py --gui
+D3HELPER_LANG=zh python d3keyhelper.py --gui
 
 # English
-D3HELPER_LANG=en python d3keyhelper_linux.py --gui
+D3HELPER_LANG=en python d3keyhelper.py --gui
 
 # Traditional Chinese
-D3HELPER_LANG=zh_TW python d3keyhelper_linux.py --gui
+D3HELPER_LANG=zh_TW python d3keyhelper.py --gui
 ```
 
 Traditional Chinese aliases such as `zh-hant`, `zh_HK`, `tw`, and `hk` are also accepted.
@@ -122,29 +129,29 @@ Traditional Chinese aliases such as `zh-hant`, `zh_HK`, `tw`, and `hk` are also 
 ### 4. Or launch the runner directly
 
 ```bash
-python d3keyhelper_linux.py
+python d3keyhelper.py
 ```
 
 ## Common Commands
 
 ```bash
 # GUI
-python d3keyhelper_linux.py --gui
+python d3keyhelper.py --gui
 
 # Create default config
-python d3keyhelper_linux.py --init-config
+python d3keyhelper.py --init-config
 
 # List profiles
-python d3keyhelper_linux.py --list-profiles
+python d3keyhelper.py --list-profiles
 
 # Launch a specific profile
-python d3keyhelper_linux.py --profile 配置1
+python d3keyhelper.py --profile 配置1
 
 # Force KDE Wayland capture backend
-python d3keyhelper_linux.py --capture-backend kde-wayland
+python d3keyhelper.py --capture-backend kde-wayland
 
 # Ignore d3only for the current run
-python d3keyhelper_linux.py --any-window
+python d3keyhelper.py --any-window
 ```
 
 ## Features
@@ -232,6 +239,18 @@ Those three slot numbers do not actually exist. They were used by the original A
 
 instead of reporting it as an invalid format.
 
+## Windows Build
+
+Build a standalone Windows executable with PyInstaller:
+
+```bat
+build_windows.bat
+```
+
+Output: `dist\D3keyHelper-Windows\D3keyHelper-Windows.exe`
+
+Requirements: Python 3.11+, pip, and internet access (the script installs dependencies automatically).
+
 ## AppImage Packaging
 
 ### Build locally
@@ -282,12 +301,14 @@ python -m unittest discover -s tests
 ├── vision.py
 ├── enums.py
 ├── runner_events.py
-├── d3keyhelper_linux.py
-├── d3keyhelper_linux_gui.py
+├── platform_compat.py
+├── d3keyhelper.py
+├── d3keyhelper_gui.py
 ├── gui_i18n.py
 ├── gui_widgets.py
 ├── gui_profile_page.py
 ├── build_appimage.sh
+├── build_windows.bat
 ├── requirements.txt
 ├── docs/
 ├── packaging/
