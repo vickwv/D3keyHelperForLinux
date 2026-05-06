@@ -260,7 +260,7 @@ class MacroApp:
 
     def start(self) -> None:
         if self.general.d3only and self.matcher is None:
-            raise ConfigError("当前配置启用了 d3only，但 Linux 运行器没有可用的窗口检测器。")
+            raise ConfigError("当前配置启用了 d3only，但运行器没有可用的窗口检测器。")
         self._start_focus_monitor()
         self._print_profile_notes(self.current_profile)
         self._print_helper_notes()
@@ -502,7 +502,7 @@ class MacroApp:
             self._spawn_periodic_worker(self._make_skill_queue_worker(profile.use_skill_queue_interval_ms))
 
         emit_runner_event("macro_started", profile.name)
-        emit_runner_log(tr(f"已启动 Linux 战斗宏：{profile.name}", f"Combat macro started: {profile.name}"))
+        emit_runner_log(tr(f"已启动战斗宏：{profile.name}", f"Combat macro started: {profile.name}"))
 
     def stop_macro(self, reason: str | None) -> None:
         with self._lock:

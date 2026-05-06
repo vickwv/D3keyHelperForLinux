@@ -335,4 +335,4 @@ def make_window_matcher(title_regex: str | None, class_regex: str | None, captur
 
 
 def platform_runner_label() -> str:
-    return tr("Windows 运行器", "Windows runner") if sys.platform == "win32" else tr("Linux 运行器", "Linux runner")
+    return tr("运行器", "runner")
