@@ -34,7 +34,7 @@ jobs:
             --noconfirm `
             --clean `
             --windowed `
-            --onedir `
+            --onefile `
             --name "D3Macro-Windows" `
             --hidden-import pynput.keyboard._win32 `
             --hidden-import pynput.mouse._win32 `
@@ -43,7 +43,7 @@ jobs:
             --add-data "mainwindow.png;." `
             d3keyhelper_gui.py
 
-      - name: Prepare versioned zip name
+      - name: Prepare versioned exe name
         id: artifact
         shell: bash
         run: |
@@ -54,11 +54,11 @@ jobs:
             safe_ref="$(printf "%s" "$ref_name" | tr -c 'A-Za-z0-9._-' '-')"
             version="${safe_ref}-${GITHUB_SHA::7}"
           fi
-          zip_name="D3Macro-Windows-${version}.zip"
-          cd dist
-          7z a "../${zip_name}" "D3Macro-Windows/"
-          echo "name=${zip_name}" >> "$GITHUB_OUTPUT"
-          echo "path=${zip_name}" >> "$GITHUB_OUTPUT"
+          src="dist/D3Macro-Windows.exe"
+          dst="dist/D3Macro-Windows-${version}.exe"
+          mv "$src" "$dst"
+          echo "name=D3Macro-Windows-${version}.exe" >> "$GITHUB_OUTPUT"
+          echo "path=${dst}" >> "$GITHUB_OUTPUT"
 
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v6

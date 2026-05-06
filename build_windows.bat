@@ -15,7 +15,7 @@ echo === D3Macro Windows Build ===
   --noconfirm ^
   --clean ^
   --windowed ^
-  --onedir ^
+  --onefile ^
   --name "%APP_NAME%" ^
   --hidden-import pynput.keyboard._win32 ^
   --hidden-import pynput.mouse._win32 ^
@@ -25,5 +25,5 @@ echo === D3Macro Windows Build ===
   "%ROOT_DIR%d3keyhelper_gui.py"
 
 echo.
-echo === Build complete: dist\%APP_NAME% ===
+echo === Build complete: dist\%APP_NAME%.exe ===
 endlocal

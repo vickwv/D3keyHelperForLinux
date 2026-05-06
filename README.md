@@ -71,7 +71,7 @@ The GUI auto-detects system language. Manual switch: click `简 / EN / 繁` in t
 
 ```bat
 build_windows.bat
-:: Output: dist\D3Macro-Windows\D3Macro-Windows.exe
+:: Output: dist\D3Macro-Windows.exe
 ```
 
 ### Windows (via GitHub Actions)
