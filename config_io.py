@@ -32,7 +32,7 @@ except ImportError:
     )
 
 DEFAULT_VERSION = "260403"
-CONFIG_DIR_NAME = "d3helperforlinux"
+CONFIG_DIR_NAME = "d3macro"
 CONFIG_FILE_NAME = "d3oldsand.ini"
 DEFAULT_PROFILE_NAMES = ["配置1"]
 START_METHOD_MOUSE = {
@@ -526,7 +526,7 @@ def create_default_config(config_path: Path) -> None:
     for name in DEFAULT_PROFILE_NAMES:
         parser[name] = default_profile_dict()
 
-    write_config_parser_atomic(config_path, parser, "; Linux native config for D3keyHelper\r\n")
+    write_config_parser_atomic(config_path, parser, "; D3Macro config\r\n")
 
 
 def write_config_parser_atomic(config_path: Path, parser: configparser.ConfigParser, header: str) -> None:

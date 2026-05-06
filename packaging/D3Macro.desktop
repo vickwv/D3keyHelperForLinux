@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=D3Macro
+Comment=Cross-platform combat macro helper for Diablo III
+Exec=D3Macro-Linux
+Icon=d3macro
+Categories=Utility;Game;
+Terminal=false
+StartupWMClass=D3Macro
+X-AppImage-Name=D3Macro

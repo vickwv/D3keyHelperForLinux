@@ -69,7 +69,7 @@ class ConfigTests(unittest.TestCase):
     def test_default_config_path_uses_xdg_directory(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir, mock.patch.dict(os.environ, {"XDG_CONFIG_HOME": tmp_dir}, clear=False):
             config_path = runtime.default_config_path()
-            self.assertEqual(config_path, Path(tmp_dir) / "d3helperforlinux" / "d3oldsand.ini")
+            self.assertEqual(config_path, Path(tmp_dir) / "d3macro" / "d3oldsand.ini")
             runtime.create_default_config(config_path)
             self.assertTrue(config_path.exists())
 

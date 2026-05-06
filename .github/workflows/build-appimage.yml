@@ -59,7 +59,7 @@ jobs:
       - name: Prepare versioned AppImage name
         id: appimage
         run: |
-          source_path="build/appimage/D3keyHelper-Linux-x86_64.AppImage"
+          source_path="build/appimage/D3Macro-Linux-x86_64.AppImage"
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             version="$GITHUB_REF_NAME"
           else
@@ -67,7 +67,7 @@ jobs:
             safe_ref="$(printf "%s" "$ref_name" | tr -c 'A-Za-z0-9._-' '-')"
             version="${safe_ref}-${GITHUB_SHA::7}"
           fi
-          appimage_name="D3keyHelper-Linux-${version}-x86_64.AppImage"
+          appimage_name="D3Macro-Linux-${version}-x86_64.AppImage"
           appimage_path="build/appimage/${appimage_name}"
           cp "$source_path" "$appimage_path"
           echo "name=${appimage_name}" >> "$GITHUB_OUTPUT"
@@ -88,7 +88,7 @@ jobs:
             mkdir -p .github/release-notes
             previous_tag="$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null || true)"
             {
-              printf "# D3keyHelperForLinux %s\n\n" "$GITHUB_REF_NAME"
+              printf "# D3Macro %s\n\n" "$GITHUB_REF_NAME"
               printf "## Changes\n\n"
               if [ -n "$previous_tag" ]; then
                 git log --pretty=format:"- %s (%h)" "${previous_tag}..${GITHUB_REF_NAME}"

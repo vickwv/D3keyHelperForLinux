@@ -225,7 +225,7 @@ class MainWindow(QMainWindow):
         self._config_apply_timer.setInterval(500)
         self._config_apply_timer.timeout.connect(self._apply_live_config_change)
         self._init_shell_widgets()
-        self.setWindowTitle("D3keyHelper")
+        self.setWindowTitle("D3Macro")
         self.setStyleSheet(APP_STYLE_SHEET)
         self.resize(*FULL_WINDOW_SIZE)
         self.setMinimumSize(960, 620)
@@ -501,7 +501,7 @@ class MainWindow(QMainWindow):
                 return new_id
 
     def _write_parser(self, parser: configparser.ConfigParser) -> None:
-        write_config_parser_atomic(self.config_path, parser, "; D3keyHelper GUI config\r\n")
+        write_config_parser_atomic(self.config_path, parser, "; D3Macro config\r\n")
 
     def _add_profile(self) -> None:
         if not self.save_config(log_message=""):
@@ -959,7 +959,7 @@ class MainWindow(QMainWindow):
     def _update_path_label(self) -> None:
         # path_label is no longer shown in the toolbar; update window title instead
         filename = Path(self._path_text).name if self._path_text else ""
-        self.setWindowTitle(f"D3keyHelper — {filename}" if filename else "D3keyHelper")
+        self.setWindowTitle(f"D3Macro — {filename}" if filename else "D3Macro")
         self.path_label.setToolTip(self._path_text)
 
     def _update_runtime_status_widgets(self) -> None:
@@ -1261,7 +1261,7 @@ class MainWindow(QMainWindow):
             self.tray_icon.setIcon(QIcon(str(icon_path)))
         else:
             self.tray_icon.setIcon(self.windowIcon())
-        self.tray_icon.setToolTip("D3keyHelper")
+        self.tray_icon.setToolTip("D3Macro")
         self._tray_menu = QMenu()
         self.tray_icon.setContextMenu(self._tray_menu)
         self.tray_icon.activated.connect(self._tray_activated)

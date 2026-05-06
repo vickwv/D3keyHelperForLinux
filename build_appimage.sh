@@ -7,9 +7,9 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="${ROOT_DIR}/build/appimage"
 DIST_DIR="${ROOT_DIR}/dist"
-APP_NAME="D3keyHelper-Linux"
+APP_NAME="D3Macro-Linux"
 APPDIR="${BUILD_DIR}/AppDir"
-ICON_NAME="d3keyhelper-linux"
+ICON_NAME="d3macro"
 ICON_DIR="${ROOT_DIR}/packaging/icons"
 if [[ -z "${PYTHON_BIN:-}" ]]; then
   if [[ -x "${ROOT_DIR}/.venv311/bin/python" ]]; then
@@ -73,18 +73,18 @@ rm -rf "${APPDIR}" "${DIST_DIR}/${APP_NAME}" "${ROOT_DIR}/build/${APP_NAME}.spec
   --add-data "${ICON_DIR}/${ICON_NAME}-256.png:." \
   "${ROOT_DIR}/d3keyhelper_gui.py"
 
-mkdir -p "${APPDIR}/usr/lib/d3keyhelper-linux"
+mkdir -p "${APPDIR}/usr/lib/d3macro"
 mkdir -p "${APPDIR}/usr/share/applications"
 mkdir -p "${APPDIR}/usr/share/metainfo"
 mkdir -p "${APPDIR}/usr/share/icons/hicolor/scalable/apps"
 for size in 16 32 48 64 128 256 512; do
   mkdir -p "${APPDIR}/usr/share/icons/hicolor/${size}x${size}/apps"
 done
-cp -a "${DIST_DIR}/${APP_NAME}/." "${APPDIR}/usr/lib/d3keyhelper-linux/"
+cp -a "${DIST_DIR}/${APP_NAME}/." "${APPDIR}/usr/lib/d3macro/"
 cp "${ROOT_DIR}/packaging/AppRun" "${APPDIR}/AppRun"
-cp "${ROOT_DIR}/packaging/D3keyHelper.desktop" "${APPDIR}/io.github.WeijieH.D3keyHelper.desktop"
-cp "${ROOT_DIR}/packaging/D3keyHelper.desktop" "${APPDIR}/usr/share/applications/io.github.WeijieH.D3keyHelper.desktop"
-cp "${ROOT_DIR}/packaging/D3keyHelper.appdata.xml" "${APPDIR}/usr/share/metainfo/io.github.WeijieH.D3keyHelper.appdata.xml"
+cp "${ROOT_DIR}/packaging/D3Macro.desktop" "${APPDIR}/io.github.WeijieH.D3Macro.desktop"
+cp "${ROOT_DIR}/packaging/D3Macro.desktop" "${APPDIR}/usr/share/applications/io.github.WeijieH.D3Macro.desktop"
+cp "${ROOT_DIR}/packaging/D3Macro.appdata.xml" "${APPDIR}/usr/share/metainfo/io.github.WeijieH.D3Macro.appdata.xml"
 cp "${ICON_DIR}/${ICON_NAME}-256.png" "${APPDIR}/${ICON_NAME}.png"
 cp "${ICON_DIR}/${ICON_NAME}-256.png" "${APPDIR}/.DirIcon"
 cp "${ICON_DIR}/${ICON_NAME}.svg" "${APPDIR}/usr/share/icons/hicolor/scalable/apps/${ICON_NAME}.svg"

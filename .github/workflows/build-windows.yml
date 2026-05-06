@@ -1,0 +1,75 @@
+name: Build Windows
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install pyinstaller
+
+      - name: Build Windows executable
+        run: |
+          python -m PyInstaller `
+            --noconfirm `
+            --clean `
+            --windowed `
+            --onedir `
+            --name "D3Macro-Windows" `
+            --hidden-import pynput.keyboard._win32 `
+            --hidden-import pynput.mouse._win32 `
+            --collect-submodules mss `
+            --collect-submodules pynput `
+            --add-data "mainwindow.png;." `
+            d3keyhelper_gui.py
+
+      - name: Prepare versioned zip name
+        id: artifact
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            version="$GITHUB_REF_NAME"
+          else
+            ref_name="${GITHUB_REF_NAME:-manual}"
+            safe_ref="$(printf "%s" "$ref_name" | tr -c 'A-Za-z0-9._-' '-')"
+            version="${safe_ref}-${GITHUB_SHA::7}"
+          fi
+          zip_name="D3Macro-Windows-${version}.zip"
+          cd dist
+          7z a "../${zip_name}" "D3Macro-Windows/"
+          echo "name=${zip_name}" >> "$GITHUB_OUTPUT"
+          echo "path=${zip_name}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ steps.artifact.outputs.name }}
+          path: ${{ steps.artifact.outputs.path }}
+          if-no-files-found: error
+
+      - name: Upload to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v3
+        with:
+          body_path: .github/release-notes/${{ github.ref_name }}.md
+          files: ${{ steps.artifact.outputs.path }}

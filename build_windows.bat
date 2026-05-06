@@ -2,10 +2,10 @@
 setlocal
 
 set PYTHON_BIN=python
-set APP_NAME=D3keyHelper-Windows
+set APP_NAME=D3Macro-Windows
 set ROOT_DIR=%~dp0
 
-echo === D3keyHelper Windows Build ===
+echo === D3Macro Windows Build ===
 
 %PYTHON_BIN% -m pip install --upgrade pip
 %PYTHON_BIN% -m pip install -r "%ROOT_DIR%requirements.txt"

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.WeijieH.D3Macro.desktop</id>
+  <name>D3Macro</name>
+  <summary>Cross-platform combat macro helper for Diablo III</summary>
+  <url type="homepage">https://github.com/vickwv/D3keyHelperForLinux</url>
+  <description>
+    <p>D3Macro provides combat macros, helper automation, and a Qt GUI configuration editor for Diablo III on Linux and Windows.</p>
+  </description>
+  <launchable type="desktop-id">io.github.WeijieH.D3Macro.desktop</launchable>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+</component>

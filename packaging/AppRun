@@ -17,4 +17,4 @@ for _d in \
 done
 export QT_PLUGIN_PATH
 
-exec "$HERE/usr/lib/d3keyhelper-linux/D3keyHelper-Linux" "$@"
+exec "$HERE/usr/lib/d3macro/D3Macro-Linux" "$@"
