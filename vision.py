@@ -248,22 +248,39 @@ def is_inventory_space_empty(image: GameImage, width: int, height: int, slot_id:
 def scan_inventory_space(image: GameImage, width: int, height: int, safezone: set[int]):
     helper_bag_zone = [-1] * 61
     inventory_colors: dict[int, list[int]] = {}
+    raw_values: dict[int, int] = {}
     points = [(0.65625, 0.71429), (0.375, 0.36508), (0.725, 0.251)]
     for index in range(1, 61):
         x_center, y_center, x0, y0 = get_inventory_space_xy(width, height, index, "bag")
         inventory_colors[index] = image.get_pixel_rgb(
             [round(x0 + 64 * 0.08 * height / 1440.0), round(y0 + 63 * 0.7 * height / 1440.0)]
         )
-        if index in safezone:
-            helper_bag_zone[index] = 0
-            continue
         slot_value = 1
         for px, py in points:
             c = image.get_pixel_rgb([round(x0 + 64 * px * height / 1440.0), round(y0 + 63 * py * height / 1440.0)])
             if not (c[0] < 22 and c[1] < 20 and c[2] < 15 and c[0] > c[2] and c[1] > c[2]):
                 slot_value = 10
                 break
-        helper_bag_zone[index] = slot_value
+        raw_values[index] = slot_value
+        helper_bag_zone[index] = 0 if index in safezone else slot_value
+
+    # Protect slots directly below/right of a safezone slot that contains an item.
+    # A 2-tall item anchored in a safezone slot has its lower half visible in the
+    # slot below (+10), which is not in safezone and would otherwise be processed.
+    for safe_slot in safezone:
+        if raw_values.get(safe_slot) != 10:
+            continue
+        # Vertical overflow: slot directly below (same column, next row)
+        below = safe_slot + 10
+        if below <= 60 and below not in safezone and helper_bag_zone[below] == 10:
+            helper_bag_zone[below] = 0
+        # Horizontal overflow: slot immediately to the right (same row only)
+        right = safe_slot + 1
+        if (right <= 60 and right not in safezone
+                and (safe_slot - 1) // 10 == (right - 1) // 10
+                and helper_bag_zone[right] == 10):
+            helper_bag_zone[right] = 0
+
     return helper_bag_zone, inventory_colors
 
 

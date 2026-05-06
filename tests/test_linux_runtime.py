@@ -755,6 +755,44 @@ class ImageTests(unittest.TestCase):
         salvage_state = [2, [0, 0, 0], [80, 10, 10], [10, 20, 100], [80, 30, 10]]
         self.assertEqual(runtime.salvage_bulk_buttons_from_state(salvage_state), [3, 2, 1])
 
+    def test_scan_inventory_safezone_overflow_protection(self) -> None:
+        width, height = 2560, 1440
+        # BGRA [8, 12, 15, 255] → RGB [15, 12, 8]: dark, R>B and G>B → detected as empty
+        pixels = np.full((height, width, 4), [8, 12, 15, 255], dtype=np.uint8)
+        # BGRA [50, 50, 50, 255] → RGB [50, 50, 50]: R≥22 → detected as has-item
+        item_pixel = np.array([50, 50, 50, 255], dtype=np.uint8)
+        detection_points = [(0.65625, 0.71429), (0.375, 0.36508), (0.725, 0.251)]
+
+        def mark_slot_as_item(slot_id: int) -> None:
+            _, _, x0, y0 = runtime.get_inventory_space_xy(width, height, slot_id, "bag")
+            for px, py in detection_points:
+                x = round(x0 + 64 * px * height / 1440.0)
+                y = round(y0 + 63 * py * height / 1440.0)
+                pixels[y, x] = item_pixel
+
+        # Safezone covers row 2 (slots 11–13). Place items in those safezone slots AND
+        # directly below them (slots 21–23) to simulate 2-tall items overflowing into row 3.
+        for slot in [11, 12, 13, 21, 22, 23]:
+            mark_slot_as_item(slot)
+
+        image = runtime.GameImage(
+            runtime.WindowInfo(0, "", "", 0, 0, width, height), pixels, 1.0
+        )
+        safezone = {11, 12, 13}
+        bag_zone, _ = runtime.scan_inventory_space(image, width, height, safezone)
+
+        # Safezone slots must be 0
+        self.assertEqual(bag_zone[11], 0)
+        self.assertEqual(bag_zone[12], 0)
+        self.assertEqual(bag_zone[13], 0)
+        # Overflow slots directly below safezone item slots must also be protected (0)
+        self.assertEqual(bag_zone[21], 0, "overflow below safezone slot 11 must be protected")
+        self.assertEqual(bag_zone[22], 0, "overflow below safezone slot 12 must be protected")
+        self.assertEqual(bag_zone[23], 0, "overflow below safezone slot 13 must be protected")
+        # Unrelated empty slots remain 1
+        self.assertEqual(bag_zone[1], 1)
+        self.assertEqual(bag_zone[60], 1)
+
 
 if __name__ == "__main__":
     unittest.main()
