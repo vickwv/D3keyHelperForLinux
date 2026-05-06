@@ -2,6 +2,7 @@ from __future__ import annotations
 import configparser
 import os
 import re
+import sys
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -502,6 +503,11 @@ def default_profile_dict() -> dict[str, str]:
 
 
 def default_config_dir() -> Path:
+    if sys.platform == "win32":
+        app_data = os.environ.get("APPDATA", "").strip()
+        if app_data:
+            return Path(app_data) / CONFIG_DIR_NAME
+        return Path.home() / "AppData" / "Roaming" / CONFIG_DIR_NAME
     base_dir = os.environ.get("XDG_CONFIG_HOME", "").strip()
     if base_dir:
         return Path(base_dir).expanduser() / CONFIG_DIR_NAME

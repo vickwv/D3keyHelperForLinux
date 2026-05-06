@@ -112,6 +112,21 @@ except ImportError:
 def read_process_commandline(pid: int) -> str:
     if pid <= 0:
         return ""
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            import ctypes.wintypes
+            PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+            handle = ctypes.windll.kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+            if not handle:
+                return ""
+            buf = ctypes.create_unicode_buffer(32768)
+            size = ctypes.wintypes.DWORD(32768)
+            ctypes.windll.kernel32.QueryFullProcessImageNameW(handle, 0, buf, ctypes.byref(size))
+            ctypes.windll.kernel32.CloseHandle(handle)
+            return buf.value
+        except Exception:
+            return ""
     try:
         raw = Path(f"/proc/{pid}/cmdline").read_bytes()
     except OSError:
@@ -140,6 +155,13 @@ def format_window_debug(window: WindowInfo | None) -> str:
 
 
 def play_notification_sound() -> None:
+    if sys.platform == "win32":
+        try:
+            import winsound
+            winsound.MessageBeep(winsound.MB_ICONASTERISK)
+        except Exception:
+            pass
+        return
     for command in (
         ["canberra-gtk-play", "-i", "complete"],
         ["canberra-gtk-play", "-i", "message"],
@@ -180,7 +202,7 @@ class SyntheticEventFilter:
 class InputSender:
     def __init__(self, event_filter: SyntheticEventFilter) -> None:
         if keyboard is None or mouse is None:
-            raise ConfigError("缺少 Linux 运行依赖，请先安装 requirements.txt 中的依赖。")
+            raise ConfigError("缺少 pynput，请先安装 requirements.txt 中的依赖。")
         self._filter = event_filter
         self._keyboard = keyboard.Controller()
         self._mouse = mouse.Controller()
@@ -381,6 +403,64 @@ class KWinWindowMatcher:
         if self._class_pattern and not class_matches:
             return False
         return bool(title_matches or class_matches or proton_matches)
+
+
+class WindowsWindowMatcher:
+    """Active-window matcher for Windows using ctypes (no extra dependencies)."""
+
+    def __init__(self, title_regex: str | None, class_regex: str | None) -> None:
+        self._title_pattern = re.compile(title_regex, re.IGNORECASE) if title_regex else None
+        self._class_pattern = re.compile(class_regex, re.IGNORECASE) if class_regex else None
+
+    def get_active_window(self) -> WindowInfo | None:
+        import ctypes
+        import ctypes.wintypes
+
+        class RECT(ctypes.Structure):
+            _fields_ = [("left", ctypes.c_long), ("top", ctypes.c_long),
+                        ("right", ctypes.c_long), ("bottom", ctypes.c_long)]
+
+        class POINT(ctypes.Structure):
+            _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
+
+        try:
+            hwnd = ctypes.windll.user32.GetForegroundWindow()
+            if not hwnd:
+                return None
+            length = ctypes.windll.user32.GetWindowTextLengthW(hwnd)
+            title_buf = ctypes.create_unicode_buffer(length + 1)
+            ctypes.windll.user32.GetWindowTextW(hwnd, title_buf, length + 1)
+            class_buf = ctypes.create_unicode_buffer(256)
+            ctypes.windll.user32.GetClassNameW(hwnd, class_buf, 256)
+            pid = ctypes.wintypes.DWORD(0)
+            ctypes.windll.user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+            pid_val = int(pid.value)
+            rect = RECT()
+            ctypes.windll.user32.GetClientRect(hwnd, ctypes.byref(rect))
+            pt = POINT(0, 0)
+            ctypes.windll.user32.ClientToScreen(hwnd, ctypes.byref(pt))
+            return WindowInfo(
+                window_id=int(hwnd),
+                title=title_buf.value,
+                wm_class=class_buf.value,
+                x=int(pt.x),
+                y=int(pt.y),
+                width=int(rect.right - rect.left),
+                height=int(rect.bottom - rect.top),
+                pid=pid_val,
+                commandline=read_process_commandline(pid_val),
+            )
+        except Exception:
+            return None
+
+    def matches_active_window(self) -> bool:
+        window = self.get_active_window()
+        return window is not None and self.matches_window(window)
+
+    def matches_window(self, window: WindowInfo) -> bool:
+        title_ok = bool(self._title_pattern and self._title_pattern.search(window.title))
+        class_ok = bool(self._class_pattern and self._class_pattern.search(window.wm_class))
+        return bool(title_ok or class_ok)
 
 
 class MacroApp:
@@ -1453,7 +1533,7 @@ def ensure_runtime_dependencies(capture_backend: str) -> None:
         raise ConfigError("未安装 numpy，请先执行：pip install -r requirements.txt")
     if capture_backend == "x11" and (xdisplay is None or X is None):
         raise ConfigError("未安装 python-xlib，请先执行：pip install -r requirements.txt")
-    if capture_backend == "x11" and mss is None:
+    if capture_backend in ("x11", "windows") and mss is None:
         raise ConfigError("未安装 mss，请先执行：pip install -r requirements.txt")
     if Image is None:
         raise ConfigError("未安装 Pillow，请先执行：pip install -r requirements.txt")
@@ -1495,21 +1575,21 @@ def normalize_mouse_button(button_event) -> str | None:
 
 
 def build_argument_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Linux native combat macro runner for D3keyHelper.")
+    parser = argparse.ArgumentParser(description="D3keyHelper combat macro runner (Windows/Linux).")
     parser.add_argument(
         "--config",
         default=str(default_config_path()),
         help=f"配置文件路径，默认 {default_config_path()}",
     )
-    parser.add_argument("--gui", action="store_true", help="启动 Linux 图形界面配置器")
+    parser.add_argument("--gui", action="store_true", help="启动图形界面配置器")
     parser.add_argument("--init-config", action="store_true", help="生成一份默认配置文件后退出")
     parser.add_argument("--list-profiles", action="store_true", help="列出配置文件中的所有配置后退出")
     parser.add_argument("--profile", help="指定要启动的配置名或 1-based 编号")
     parser.add_argument(
         "--capture-backend",
-        choices=["auto", "x11", "kde-wayland"],
+        choices=["auto", "x11", "kde-wayland", "windows"],
         default="auto",
-        help="图像捕获/窗口检测后端",
+        help="图像捕获/窗口检测后端（auto 自动选择）",
     )
     parser.add_argument(
         "--window-title-regex",
@@ -1530,11 +1610,28 @@ def build_argument_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _set_windows_dpi_awareness() -> None:
+    """Enable per-monitor DPI awareness so pixel coordinates and mss captures are consistent."""
+    try:
+        import ctypes
+        ctypes.windll.shcore.SetProcessDpiAwareness(2)
+    except Exception:
+        try:
+            import ctypes
+            ctypes.windll.user32.SetProcessDPIAware()
+        except Exception:
+            pass
+
+
 def main() -> int:
     parser = build_argument_parser()
     args = parser.parse_args()
     if args.lang:
         set_ui_language(args.lang)
+
+    if sys.platform == "win32":
+        _set_windows_dpi_awareness()
+
     config_path = Path(args.config).expanduser().resolve()
 
     if args.gui:
@@ -1561,24 +1658,32 @@ def main() -> int:
         general.d3only = False
 
     matcher = None
-    capture_backend = "x11"
-    if general.d3only:
-        if args.capture_backend == "kde-wayland" or (
-            args.capture_backend == "auto"
-            and os.environ.get("XDG_SESSION_TYPE", "").lower() == "wayland"
-            and "KDE" in os.environ.get("XDG_CURRENT_DESKTOP", "").upper()
-            and Path("/usr/bin/spectacle").exists()
-        ):
-            matcher = KWinWindowMatcher(
+    if sys.platform == "win32":
+        capture_backend = "windows"
+        if general.d3only:
+            matcher = WindowsWindowMatcher(
                 title_regex=args.window_title_regex or None,
                 class_regex=args.window_class_regex or None,
             )
-            capture_backend = "kde-wayland"
-        else:
-            matcher = ActiveWindowMatcher(
-                title_regex=args.window_title_regex or None,
-                class_regex=args.window_class_regex or None,
-            )
+    else:
+        capture_backend = "x11"
+        if general.d3only:
+            if args.capture_backend == "kde-wayland" or (
+                args.capture_backend == "auto"
+                and os.environ.get("XDG_SESSION_TYPE", "").lower() == "wayland"
+                and "KDE" in os.environ.get("XDG_CURRENT_DESKTOP", "").upper()
+                and Path("/usr/bin/spectacle").exists()
+            ):
+                matcher = KWinWindowMatcher(
+                    title_regex=args.window_title_regex or None,
+                    class_regex=args.window_class_regex or None,
+                )
+                capture_backend = "kde-wayland"
+            else:
+                matcher = ActiveWindowMatcher(
+                    title_regex=args.window_title_regex or None,
+                    class_regex=args.window_class_regex or None,
+                )
     ensure_runtime_dependencies(capture_backend if general.d3only else "none")
 
     event_filter = SyntheticEventFilter()
@@ -1618,9 +1723,10 @@ def main() -> int:
     if mouse_listener is not None:
         mouse_listener.start()
 
+    platform_label = tr("Windows 运行器", "Windows runner") if sys.platform == "win32" else tr("Linux 运行器", "Linux runner")
     profile = profiles[start_profile_index]
     print(
-        tr(f"Linux 运行器已启动，当前配置：{profile.name}，启动热键：{format_hotkey(general.start_hotkey)}，捕获后端：{capture_backend}", f"Linux runner started. Profile: {profile.name}, start hotkey: {format_hotkey(general.start_hotkey)}, capture backend: {capture_backend}"),
+        tr(f"{platform_label}已启动，当前配置：{profile.name}，启动热键：{format_hotkey(general.start_hotkey)}，捕获后端：{capture_backend}", f"{platform_label} started. Profile: {profile.name}, start hotkey: {format_hotkey(general.start_hotkey)}, capture backend: {capture_backend}"),
         flush=True,
     )
     print(tr("按 Ctrl+C 退出运行器。", "Press Ctrl+C to stop the runner."), flush=True)
@@ -1629,7 +1735,7 @@ def main() -> int:
         while True:
             time.sleep(1.0)
     except KeyboardInterrupt:
-        print(tr("正在退出 Linux 运行器...", "Stopping Linux runner..."), flush=True)
+        print(tr(f"正在退出{platform_label}...", f"Stopping {platform_label}..."), flush=True)
     finally:
         app.shutdown()
         if key_listener is not None:

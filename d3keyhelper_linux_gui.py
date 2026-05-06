@@ -225,7 +225,7 @@ class MainWindow(QMainWindow):
         self._config_apply_timer.setInterval(500)
         self._config_apply_timer.timeout.connect(self._apply_live_config_change)
         self._init_shell_widgets()
-        self.setWindowTitle("D3keyHelper Linux")
+        self.setWindowTitle("D3keyHelper")
         self.setStyleSheet(APP_STYLE_SHEET)
         self.resize(*FULL_WINDOW_SIZE)
         self.setMinimumSize(960, 620)
@@ -501,7 +501,7 @@ class MainWindow(QMainWindow):
                 return new_id
 
     def _write_parser(self, parser: configparser.ConfigParser) -> None:
-        write_config_parser_atomic(self.config_path, parser, "; Linux GUI config for D3keyHelper\r\n")
+        write_config_parser_atomic(self.config_path, parser, "; D3keyHelper GUI config\r\n")
 
     def _add_profile(self) -> None:
         if not self.save_config(log_message=""):
@@ -1151,7 +1151,7 @@ class MainWindow(QMainWindow):
         self.process.finished.connect(self._runner_finished)
         self.process.start(command[0], command[1:])
         if not self.process.waitForStarted(5000):
-            QMessageBox.critical(self, tr("启动失败", "Start failed"), tr("无法启动 Linux 运行器。", "Failed to start the Linux runner."))
+            QMessageBox.critical(self, tr("启动失败", "Start failed"), tr("无法启动运行器。", "Failed to start the runner."))
             self.process = None
             self._update_runtime_status_widgets()
             return
@@ -1261,7 +1261,7 @@ class MainWindow(QMainWindow):
             self.tray_icon.setIcon(QIcon(str(icon_path)))
         else:
             self.tray_icon.setIcon(self.windowIcon())
-        self.tray_icon.setToolTip("D3keyHelper Linux")
+        self.tray_icon.setToolTip("D3keyHelper")
         self._tray_menu = QMenu()
         self.tray_icon.setContextMenu(self._tray_menu)
         self.tray_icon.activated.connect(self._tray_activated)

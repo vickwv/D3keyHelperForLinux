@@ -1,5 +1,5 @@
 pynput>=1.7,<2
-python-xlib>=0.33,<1
+python-xlib>=0.33,<1; platform_system == "Linux"
 mss>=9,<11
 numpy>=2,<3
 PySide6>=6.7,<7
