@@ -6,6 +6,8 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
+    QDialog,
+    QDialogButtonBox,
     QDoubleSpinBox,
     QFormLayout,
     QFrame,
@@ -14,6 +16,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QListView,
+    QPushButton,
     QSizePolicy,
     QSpacerItem,
     QSpinBox,
@@ -479,6 +482,84 @@ def classify_safezone_text(text: str) -> tuple[str, set[int]]:
     if values:
         return "set", values
     return "unset", set()
+
+
+class SafeZonePickerDialog(QDialog):
+    """A 10×6 grid dialog that lets the user toggle inventory slots 1-60 as safe slots."""
+
+    COLS = 10
+    ROWS = 6
+
+    def __init__(self, initial_slots: set[int], parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle(tr("选择安全格", "Select Safe Slots"))
+        self.setModal(True)
+
+        outer = QVBoxLayout(self)
+        outer.setSpacing(12)
+
+        hint = QLabel(tr(
+            "点击格子以切换是否为安全格（蓝色 = 已选中）。\n左上角为第1格，右上角为第10格，依次排列。",
+            "Click a slot to toggle it as safe (blue = selected).\nTop-left is slot 1, top-right is slot 10.",
+        ))
+        hint.setWordWrap(True)
+        outer.addWidget(hint)
+
+        grid_widget = QWidget()
+        grid = QGridLayout(grid_widget)
+        grid.setContentsMargins(0, 0, 0, 0)
+        grid.setSpacing(4)
+
+        self._buttons: dict[int, QPushButton] = {}
+        for slot in range(1, 61):
+            row = (slot - 1) // self.COLS
+            col = (slot - 1) % self.COLS
+            btn = QPushButton(str(slot))
+            btn.setCheckable(True)
+            btn.setChecked(slot in initial_slots)
+            btn.setFixedSize(36, 30)
+            btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+            btn.toggled.connect(self._update_button_style)
+            self._update_button_style_for(btn)
+            self._buttons[slot] = btn
+            grid.addWidget(btn, row, col)
+
+        outer.addWidget(grid_widget)
+
+        button_box = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
+        ok_btn = button_box.button(QDialogButtonBox.StandardButton.Ok)
+        cancel_btn = button_box.button(QDialogButtonBox.StandardButton.Cancel)
+        if ok_btn:
+            ok_btn.setText(tr("确认", "OK"))
+        if cancel_btn:
+            cancel_btn.setText(tr("取消", "Cancel"))
+        button_box.accepted.connect(self.accept)
+        button_box.rejected.connect(self.reject)
+        outer.addWidget(button_box)
+
+    def _update_button_style(self) -> None:
+        btn = self.sender()
+        if isinstance(btn, QPushButton):
+            self._update_button_style_for(btn)
+
+    @staticmethod
+    def _update_button_style_for(btn: QPushButton) -> None:
+        if btn.isChecked():
+            btn.setStyleSheet(
+                "QPushButton { background: #1d6fa4; color: #ffffff; border: 1px solid #1d6fa4; border-radius: 4px; font-weight: 600; }"
+                "QPushButton:hover { background: #1a5e8a; }"
+            )
+        else:
+            btn.setStyleSheet(
+                "QPushButton { background: #f0f2f5; color: #1f2933; border: 1px solid #c8d0d8; border-radius: 4px; }"
+                "QPushButton:hover { background: #e2e6ea; }"
+            )
+
+    def selected_slots(self) -> set[int]:
+        """Return the set of currently selected slot numbers (1-60)."""
+        return {slot for slot, btn in self._buttons.items() if btn.isChecked()}
 
 
 def helper_speed_preset_from_values(mouse_speed: int, animation_delay: int, configured_preset: int = 5) -> int:

@@ -32,12 +32,14 @@ from PySide6.QtWidgets import (
     QListWidget,
     QListWidgetItem,
     QMainWindow,
+    QMenu,
     QMessageBox,
     QPushButton,
     QSizePolicy,
     QSplitter,
     QSpinBox,
     QStackedWidget,
+    QSystemTrayIcon,
     QVBoxLayout,
     QWidget,
 )
@@ -107,6 +109,7 @@ try:
         make_reforge_method_tooltip, set_combo_value, _make_line_edit,
         _add_combo_item, tune_combo_box, combo_value, combo_data,
         classify_safezone_text, helper_speed_preset_from_values,
+        SafeZonePickerDialog,
         build_profile_selector, build_form_layout, build_settings_grid,
         add_form_rows, build_section, build_sub_header, build_two_column_form,
         build_inline_field, build_checkbox_field, build_toggle_grid,
@@ -150,6 +153,7 @@ except ImportError:
         make_reforge_method_tooltip, set_combo_value, _make_line_edit,
         _add_combo_item, tune_combo_box, combo_value, combo_data,
         classify_safezone_text, helper_speed_preset_from_values,
+        SafeZonePickerDialog,
         build_profile_selector, build_form_layout, build_settings_grid,
         add_form_rows, build_section, build_sub_header, build_two_column_form,
         build_inline_field, build_checkbox_field, build_toggle_grid,
@@ -227,6 +231,7 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(960, 620)
         self._build_shell()
         self.reload_config()
+        self._build_tray_icon()
 
     def _init_shell_widgets(self) -> None:
         self.navigation = ListWidget()
@@ -433,6 +438,7 @@ class MainWindow(QMainWindow):
         self._update_runtime_status_widgets()
         self._sync_toolbar_profile_combo(profile_names)
         self._refresh_profile_buttons()
+        self._update_tray_menu()
 
     def _navigation_item(self, text: str) -> QListWidgetItem:
         item = QListWidgetItem(text)
@@ -635,6 +641,21 @@ class MainWindow(QMainWindow):
         self.general_widgets["helpermousespeed"] = self._spin(0, 10, _section_int(section, "helpermousespeed", gd("helpermousespeed")))
         self.general_widgets["helperanimationdelay"] = self._spin(1, 1000, _section_int(section, "helperanimationdelay", gd("helperanimationdelay")))
         self.general_widgets["safezone"] = _make_line_edit(section.get("safezone", gd("safezone")))
+        safezone_pick_btn = QPushButton(tr("选择", "Pick"))
+        safezone_pick_btn.setFixedWidth(50)
+        safezone_pick_btn.setFixedHeight(FORM_CONTROL_HEIGHT)
+        safezone_pick_btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.general_widgets["safezone_pick_btn"] = safezone_pick_btn
+        safezone_row = QWidget()
+        safezone_row.setFixedHeight(FORM_CONTROL_HEIGHT)
+        safezone_row.setMinimumWidth(FORM_FIELD_MIN_WIDTH)
+        safezone_row.setMaximumWidth(FORM_FIELD_MAX_WIDTH)
+        _sz_layout = QHBoxLayout(safezone_row)
+        _sz_layout.setContentsMargins(0, 0, 0, 0)
+        _sz_layout.setSpacing(4)
+        _sz_layout.addWidget(self.general_widgets["safezone"], 1)
+        _sz_layout.addWidget(safezone_pick_btn, 0)
+        self.general_widgets["safezone_row"] = safezone_row
         self.general_widgets["maxreforge"] = self._spin(1, 999, _section_int(section, "maxreforge", gd("maxreforge")))
         self.general_widgets["safezonestatus"] = QLabel()
         self.general_widgets["enablegamblehelper"].setToolTip(GAMBLE_TOOLTIP)
@@ -715,7 +736,7 @@ class MainWindow(QMainWindow):
                     ("动画速度预设", self.general_widgets["helperspeed"], HELPER_SPEED_PRESET_TOOLTIP),
                     ("辅助鼠标速度", self.general_widgets["helpermousespeed"], HELPER_SPEED_TOOLTIP),
                     ("辅助动画延迟", self.general_widgets["helperanimationdelay"], HELPER_SPEED_TOOLTIP),
-                    ("安全格", self.general_widgets["safezone"], SAFEZONE_TOOLTIP),
+                    ("安全格", self.general_widgets["safezone_row"], SAFEZONE_TOOLTIP),
                     ("最大重铸次数", self.general_widgets["maxreforge"]),
                 ]
             )
@@ -851,6 +872,7 @@ class MainWindow(QMainWindow):
         self.general_widgets["enableabandonhelper"].toggled.connect(self._refresh_general_state)
         self.general_widgets["salvagehelpermethod"].currentIndexChanged.connect(self._refresh_general_state)
         self.general_widgets["safezone"].editingFinished.connect(self._refresh_general_state)
+        self.general_widgets["safezone_pick_btn"].clicked.connect(self._open_safezone_picker)
     def _refresh_general_state(self, *_args) -> None:
         start_method = combo_value(self.general_widgets["startmethod"])
         helper_method = combo_value(self.general_widgets["oldsandhelpermethod"])
@@ -881,6 +903,7 @@ class MainWindow(QMainWindow):
         ) or (salvage_enabled and salvage_mode != 1)
         status = self.general_widgets["safezonestatus"]
         self.general_widgets["safezone"].setEnabled(needs_safezone)
+        self.general_widgets["safezone_pick_btn"].setEnabled(needs_safezone)
         if not needs_safezone:
             status.hide()
             return
@@ -904,6 +927,18 @@ class MainWindow(QMainWindow):
             status.setStyleSheet("color: #b42318; font-weight: 400;")
             status.setToolTip(tr("请填写 1-60 之间的格子编号，使用英文逗号分隔，例如：1,2,3", "Use slot numbers from 1 to 60, separated by commas, for example: 1,2,3"))
         status.show()
+
+    def _open_safezone_picker(self) -> None:
+        text = self.general_widgets["safezone"].text().strip()
+        _, current_slots = classify_safezone_text(text)
+        dlg = SafeZonePickerDialog(current_slots, parent=self)
+        if dlg.exec() == SafeZonePickerDialog.DialogCode.Accepted:
+            selected = dlg.selected_slots()
+            if selected:
+                self.general_widgets["safezone"].setText(",".join(str(s) for s in sorted(selected)))
+            else:
+                self.general_widgets["safezone"].setText("")
+            self._refresh_general_state()
 
     def _append_log(self, text: str) -> None:
         message = localize_text(text.rstrip())
@@ -945,6 +980,7 @@ class MainWindow(QMainWindow):
         )
         self.status_log_value.setText(log_text)
         self.status_log_value.setToolTip(latest_text)
+        self._update_tray_menu()
 
     def resizeEvent(self, event) -> None:
         super().resizeEvent(event)
@@ -1213,6 +1249,101 @@ class MainWindow(QMainWindow):
         if was_running:
             self._launch_runner(save_first=False, log_message="检测到配置变更，已自动重启运行器。")
 
+    # ------------------------------------------------------------------ #
+    #  System tray icon                                                    #
+    # ------------------------------------------------------------------ #
+
+    def _build_tray_icon(self) -> None:
+        """Create the system tray icon and its context menu."""
+        self.tray_icon = QSystemTrayIcon(self)
+        icon_path = app_icon_path()
+        if icon_path is not None:
+            self.tray_icon.setIcon(QIcon(str(icon_path)))
+        else:
+            self.tray_icon.setIcon(self.windowIcon())
+        self.tray_icon.setToolTip("D3keyHelper Linux")
+        self._tray_menu = QMenu()
+        self.tray_icon.setContextMenu(self._tray_menu)
+        self.tray_icon.activated.connect(self._tray_activated)
+        self._update_tray_menu()
+        self.tray_icon.show()
+
+    def _update_tray_menu(self) -> None:
+        """Rebuild the tray right-click context menu."""
+        if not hasattr(self, "_tray_menu"):
+            return
+        menu = self._tray_menu
+        menu.clear()
+
+        action_toggle = menu.addAction(tr("显示/隐藏窗口", "Show/Hide Window"))
+        action_toggle.triggered.connect(self._tray_toggle_window)
+
+        action_general = menu.addAction(tr("打开通用设置", "Open General Settings"))
+        action_general.triggered.connect(self._tray_open_general)
+
+        menu.addSeparator()
+
+        if self.profile_tabs:
+            active_idx = 1
+            general_combo = self.general_widgets.get("activatedprofile")
+            if general_combo is not None:
+                active_idx = combo_value(general_combo)
+            profile_menu = menu.addMenu(tr("切换配置", "Switch Profile"))
+            for i, tab in enumerate(self.profile_tabs, start=1):
+                name = tab.widgets["name"].text().strip() or tab.section_name
+                display = f"{i} - {localize_text(name)}"
+                action = profile_menu.addAction(display)
+                action.setCheckable(True)
+                action.setChecked(i == active_idx)
+
+                def _make_switcher(idx: int):
+                    return lambda _checked=False: self._tray_switch_profile(idx)
+
+                action.triggered.connect(_make_switcher(i))
+            menu.addSeparator()
+
+        running = self._runner_is_active()
+        action_start = menu.addAction(tr("启动运行器", "Start Runner"))
+        action_start.triggered.connect(self.start_runner)
+        action_start.setEnabled(not running)
+        action_stop = menu.addAction(tr("停止运行器", "Stop Runner"))
+        action_stop.triggered.connect(lambda _checked=False: self.stop_runner())
+        action_stop.setEnabled(running)
+
+        menu.addSeparator()
+
+        action_quit = menu.addAction(tr("退出", "Quit"))
+        action_quit.triggered.connect(QApplication.quit)
+
+    def _tray_activated(self, reason: QSystemTrayIcon.ActivationReason) -> None:
+        if reason == QSystemTrayIcon.ActivationReason.DoubleClick:
+            self._tray_toggle_window()
+
+    def _tray_toggle_window(self) -> None:
+        if self.isVisible():
+            self.hide()
+        else:
+            self.show()
+            self.raise_()
+            self.activateWindow()
+
+    def _tray_open_general(self) -> None:
+        self.show()
+        self.raise_()
+        self.activateWindow()
+        self.navigation.setCurrentRow(0)
+
+    def _tray_switch_profile(self, index: int) -> None:
+        set_combo_value(self.toolbar_profile_combo, index)
+        self._update_tray_menu()
+
+    def closeEvent(self, event) -> None:
+        if hasattr(self, "tray_icon") and self.tray_icon.isVisible():
+            event.ignore()
+            self.hide()
+        else:
+            super().closeEvent(event)
+
 
 def main() -> int:
     if "--runner" in sys.argv[1:]:
@@ -1236,6 +1367,7 @@ def main() -> int:
         if os.path.isdir(_p):
             QApplication.addLibraryPath(_p)
     app = QApplication(sys.argv)
+    app.setQuitOnLastWindowClosed(False)
     setTheme(Theme.LIGHT)
     setThemeColor('#2f72c4')
     icon_path = app_icon_path()
