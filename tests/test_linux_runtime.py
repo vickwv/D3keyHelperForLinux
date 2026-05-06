@@ -676,8 +676,9 @@ class PackageImportTests(unittest.TestCase):
     def test_package_import_runtime(self) -> None:
         """d3keyhelper must be importable from its parent directory."""
         parent = str(REPO_ROOT.parent)
+        pkg = REPO_ROOT.name
         result = subprocess.run(
-            [sys.executable, "-c", "import D3keyHelperForLinux.d3keyhelper"],
+            [sys.executable, "-c", f"import {pkg}.d3keyhelper"],
             capture_output=True,
             text=True,
             env={**os.environ, "PYTHONPATH": parent},
@@ -692,8 +693,9 @@ class PackageImportTests(unittest.TestCase):
         """d3keyhelper_gui must be importable from its parent directory."""
         parent = str(REPO_ROOT.parent)
         env = {**os.environ, "PYTHONPATH": parent, "QT_QPA_PLATFORM": "offscreen"}
+        pkg = REPO_ROOT.name
         result = subprocess.run(
-            [sys.executable, "-c", "import D3keyHelperForLinux.d3keyhelper_gui"],
+            [sys.executable, "-c", f"import {pkg}.d3keyhelper_gui"],
             capture_output=True,
             text=True,
             env=env,
